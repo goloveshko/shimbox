@@ -5,9 +5,13 @@
 
 mod pe;
 mod runner;
+mod shim;
 
 use std::path::Path;
+use std::process::Command;
 use tauri_plugin_dialog::DialogExt;
+
+use runner::Variant;
 
 /// Reported to the UI so the `Auto detect` choice is visible before generating
 /// (docs/techspec.md 5.4).
@@ -30,7 +34,9 @@ fn main() {
             detect_variant,
             embedded_runners,
             pick_file,
-            pick_folder
+            pick_folder,
+            open_folder,
+            shim::generate
         ])
         .run(tauri::generate_context!())
         .expect("shimbox failed to start");
@@ -38,21 +44,16 @@ fn main() {
 
 #[tauri::command]
 fn detect_variant(path: String) -> Detected {
-    match pe::subsystem_of(Path::new(&path)) {
-        pe::Subsystem::Gui => Detected {
-            variant: "gui",
-            subsystem: "windows",
-        },
-        pe::Subsystem::Console => Detected {
-            variant: "cli",
-            subsystem: "console",
-        },
-        pe::Subsystem::Unknown => Detected {
-            // Unreadable headers fall back to the variant that can report
-            // errors at all.
-            variant: "cli",
-            subsystem: "unknown",
-        },
+    let subsystem = pe::subsystem_of(Path::new(&path));
+    // A stable token, not prose: the UI picks the sentence for it.
+    let name = match subsystem {
+        pe::Subsystem::Gui => "gui",
+        pe::Subsystem::Console => "console",
+        pe::Subsystem::Unknown => "unknown",
+    };
+    Detected {
+        variant: Variant::from(subsystem).name(),
+        subsystem: name,
     }
 }
 
@@ -95,4 +96,16 @@ async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
     .map_err(|error| error.to_string())?;
 
     Ok(picked.map(|file| file.to_string()))
+}
+
+/// The success panel's "Open destination folder" action (5.1).
+#[tauri::command]
+fn open_folder(path: String) -> Result<(), String> {
+    // `explorer` reports a non-zero exit code even when it opened the folder,
+    // so its status says nothing and is ignored.
+    Command::new("explorer")
+        .arg(&path)
+        .spawn()
+        .map_err(|error| format!("cannot open {path}: {error}"))
+        .map(|_| ())
 }

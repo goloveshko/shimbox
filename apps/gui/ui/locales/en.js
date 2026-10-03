@@ -9,6 +9,9 @@ export default {
   'single.target': 'Target executable',
   'single.target.placeholder': 'C:\\Tools\\ffmpeg\\bin\\ffmpeg.exe',
   'single.browse': 'Browse',
+  'single.destination': 'Destination folder',
+  'single.destination.placeholder': 'C:\\Shims',
+  'single.destination.help': 'Where the .exe and .shim pair is written.',
   'single.alias': 'Shim name',
   'single.alias.placeholder': 'ffmpeg',
   'single.arguments': 'Default arguments',
@@ -18,10 +21,24 @@ export default {
   'single.variant.auto': 'Auto detect',
   'single.variant.cli': 'CLI (Console)',
   'single.variant.gui': 'GUI (Detached)',
-  'single.variant.detected': 'Detected: {subsystem} application.',
-  'single.variant.unknown':
+  'single.detected.gui': 'Detected: GUI application.',
+  'single.detected.console': 'Detected: console application.',
+  'single.detected.unknown':
     'Detected: not a readable PE, the console runner will be used.',
   'single.workdir': 'Working directory',
   'single.workdir.placeholder': 'defaults to the target folder',
   'single.workdir.help': 'Leave empty to run the target from its own folder.',
+
+  'single.generate': 'Generate shim',
+  'single.result': '{name} is ready in {destination}.',
+  'single.result.variant': 'Runner type: {variant}.',
+  'single.result.path':
+    'Add the destination folder to PATH to start the shim by name.',
+  'single.result.open': 'Open destination folder',
+
+  'error.target': 'The target executable does not exist.',
+  'error.destination': 'The destination folder does not exist.',
+  'error.alias': 'The shim name is not a valid file name.',
+  'error.collision': 'A file with that name is already there.',
+  'error.write': 'The shim could not be written.',
 };
