@@ -11,10 +11,12 @@
     "windows": [
       {
         "title": "shimbox",
-        "width": 880,
-        "height": 640,
+        "width": 900,
+        "height": 660,
         "minWidth": 620,
-        "minHeight": 440
+        "minHeight": 440,
+        "transparent": true,
+        "windowEffects": { "effects": ["mica"] }
       }
     ],
     "security": {
