@@ -247,13 +247,25 @@ Two tabs, no other navigation.
 * **Discovered binaries table**: `Select` checkbox, `Shim name` (the file stem
   the pair is named after, so two rows sharing it are visible as such),
   `Executable` path (shortened in the middle, so the file name survives; the
-  full path is the tooltip), `Size`, `Runner type` (the variant Auto resolved
-  to, 5.4). `Select all` / `Select none`, plus how many were found.
+  full path is the tooltip), `Version` (from the PE version resource, 5.5; the
+  full string is the tooltip), `Size`, `Runner type` (the variant Auto resolved
+  to, 5.4). `Select all` / `Select none`, how many were found and how many are
+  selected. A `Filter` box above the table narrows it by name or path; it only
+  hides rows, so the selection counter is what says how many shims a Generate
+  would write.
 * **Destination directory**: folder picker.
 * **Left out of the scan**: an `.exe` that has a sibling `.shim` is already a
   shim, and everything under the destination folder is where the pairs are
   being written — a tool tree that is also its own output folder is the normal
   case, not a corner. Changing the destination rescans.
+* **Same name, one choice**: files that would claim one shim name are
+  alternatives, not a set of checkboxes, so checking one clears the rest of its
+  group and the table marks the group with a left band and an indent. The row
+  the scan preselects is the one with the highest `FileVersion`, falling back to
+  the modification date when a file reports no version at all — which is common
+  enough (static builds of `ffmpeg` report none) that the date is the rule's
+  second half rather than an edge case. `Select all` therefore means one row
+  per name, never the whole table.
 * **Policy**: no per-entry configuration. Each selected binary gets a config
   with `path` only, i.e. default arguments and default working directory, and
   the runner variant resolved by Auto.
@@ -295,6 +307,24 @@ backend. The runner stays unaware of the mechanism.
 * Mode 2 has no override control: the batch policy is Auto for every row, and
   the `Type` column is what makes that auditable.
 
+### 5.5 File version
+
+Also read from the file, never from running it: the `Version` column and the
+preselection of 5.2 come from the PE resource directory.
+
+* The walk is `IMAGE_DIRECTORY_ENTRY_RESOURCE` -> `RT_VERSION` -> the single
+  named resource -> the single language block -> `IMAGE_RESOURCE_DATA_ENTRY`,
+  whose `OffsetToData` is an RVA resolved through the section table. RVAs are
+  bounded by the section's raw size, so a malformed header cannot make the scan
+  read past what the file holds.
+* Two fields are read out of `VS_VERSIONINFO`, and they do not always agree:
+  `VS_FIXEDFILEINFO.dwFileVersion`, which is what gets compared, and the
+  `StringFileInfo` `FileVersion`, which is what is shown because it is what the
+  tool itself and Explorer print. A file that reports only one of the two is
+  normal; the display string falls back to the four numbers.
+* Nothing is ever failed over a version: no resource, no PE, unreadable file all
+  mean an empty cell and the modification date deciding 5.2.
+
 ---
 
 ## 6. Non-Functional Requirements
@@ -326,7 +356,7 @@ backend. The runner stays unaware of the mechanism.
 | **2** | Runner tests | Scripted checks: quoting round trip through `raw_arg` (backslash-quote cases), exit-code propagation, missing/invalid config, interactive stdin, workdir default. |
 | **3** | Tauri scaffold | Tauri v2 + frontend template, both runners embedded, workspace ordering so debug builds read the freshly built runner. |
 | **4** | Mode 1 | Pickers, alias, arguments, workdir, validation, generation, collision skip, notification. Includes PE `Subsystem` detection (5.4) behind the `Auto detect` dropdown. |
-| **5** | Mode 2 | Directory scan, table with checkboxes and detected `Type`, batch write, progress, summary with skip reasons. |
+| **5** | Mode 2 | Directory scan, table with checkboxes, detected `Type` and file version (5.5), a filter, one choice per shim name, batch write, progress, summary with skip reasons. |
 | **6** | Polish | Size/flag pass on the runner, error dialog copy, README with the `Setup` / `PATH` steps. |
 
 ---
