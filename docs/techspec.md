@@ -89,6 +89,8 @@ shimbox/
         index.html
         main.js         tab switching, status line
         i18n.js         language resolution and lookup
+        form.js         widgets both screens build the same way
+        app.css
         locales/        one file per language
         screens/        one file per mode
 ```
@@ -242,14 +244,15 @@ Two tabs, no other navigation.
 
 * **Source directory**: folder picker.
 * **Include subdirectories**: checkbox.
-* **Discovered binaries table**: `Select` checkbox, `Binary Name`, `Path`,
-  `Type` (the runner variant Auto resolved to, 5.4). `Select All` /
-  `Deselect All`.
+* **Discovered binaries table**: `Select` checkbox, `Shim name` (the file stem
+  the pair is named after, so two rows sharing it are visible as such),
+  `Executable` path, `Runner type` (the variant Auto resolved to, 5.4).
+  `Select all` / `Select none`, plus how many were found.
 * **Destination directory**: folder picker.
 * **Policy**: no per-entry configuration. Each selected binary gets a config
   with `path` only, i.e. default arguments and default working directory, and
   the runner variant resolved by Auto.
-* **Generate All**: progress indicator ("Generated 12/25…") then a summary
+* **Generate All**: progress indicator ("Writing 12 of 25…") then a summary
   listing what was created and what was skipped with the reason, plus the same
   `PATH` reminder (6).
 
@@ -260,8 +263,9 @@ Two tabs, no other navigation.
   an error shown next to the form, in Mode 2 it is a row in the summary.
 * Inside Mode 2, two discovered binaries may share a stem (recursive scan of
   `tools\x\git.exe` and `tools\y\git.exe`). First one wins; every later one is
-  reported as skipped due to name collision. Disambiguating suffixes are
-  deliberately not generated — a skipped-and-reported batch is honest, a
+  reported as skipped with a `duplicate` reason, kept distinct from `collision`,
+  which means a file already sitting in the destination. Disambiguating suffixes
+  are deliberately not generated — a skipped-and-reported batch is honest, a
   silently renamed one is not.
 * The generated `.exe` is written **after** a successful `.shim` write, so a
   partially generated shim is a working config without a runner rather than a
