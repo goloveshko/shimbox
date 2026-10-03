@@ -67,8 +67,9 @@ shimbox/
   Cargo.toml            workspace manifest
   Cargo.lock
   README.md
-  .gitignore            /target, /bin, node_modules/, dist/
-  bin/                  build output, ignored (runner-cli.exe, runner-gui.exe)
+  .gitignore            /target, /bin, tauri's generated schemas
+  bin/                  build output, ignored
+                        (runner-cli.exe, runner-gui.exe, shimbox.exe)
   docs/
     techspec.md
   scripts/
@@ -81,10 +82,15 @@ shimbox/
   crates/
     runner/             shim-runner, both variants
   apps/
-    gui/                Tauri app
-      src-tauri/        Rust backend
-      ui/               frontend sources
-      dist/             built frontend (generated, ignored)
+    gui/
+      assets/           icon source
+      src-tauri/        Rust backend, embeds ui/ and both runners
+      ui/               frontend: no build step, no npm dependencies
+        index.html
+        main.js         tab switching, status line
+        i18n.js         language resolution and lookup
+        locales/        one file per language
+        screens/        one file per mode
 ```
 
 Rule of thumb: nothing new is added to the root directory without a reason;
@@ -226,8 +232,8 @@ Two tabs, no other navigation.
 * **Working directory**: optional folder picker; empty means the default from
   3.4.
 * **Generate**: write `<destination>\<alias>.exe` then `<destination>\<alias>.shim`;
-  on success, a notification with an "Open destination folder" action and a
-  reminder that the destination must be on `PATH` (6).
+  on success, a message below the form with an "Open destination folder" action
+  and a reminder that the destination must be on `PATH` (6).
 * Validates before writing: source exists, destination directory exists and is
   writable, alias is a legal file name.
 
@@ -319,11 +325,17 @@ backend. The runner stays unaware of the mechanism.
 
 Decisions this draft still needs:
 
-1. **Frontend**: Vanilla vs Svelte.
-2. **`.shim` file extension**: worth checking it does not collide with an
+1. **`.shim` file extension**: worth checking it does not collide with an
    existing convention before shipping — unverified suspicion, not a finding.
-3. **Hard links instead of copies** for Mode 2: saves space and makes runner
+2. **Hard links instead of copies** for Mode 2: saves space and makes runner
    updates land on all shims at once, but requires FR-1.1 to key off `argv[0]`.
+
+Resolved since draft 3:
+
+* **Frontend**: Vanilla JS, no build step and no npm dependencies, reached
+  through `withGlobalTauri`. UI text is English only for now, but every string
+  goes through `data-i18n` keys and a per-language dictionary file, so adding a
+  language is one file in `ui/locales/` plus one line in `ui/i18n.js`.
 
 Deferred, explicitly out of v1:
 
