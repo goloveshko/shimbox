@@ -246,9 +246,14 @@ Two tabs, no other navigation.
 * **Include subdirectories**: checkbox.
 * **Discovered binaries table**: `Select` checkbox, `Shim name` (the file stem
   the pair is named after, so two rows sharing it are visible as such),
-  `Executable` path, `Runner type` (the variant Auto resolved to, 5.4).
-  `Select all` / `Select none`, plus how many were found.
+  `Executable` path (shortened in the middle, so the file name survives; the
+  full path is the tooltip), `Size`, `Runner type` (the variant Auto resolved
+  to, 5.4). `Select all` / `Select none`, plus how many were found.
 * **Destination directory**: folder picker.
+* **Left out of the scan**: an `.exe` that has a sibling `.shim` is already a
+  shim, and everything under the destination folder is where the pairs are
+  being written — a tool tree that is also its own output folder is the normal
+  case, not a corner. Changing the destination rescans.
 * **Policy**: no per-entry configuration. Each selected binary gets a config
   with `path` only, i.e. default arguments and default working directory, and
   the runner variant resolved by Auto.
