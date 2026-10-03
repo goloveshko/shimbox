@@ -1,14 +1,21 @@
 [workspace]
 resolver = "2"
-members = ["crates/runner"]
+members = ["crates/runner", "apps/gui/src-tauri"]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
 
 [profile.release]
+strip = true
+
+# Size-optimized build for the runner only (docs/techspec.md 2.2). It cannot be
+# a per-package override of `release`, because `panic` and `lto` are workspace
+# profile settings, and abort-on-panic would also change how the Tauri app
+# handles failures.
+[profile.dist]
+inherits = "release"
 opt-level = "z"
 lto = "fat"
 codegen-units = 1
 panic = "abort"
-strip = true
