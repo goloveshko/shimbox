@@ -214,18 +214,19 @@ input[type='text']::placeholder {
   color: color-mix(in srgb, var(--muted) 80%, transparent);
 }
 
-/* The accent underline is the Windows way of saying `this field has focus`;
-  keyboard focus additionally gets the ring, which a click does not need. */
+/* A text field takes `focus-visible` from a click as readily as from Tab, so
+   the accent underline has to be its whole signal: the ring on top of an
+   accent-coloured border is the double outline. The ring is left to the
+   controls that show no caret, where a keyboard user needs to see where Tab
+   landed. */
 input[type='text']:focus,
 select:focus {
   outline: none;
-  border-color: Highlight;
   box-shadow: inset 0 -2px 0 Highlight;
 }
 
-input[type='text']:focus-visible,
-select:focus-visible,
-button:focus-visible {
+button:focus-visible,
+input[type='checkbox']:focus-visible {
   outline: 2px solid Highlight;
   outline-offset: 2px;
 }
