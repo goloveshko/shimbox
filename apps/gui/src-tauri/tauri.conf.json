@@ -15,6 +15,7 @@
         "height": 660,
         "minWidth": 620,
         "minHeight": 440,
+        "visible": false,
         "transparent": true,
         "windowEffects": { "effects": ["mica"] }
       }

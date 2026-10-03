@@ -31,6 +31,13 @@ struct EmbeddedRunner {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        // The size and the corner the window was left in are the user's, not the
+        // config file's, so they are written back on close and read again on start.
+        // The window starts hidden (`visible: false`) because this plugin is what
+        // shows it, already at the saved geometry, instead of letting it flash at
+        // the configured one first. Deleting `$APPCONFIG/.window-state.json` is the
+        // reset; a first run has no state and gets the size from the config.
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             detect_variant,
             embedded_runners,

@@ -230,7 +230,10 @@ chose in the system, so there is no in-app theme switch to keep in step. A field
 is one block of caption, control and hint, and the blocks reflow from two
 columns to one with the window. The window itself does not scroll: the batch
 table takes the height the rest of the screen leaves it and scrolls inside its
-own card, under a header that stays put.
+own card, under a header that stays put. The size and the position the window was
+left in are remembered between runs, in `$APPCONFIG/.window-state.json`; the
+window opens hidden and is shown once that geometry has been applied, so it never
+flashes at the configured default first.
 
 ### 5.1 Mode 1: single shim
 
