@@ -115,9 +115,9 @@ scratch scripts go to `scripts/`, notes to `docs/`.
     against the noise.
 
 * **`shim-gui` (crate / Tauri app `gui`)**
-  * Backend: Rust (Tauri v2). Frontend: undecided between Vanilla and Svelte
-    (section 8); the UI is two tabs and one table, so no build-chain-heavy stack
-    is needed for its sake.
+  * Backend: Rust (Tauri v2). Frontend: Vanilla JS with no build step and no npm
+    dependencies (section 8); the UI is two tabs and one table, so no
+    build-chain-heavy stack is needed for its sake.
   * Embeds **both** runner variants via `include_bytes!` and writes the selected
     one.
   * Dev loop: the embedded bytes go stale against a freshly built runner, so the
@@ -221,6 +221,16 @@ child's *arguments* changes — only its `GetCurrentDirectory`. Explicit
 ## 5. Functional Requirements: `shim-gui`
 
 Two tabs, no other navigation.
+
+The shell reads as a Windows application rather than a web page: the window sits
+on a Mica backdrop and the interface is semi-opaque cards over it. No colour is
+picked by hand — each one is a token declared once per theme, the theme comes
+from `prefers-color-scheme` and the accent from `Highlight`, the colour the user
+chose in the system, so there is no in-app theme switch to keep in step. A field
+is one block of caption, control and hint, and the blocks reflow from two
+columns to one with the window. The window itself does not scroll: the batch
+table takes the height the rest of the screen leaves it and scrolls inside its
+own card, under a header that stays put.
 
 ### 5.1 Mode 1: single shim
 
