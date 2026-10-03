@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime};
 
 use tauri::Emitter;
 
@@ -13,13 +14,16 @@ use crate::runner::Variant;
 use crate::shim::{self, Failure};
 
 /// One discovered binary, named by the stem the shim will get, with the
-/// variant `Auto` resolves to, so the table previews the result (5.4).
+/// variant `Auto` resolves to and the version that decides which of two
+/// same-named files the table preselects (5.2).
 #[derive(serde::Serialize)]
 pub struct Found {
     name: String,
     path: String,
     size: u64,
+    version: Option<String>,
     variant: &'static str,
+    selected: bool,
 }
 
 #[derive(serde::Deserialize)]
@@ -40,6 +44,47 @@ pub struct Summary {
     skipped: Vec<Skipped>,
 }
 
+/// A scanned file with everything the row and the choice need, kept apart from
+/// `Found` so the comparison can be tested without a disk.
+struct Candidate {
+    name: String,
+    path: PathBuf,
+    size: u64,
+    numbers: Option<[u32; 4]>,
+    version: Option<String>,
+    modified: SystemTime,
+    selected: bool,
+}
+
+impl Candidate {
+    fn of(path: PathBuf) -> Self {
+        let metadata = fs::metadata(&path).ok();
+        let size = metadata.as_ref().map_or(0, fs::Metadata::len);
+        let modified = metadata
+            .and_then(|meta| meta.modified().ok())
+            .unwrap_or(SystemTime::UNIX_EPOCH);
+        let version = pe::version_of(&path);
+        let text = version.text().map(str::to_owned);
+        Self {
+            numbers: version.numbers(),
+            version: text.or_else(|| {
+                version
+                    .numbers()
+                    .map(|[a, b, c, d]| format!("{a}.{b}.{c}.{d}"))
+            }),
+            name: path
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned(),
+            size,
+            modified,
+            path,
+            selected: false,
+        }
+    }
+}
+
 #[tauri::command]
 pub async fn scan(
     source: String,
@@ -50,19 +95,60 @@ pub async fn scan(
     // The destination is only an exclusion hint here: half-typing it must not
     // break a scan of a folder that is perfectly readable.
     let exclude = std::path::absolute(destination.trim()).ok();
-    Ok(walk(&root, recursive, exclude.as_deref())
+    let mut rows = walk(&root, recursive, exclude.as_deref())
         .into_iter()
-        .map(|path| Found {
-            name: path
-                .file_stem()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .into_owned(),
-            size: fs::metadata(&path).map(|meta| meta.len()).unwrap_or(0),
-            path: path.display().to_string(),
-            variant: Variant::from(pe::subsystem_of(&path)).name(),
-        })
-        .collect())
+        .map(Candidate::of)
+        .collect::<Vec<_>>();
+    mark_newest(&mut rows);
+    Ok(rows.into_iter().map(Found::from).collect())
+}
+
+/// For each run of files that would claim the same shim name, select the one
+/// the table starts with. `walk` sorts by name, so a group is always
+/// contiguous, and a group of one is selected by definition.
+fn mark_newest(rows: &mut [Candidate]) {
+    let mut start = 0;
+    while start < rows.len() {
+        let mut end = start + 1;
+        while end < rows.len() && rows[end].name.eq_ignore_ascii_case(&rows[start].name) {
+            end += 1;
+        }
+        for row in &mut rows[start..end] {
+            row.selected = false;
+        }
+        let group = &rows[start..end];
+        let best = group
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, row)| freshness(row))
+            .map_or(start, |(index, _)| start + index);
+        rows[best].selected = true;
+        start = end;
+    }
+}
+
+/// One key for "the freshest we can prove", because the rule cannot be a
+/// pairwise comparison: with `version if both have one, else date`, an
+/// unversioned new file beats a versioned one, and that one beats a second
+/// versioned file the unversioned one loses to, so the winner would depend on
+/// the order the rows happen to be scanned in. A file that reports a version
+/// is a known quantity, so it goes first; date settles everything the version
+/// cannot, which covers the tools that ship with no version resource at all.
+fn freshness(row: &Candidate) -> (bool, [u32; 4], SystemTime) {
+    (row.numbers.is_some(), row.numbers.unwrap_or([0; 4]), row.modified)
+}
+
+impl From<Candidate> for Found {
+    fn from(row: Candidate) -> Self {
+        Self {
+            version: row.version,
+            name: row.name,
+            path: row.path.display().to_string(),
+            size: row.size,
+            variant: Variant::from(pe::subsystem_of(&row.path)).name(),
+            selected: row.selected,
+        }
+    }
 }
 
 #[tauri::command]
@@ -251,6 +337,56 @@ mod tests {
         assert!(walk(&root, true, Some(&root)).is_empty());
 
         fs::remove_dir_all(&root).ok();
+    }
+
+    fn candidate(name: &str, numbers: Option<[u32; 4]>, age_secs: u64) -> Candidate {
+        Candidate {
+            name: name.to_string(),
+            path: PathBuf::from(name),
+            size: 0,
+            numbers,
+            version: None,
+            modified: SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000 - age_secs),
+            selected: false,
+        }
+    }
+
+    #[test]
+    fn selects_the_best_row_of_each_name_group() {
+        let mut rows = vec![
+            // A reported version outranks a recent date, and a higher version
+            // outranks a lower one.
+            candidate("ffmpeg", Some([5, 1, 0, 0]), 30),
+            candidate("ffmpeg", Some([6, 0, 0, 0]), 90),
+            candidate("ffmpeg", None, 0),
+            // Same name, different case, no versions: the newer file on disk.
+            candidate("FFPROBE", None, 40),
+            candidate("ffprobe", None, 10),
+            candidate("zip", None, 0),
+        ];
+
+        mark_newest(&mut rows);
+
+        let chosen: Vec<(&str, Option<[u32; 4]>)> = rows
+            .iter()
+            .filter(|row| row.selected)
+            .map(|row| (row.name.as_str(), row.numbers))
+            .collect();
+        assert_eq!(chosen, [("ffmpeg", Some([6, 0, 0, 0])), ("ffprobe", None), ("zip", None)]);
+    }
+
+    #[test]
+    fn compares_versions_before_dates() {
+        let versioned = candidate("a", Some([2, 0, 0, 0]), 200);
+        let unversioned_but_recent = candidate("a", None, 0);
+        assert!(freshness(&versioned) > freshness(&unversioned_but_recent));
+
+        // Same version, and no version at all: the date decides.
+        let older = candidate("a", Some([2, 0, 0, 0]), 300);
+        assert!(freshness(&versioned) > freshness(&older));
+        let recent = candidate("a", None, 0);
+        let ancient = candidate("a", None, 500);
+        assert!(freshness(&recent) > freshness(&ancient));
     }
 
     #[test]
