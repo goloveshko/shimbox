@@ -3,6 +3,7 @@
 import { t } from '../i18n.js';
 import {
   folderOf,
+  formatSize,
   invoke,
   labelFor,
   messagePanel,
@@ -26,13 +27,29 @@ function cell(content, className) {
   return element;
 }
 
-/// A path long enough to push the table out of the window is shown shortened,
-/// with the full text kept in the tooltip.
+/// A path long enough to push the table out of the window loses its middle,
+/// not its end: the file name is the part that says which row is which.
 function pathCell(path) {
-  const shown = document.createElement('span');
-  shown.textContent = path;
-  const element = cell(shown, 'path');
+  const folder = folderOf(path);
+  const head = document.createElement('span');
+  head.textContent = folder;
+  const tail = document.createElement('span');
+  tail.textContent = path.slice(folder.length);
+
+  const row = document.createElement('div');
+  row.className = 'path';
+  row.append(head, tail);
+
+  const element = document.createElement('td');
   element.title = path;
+  element.append(row);
+  return element;
+}
+
+function sizeCell(bytes) {
+  const element = document.createElement('td');
+  element.className = 'size';
+  element.textContent = formatSize(bytes);
   return element;
 }
 
@@ -64,7 +81,8 @@ export function renderBatch(root) {
   form.append(
     labelFor('batch.destination', destination),
     withBrowseButton(destination, 'pick_folder'),
-    note('batch.destination.help')
+    note('batch.destination.help'),
+    note('batch.scan.help')
   );
 
   const found = note();
@@ -77,9 +95,15 @@ export function renderBatch(root) {
   const body = document.createElement('tbody');
   const table = document.createElement('table');
   const head = document.createElement('tr');
-  for (const key of ['batch.column.name', 'batch.column.path', 'batch.column.type']) {
+  for (const key of [
+    'batch.column.name',
+    'batch.column.path',
+    'batch.column.size',
+    'batch.column.type',
+  ]) {
     const label = document.createElement('th');
     label.dataset.i18n = key;
+    label.className = key.split('.')[2];
     head.append(label);
   }
   head.prepend(document.createElement('th'));
@@ -112,6 +136,7 @@ export function renderBatch(root) {
         cell(check),
         cell(row.name),
         pathCell(row.path),
+        sizeCell(row.size),
         cell(t(`variant.${row.variant}`))
       );
       body.append(entry);
@@ -132,7 +157,11 @@ export function renderBatch(root) {
     }
     progress.textContent = t('batch.scanning');
     try {
-      rows = await invoke('scan', { source: path, recursive: recursive.checked });
+      rows = await invoke('scan', {
+        source: path,
+        destination: destination.value,
+        recursive: recursive.checked,
+      });
     } catch (failure) {
       rows = [];
       result.fail(t(`error.${failure.code}`), failure.detail);
@@ -142,8 +171,10 @@ export function renderBatch(root) {
     show();
   }
 
-  source.addEventListener('change', rescan);
-  destination.addEventListener('change', result.clear);
+  // Both fields feed the scan: the destination is what gets left out of it.
+  for (const field of [source, destination]) {
+    field.addEventListener('change', rescan);
+  }
   destination.addEventListener('input', () => {
     result.clear();
     progress.textContent = '';

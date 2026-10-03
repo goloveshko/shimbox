@@ -1,3 +1,4 @@
+import { formatSize } from './form.js';
 import { localize, t } from './i18n.js';
 import { renderBatch } from './screens/batch.js';
 import { renderSingle } from './screens/single.js';
@@ -29,13 +30,9 @@ function render() {
   localize();
 }
 
-function formatKb(bytes) {
-  return `${Math.round(bytes / 1024)} KB`;
-}
-
 async function reportEmbeddedRunners() {
   const runners = await window.__TAURI__.core.invoke('embedded_runners');
-  const sizes = runners.map((runner) => `${runner.variant} ${formatKb(runner.size)}`);
+  const sizes = runners.map((runner) => `${runner.variant} ${formatSize(runner.size)}`);
   statusRoot.textContent = t('status.runners', { size: sizes.join(' / ') });
 }
 

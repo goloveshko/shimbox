@@ -66,6 +66,20 @@ export function folderOf(path) {
   return separator > 0 ? path.slice(0, separator) : '';
 }
 
+/// Sizes are read by eye, so one decimal is enough to tell 208 KB from 211 KB.
+export function formatSize(bytes) {
+  const kb = bytes / 1024;
+  if (kb < 1) {
+    return `${bytes} B`;
+  }
+  const mb = kb / 1024;
+  if (mb < 1) {
+    return `${Math.round(kb)} KB`;
+  }
+  const gb = mb / 1024;
+  return gb < 1 ? `${mb.toFixed(1)} MB` : `${gb.toFixed(1)} GB`;
+}
+
 /// Fills a field from another one until the user edits it themselves.
 export function autofill(input, compute) {
   let edited = false;

@@ -131,16 +131,30 @@ thead th {
   opacity: 0.75;
 }
 
-td.path {
+div.path {
+  display: flex;
+  align-items: baseline;
+  max-width: 30rem;
   font-size: 0.8rem;
   opacity: 0.75;
 }
 
-td.path span {
-  display: block;
-  max-width: 26rem;
+/* The folder shrinks, so the dots land in the middle and the file name stays. */
+div.path span:first-child {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+div.path span:last-child {
+  white-space: nowrap;
+}
+
+td.size,
+th.size {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
