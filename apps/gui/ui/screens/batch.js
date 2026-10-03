@@ -53,6 +53,20 @@ function sizeCell(bytes) {
   return element;
 }
 
+/// Build strings carry a suffix like `(WinBuild.160101.0800)` that says nothing
+/// about which file is newer, so the cell keeps the leading numbers readable
+/// and puts the rest in the tooltip.
+function versionCell(version) {
+  const text = document.createElement('div');
+  text.className = 'version';
+  text.textContent = version ?? '';
+
+  const element = document.createElement('td');
+  element.title = version ?? '';
+  element.append(text);
+  return element;
+}
+
 function list(items) {
   const element = document.createElement('ul');
   for (const item of items) {
@@ -61,6 +75,22 @@ function list(items) {
     element.append(entry);
   }
   return element;
+}
+
+/// Files that would claim the same shim name are alternatives for one slot, so
+/// they are given a shared `group` and the table treats them as a choice rather
+/// than as a set of checkboxes. `preferred` keeps what the scan picked, which
+/// the filter and `Select all` both fall back to. (5.2)
+function groupRows(list) {
+  const counts = new Map();
+  for (const row of list) {
+    row.group = row.name.toLowerCase();
+    row.preferred = row.selected;
+    counts.set(row.group, (counts.get(row.group) ?? 0) + 1);
+  }
+  for (const row of list) {
+    row.grouped = counts.get(row.group) > 1;
+  }
 }
 
 export function renderBatch(root) {
@@ -82,15 +112,25 @@ export function renderBatch(root) {
     labelFor('batch.destination', destination),
     withBrowseButton(destination, 'pick_folder'),
     note('batch.destination.help'),
-    note('batch.scan.help')
+    note('batch.scan.help'),
+    note('batch.group.help')
   );
 
   const found = note();
+  const selectedCount = note();
+  const filter = textInput('batch.filter.placeholder');
   const selectAll = smallButton('batch.selectAll');
   const deselectAll = smallButton('batch.deselectAll');
   const caption = document.createElement('div');
   caption.className = 'caption';
-  caption.append(selectAll, deselectAll, found);
+  caption.append(
+    labelFor('batch.filter', filter),
+    filter,
+    selectAll,
+    deselectAll,
+    found,
+    selectedCount
+  );
 
   const body = document.createElement('tbody');
   const table = document.createElement('table');
@@ -98,6 +138,7 @@ export function renderBatch(root) {
   for (const key of [
     'batch.column.name',
     'batch.column.path',
+    'batch.column.version',
     'batch.column.size',
     'batch.column.type',
   ]) {
@@ -122,29 +163,98 @@ export function renderBatch(root) {
   root.append(form, caption, table, generate, progress, result);
 
   let rows = [];
+  // What is on screen right now, and the checkbox each visible row owns. The
+  // selection itself lives on the rows, so filtering cannot lose it.
+  let shown = [];
+  const checks = new Map();
 
   function show() {
+    const needle = filter.value.trim().toLowerCase();
+    shown = rows.filter(
+      (row) => !needle || `${row.name} ${row.path}`.toLowerCase().includes(needle)
+    );
     body.replaceChildren();
-    for (const row of rows) {
+    checks.clear();
+
+    for (const row of shown) {
       const check = document.createElement('input');
       check.type = 'checkbox';
-      check.checked = true;
+      check.checked = row.selected;
       check.dataset.path = row.path;
       check.setAttribute('aria-label', row.name);
+      check.addEventListener('change', () => choose(row));
+      checks.set(row, check);
+
       const entry = document.createElement('tr');
+      if (row.grouped) {
+        entry.className = 'grouped';
+      }
       entry.append(
         cell(check),
         cell(row.name),
         pathCell(row.path),
+        versionCell(row.version),
         sizeCell(row.size),
         cell(t(`variant.${row.variant}`))
       );
       body.append(entry);
     }
+
     table.hidden = rows.length === 0;
     caption.hidden = rows.length === 0;
     generate.disabled = rows.length === 0;
-    found.textContent = t('batch.found', { count: rows.length });
+    found.textContent = needle
+      ? t('batch.matching', { shown: shown.length, count: rows.length })
+      : t('batch.found', { count: rows.length });
+    // The buttons only reach the rows the filter leaves visible, so say what
+    // is actually going to be written.
+    tally();
+  }
+
+  function tally() {
+    selectedCount.textContent = t('batch.selected', {
+      count: rows.filter((row) => row.selected).length,
+    });
+  }
+
+  /// Checking a row takes the shim name, which unchecks every other file that
+  /// would have claimed it, filtered out or not.
+  function choose(row) {
+    row.selected = checks.get(row).checked;
+    if (row.selected) {
+      for (const sibling of rows) {
+        if (sibling === row || sibling.group !== row.group) {
+          continue;
+        }
+        sibling.selected = false;
+        const other = checks.get(sibling);
+        if (other) {
+          other.checked = false;
+        }
+      }
+    }
+    tally();
+  }
+
+  /// `Select all` cannot mean every row: one name gets one shim. It means the
+  /// row already picked, else the one the scan picked, else the first visible
+  /// one, and `Select none` clears the same set of rows the filter leaves.
+  function selectVisible(state) {
+    const picked = new Set();
+    if (state) {
+      for (const group of new Set(shown.map((row) => row.group))) {
+        const members = shown.filter((row) => row.group === group);
+        const winner =
+          members.find((row) => row.selected) ??
+          members.find((row) => row.preferred) ??
+          members[0];
+        picked.add(winner.path);
+      }
+    }
+    for (const row of shown) {
+      row.selected = picked.has(row.path);
+    }
+    show();
   }
 
   async function rescan() {
@@ -162,6 +272,7 @@ export function renderBatch(root) {
         destination: destination.value,
         recursive: recursive.checked,
       });
+      groupRows(rows);
     } catch (failure) {
       rows = [];
       result.fail(t(`error.${failure.code}`), failure.detail);
@@ -185,18 +296,15 @@ export function renderBatch(root) {
     }
   });
 
-  const select = (state) => () => {
-    for (const check of body.querySelectorAll('input[type=checkbox]')) {
-      check.checked = state;
-    }
-  };
-  selectAll.addEventListener('click', select(true));
-  deselectAll.addEventListener('click', select(false));
+  filter.addEventListener('input', show);
+
+  selectAll.addEventListener('click', () => selectVisible(true));
+  deselectAll.addEventListener('click', () => selectVisible(false));
 
   generate.addEventListener('click', async () => {
-    const targets = [...body.querySelectorAll('input[type=checkbox]')]
-      .filter((check) => check.checked)
-      .map((check) => check.dataset.path);
+    // The selection lives on the rows, so a filtered-out one is still written;
+    // the counter next to the filter is what says how many there are.
+    const targets = rows.filter((row) => row.selected).map((row) => row.path);
     if (!targets.length) {
       result.fail(t('batch.nothing'), '');
       return;

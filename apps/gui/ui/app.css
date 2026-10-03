@@ -113,6 +113,17 @@ form button[type='submit'] {
   margin-left: auto;
 }
 
+/* Only the first of the two counters pushes itself right; the rest follow it. */
+.caption .note + .note {
+  margin-left: 0;
+}
+
+/* The filter is one of several things sharing this line, so it does not get to
+   stretch the way a field in a form row does. */
+.caption input[type='text'] {
+  flex: 0 1 12rem;
+}
+
 table {
   border-collapse: collapse;
   margin: 0.4rem 0 1rem;
@@ -134,7 +145,7 @@ thead th {
 div.path {
   display: flex;
   align-items: baseline;
-  max-width: 30rem;
+  max-width: 21rem;
   font-size: 0.8rem;
   opacity: 0.75;
 }
@@ -156,6 +167,26 @@ th.size {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+div.version {
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Files that would claim the same shim name are alternatives for one slot.
+   Equal names already sort together, so a band and an indent are enough to
+   mark the block without a header row per group. */
+tr.grouped td:first-child {
+  border-left: 3px solid color-mix(in srgb, currentColor 45%, transparent);
+  padding-left: 0.4rem;
+}
+
+tr.grouped td:nth-child(2) {
+  padding-left: 0.9rem;
 }
 
 button.primary {
