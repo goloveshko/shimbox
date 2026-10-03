@@ -1,7 +1,8 @@
 import { localize, t } from './i18n.js';
+import { renderBatch } from './screens/batch.js';
 import { renderSingle } from './screens/single.js';
 
-const screens = { single: renderSingle };
+const screens = { single: renderSingle, batch: renderBatch };
 const screenRoot = document.getElementById('screen');
 const tabsRoot = document.getElementById('tabs');
 const statusRoot = document.getElementById('status');

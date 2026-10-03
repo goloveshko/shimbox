@@ -1,14 +1,24 @@
-// One file per language, registered in i18n.js. Keys are grouped by screen.
+// One file per language, registered in i18n.js. Keys are grouped by screen;
+// the `form.` / `result.` / `variant.` groups are shared by both modes.
 export default {
   'app.title': 'shimbox',
 
   'tab.single': 'Single shim',
+  'tab.batch': 'Folder batch',
 
   'status.runners': 'embedded runner: {size}',
 
+  'form.browse': 'Browse',
+
+  'result.path': 'Add the destination folder to PATH to start a shim by name.',
+  'result.open': 'Open destination folder',
+
+  'variant.auto': 'Auto detect',
+  'variant.cli': 'CLI (Console)',
+  'variant.gui': 'GUI (Detached)',
+
   'single.target': 'Target executable',
   'single.target.placeholder': 'C:\\Tools\\ffmpeg\\bin\\ffmpeg.exe',
-  'single.browse': 'Browse',
   'single.destination': 'Destination folder',
   'single.destination.placeholder': 'C:\\Shims',
   'single.destination.help': 'Where the .exe and .shim pair is written.',
@@ -18,9 +28,6 @@ export default {
   'single.arguments.placeholder': '-hide_banner -loglevel error',
   'single.arguments.help': 'Inserted before the caller arguments, verbatim.',
   'single.variant': 'Runner type',
-  'single.variant.auto': 'Auto detect',
-  'single.variant.cli': 'CLI (Console)',
-  'single.variant.gui': 'GUI (Detached)',
   'single.detected.gui': 'Detected: GUI application.',
   'single.detected.console': 'Detected: console application.',
   'single.detected.unknown':
@@ -29,15 +36,36 @@ export default {
   'single.workdir.placeholder': 'C:\\Tools\\ffmpeg',
   'single.workdir.help': 'Leave empty to run the target from its own folder.',
   'single.workdir.default': 'Runs from {folder} by default.',
-
   'single.generate': 'Generate shim',
   'single.result': '{name} is ready in {destination}.',
   'single.result.variant': 'Runner type: {variant}.',
-  'single.result.path':
-    'Add the destination folder to PATH to start the shim by name.',
-  'single.result.open': 'Open destination folder',
+
+  'batch.source': 'Source folder',
+  'batch.source.placeholder': 'C:\\Tools',
+  'batch.recursive': 'Include subfolders',
+  'batch.destination': 'Destination folder',
+  'batch.destination.placeholder': 'C:\\Shims',
+  'batch.destination.help': 'Every selected executable gets a shim of the same name here.',
+  'batch.selectAll': 'Select all',
+  'batch.deselectAll': 'Select none',
+  'batch.found': 'Found: {count}',
+  'batch.column.name': 'Shim name',
+  'batch.column.path': 'Executable',
+  'batch.column.type': 'Runner type',
+  'batch.scanning': 'Scanning…',
+  'batch.progress': 'Writing {done} of {total}…',
+  'batch.generate': 'Generate shims',
+  'batch.nothing': 'Select at least one executable.',
+  'batch.created': 'Created {count} shim pairs in {destination}.',
+  'batch.created.none': 'No shim pair was created.',
+  'batch.skipped': 'Skipped:',
+  'batch.skip.collision': 'a shim with that name already exists',
+  'batch.skip.duplicate': 'another selected file has the same name',
+  'batch.skip.missing': 'the executable is not there anymore',
+  'batch.skip.write': 'the shim could not be written',
 
   'error.target': 'The target executable does not exist.',
+  'error.source': 'The source folder does not exist.',
   'error.destination': 'The destination folder does not exist.',
   'error.alias': 'The shim name is not a valid file name.',
   'error.collision': 'A file with that name is already there.',

@@ -92,6 +92,62 @@ form button[type='submit'] {
   padding-inline: 1.1rem;
 }
 
+.checkbox input {
+  margin: 0;
+}
+
+/* The list above the batch table: how much was found and how to toggle it. */
+.caption {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.caption button {
+  font-size: 0.8rem;
+  padding: 0.1rem 0.5rem;
+}
+
+.caption .note {
+  margin-left: auto;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 0.4rem 0 1rem;
+}
+
+th,
+td {
+  text-align: left;
+  font-weight: 400;
+  padding: 0.15rem 1rem 0.15rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+thead th {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+td.path {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+td.path span {
+  display: block;
+  max-width: 26rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.primary {
+  padding-inline: 1.1rem;
+}
+
 .result {
   max-width: 46rem;
   margin: 1.25rem 0 0;

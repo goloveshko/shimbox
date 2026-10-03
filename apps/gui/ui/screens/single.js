@@ -1,92 +1,18 @@
 // Mode 1 of the spec (docs/techspec.md 5.1): one shim at a time.
-import { t, localize } from '../i18n.js';
-
-const invoke = (command, args) => window.__TAURI__.core.invoke(command, args);
-
-let nextId = 0;
-
-function textInput(placeholderKey) {
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.id = `single-${nextId++}`;
-  input.dataset.i18nPlaceholder = placeholderKey;
-  return input;
-}
-
-function labelFor(key, control) {
-  const label = document.createElement('label');
-  label.htmlFor = control.id;
-  label.dataset.i18n = key;
-  return label;
-}
-
-function note(key) {
-  const element = document.createElement('p');
-  element.className = 'note';
-  element.dataset.i18n = key;
-  return element;
-}
-
-function withBrowseButton(input, command) {
-  const row = document.createElement('div');
-  row.className = 'row';
-
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.i18n = 'single.browse';
-  button.addEventListener('click', async () => {
-    const picked = await invoke(command, {});
-    if (picked) {
-      input.value = picked;
-      input.dispatchEvent(new Event('change'));
-    }
-  });
-
-  row.append(input, button);
-  return row;
-}
-
-function stemOf(path) {
-  const name = path.split(/[\\/]/).pop() ?? '';
-  return name.replace(/\.[^.]+$/, '');
-}
-
-function folderOf(path) {
-  const separator = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
-  return separator > 0 ? path.slice(0, separator) : '';
-}
-
-/// Fills a field from the target until the user edits it themselves.
-function autofill(input, compute) {
-  let edited = false;
-  input.addEventListener('input', () => {
-    edited = true;
-  });
-  return () => {
-    if (!edited) {
-      input.value = compute();
-    }
-  };
-}
-
-function resultPanel() {
-  const panel = document.createElement('p');
-  panel.className = 'result';
-  panel.hidden = true;
-
-  panel.clear = () => {
-    panel.hidden = true;
-    panel.textContent = '';
-    panel.classList.remove('error');
-  };
-  panel.fail = (text, detail) => {
-    panel.clear();
-    panel.classList.add('error');
-    panel.textContent = detail ? `${text} ${detail}` : text;
-    panel.hidden = false;
-  };
-  return panel;
-}
+import { t } from '../i18n.js';
+import {
+  autofill,
+  folderOf,
+  invoke,
+  labelFor,
+  messagePanel,
+  nextFieldId,
+  note,
+  openFolderButton,
+  stemOf,
+  textInput,
+  withBrowseButton,
+} from '../form.js';
 
 export function renderSingle(root) {
   const form = document.createElement('form');
@@ -108,43 +34,44 @@ export function renderSingle(root) {
   form.append(labelFor('single.arguments', args), args, note('single.arguments.help'));
 
   const variant = document.createElement('select');
-  variant.id = `single-${nextId++}`;
+  variant.id = nextFieldId();
   for (const value of ['auto', 'cli', 'gui']) {
     const option = document.createElement('option');
     option.value = value;
-    option.dataset.i18n = `single.variant.${value}`;
+    option.dataset.i18n = `variant.${value}`;
     variant.append(option);
   }
-  const detected = document.createElement('p');
-  detected.className = 'note';
+  const detected = note();
   form.append(labelFor('single.variant', variant), variant, detected);
 
   const workdir = textInput('single.workdir.placeholder');
-  const workdirNote = document.createElement('p');
-  workdirNote.className = 'note';
-  form.append(labelFor('single.workdir', workdir), withBrowseButton(workdir, 'pick_folder'), workdirNote);
+  const workdirNote = note();
+  form.append(
+    labelFor('single.workdir', workdir),
+    withBrowseButton(workdir, 'pick_folder'),
+    workdirNote
+  );
 
   const generate = document.createElement('button');
   generate.type = 'submit';
   generate.dataset.i18n = 'single.generate';
   form.append(generate);
 
-  const result = resultPanel();
+  const result = messagePanel();
   root.append(form, result);
 
   const fillAlias = autofill(alias, () => stemOf(target.value));
   const fillDestination = autofill(destination, () => folderOf(target.value));
 
-  // The default is the runner's, not a value we write into the config: naming
-  // the folder here keeps it visible without pinning it into every shim.
+  // The default working directory belongs to the runner, not to the config:
+  // naming the folder here keeps it visible without pinning it into every
+  // shim, which would stop following a target that moves (3.4).
   function showWorkdirDefault() {
     const folder = workdir.value.trim() ? '' : folderOf(target.value);
     workdirNote.textContent = folder
       ? t('single.workdir.default', { folder })
       : t('single.workdir.help');
   }
-
-  showWorkdirDefault();
 
   target.addEventListener('change', async () => {
     const path = target.value.trim();
@@ -161,9 +88,10 @@ export function renderSingle(root) {
   });
 
   workdir.addEventListener('input', showWorkdirDefault);
+  showWorkdirDefault();
 
   for (const input of [destination, alias, args, variant, workdir]) {
-    input.addEventListener('input', result.clear);
+    input.addEventListener('input', () => result.clear());
   }
 
   form.addEventListener('submit', async (event) => {
@@ -180,33 +108,25 @@ export function renderSingle(root) {
           workdir: workdir.value,
         },
       });
-      showCreated(result, created);
+      const folder = folderOf(created.exe);
+      result.show((panel) => {
+        panel.append(
+          t('single.result', {
+            name: created.exe.slice(folder.length + 1),
+            destination: folder,
+          }),
+          ' ',
+          t('single.result.variant', { variant: t(`variant.${created.variant}`) }),
+          document.createElement('br'),
+          t('result.path'),
+          document.createElement('br'),
+          openFolderButton(folder)
+        );
+      });
     } catch (failure) {
       result.fail(t(`error.${failure.code}`), failure.detail);
     } finally {
       generate.disabled = false;
     }
   });
-}
-
-function showCreated(result, created) {
-  result.clear();
-
-  const folder = folderOf(created.exe);
-  const lines = [
-    t('single.result', { name: created.exe.slice(folder.length + 1), destination: folder }),
-    t('single.result.variant', { variant: t(`single.variant.${created.variant}`) }),
-    t('single.result.path'),
-  ];
-  for (const line of lines) {
-    result.append(line, document.createElement('br'));
-  }
-
-  const open = document.createElement('button');
-  open.type = 'button';
-  open.dataset.i18n = 'single.result.open';
-  open.addEventListener('click', () => invoke('open_folder', { path: folder }));
-  result.append(open);
-  localize(result);
-  result.hidden = false;
 }
