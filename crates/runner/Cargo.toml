@@ -1,0 +1,18 @@
+[package]
+name = "runner"
+description = "shimbox shim runner: forwards invocation to the real binary"
+version.workspace = true
+edition.workspace = true
+
+[features]
+# Selects the PE subsystem of the produced binary, see docs/techspec.md 2.1.
+# Default build = console subsystem (CLI shim), `--features gui` = windows
+# subsystem (GUI shim).
+default = []
+gui = []
+
+[dependencies]
+
+[[bin]]
+name = "shim-runner"
+path = "src/main.rs"
