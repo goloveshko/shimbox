@@ -2,12 +2,13 @@
 // per-entry parameters, so the table is a list of names and nothing else.
 import { t } from '../i18n.js';
 import {
+  checkField,
+  field,
   folderOf,
   formatSize,
   invoke,
   labelFor,
   messagePanel,
-  nextFieldId,
   note,
   openFolderButton,
   textInput,
@@ -97,24 +98,29 @@ export function renderBatch(root) {
   const form = document.createElement('form');
 
   const source = textInput('batch.source.placeholder');
-  form.append(labelFor('batch.source', source), withBrowseButton(source, 'pick_folder'));
-
-  const recursive = document.createElement('input');
-  recursive.type = 'checkbox';
-  recursive.id = nextFieldId();
-  const recursiveRow = document.createElement('div');
-  recursiveRow.className = 'checkbox';
-  recursiveRow.append(recursive);
-  form.append(labelFor('batch.recursive', recursive), recursiveRow);
-
   const destination = textInput('batch.destination.placeholder');
   form.append(
-    labelFor('batch.destination', destination),
-    withBrowseButton(destination, 'pick_folder'),
+    field('batch.source', source, withBrowseButton(source, 'pick_folder')),
+    field(
+      'batch.destination',
+      destination,
+      withBrowseButton(destination, 'pick_folder')
+    )
+  );
+
+  // The three lines that explain the scan belong to both folders above, so they
+  // sit under them rather than being split between two fields.
+  const recursive = document.createElement('input');
+  recursive.type = 'checkbox';
+  const help = document.createElement('div');
+  help.className = 'field span-all';
+  help.append(
+    checkField('batch.recursive', recursive),
     note('batch.destination.help'),
     note('batch.scan.help'),
     note('batch.group.help')
   );
+  form.append(help);
 
   const found = note();
   const selectedCount = note();
@@ -160,7 +166,18 @@ export function renderBatch(root) {
 
   const progress = note();
   const result = messagePanel();
-  root.append(form, caption, table, generate, progress, result);
+
+  // The scroll and the card belong to the wrapper, not the table: a sticky
+  // header only stays put inside a box that actually scrolls.
+  const tableWrap = document.createElement('div');
+  tableWrap.className = 'table-wrap';
+  tableWrap.append(table);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  actions.append(generate, progress);
+
+  root.append(form, caption, tableWrap, actions, result);
 
   let rows = [];
   // What is on screen right now, and the checkbox each visible row owns. The
@@ -200,7 +217,7 @@ export function renderBatch(root) {
       body.append(entry);
     }
 
-    table.hidden = rows.length === 0;
+    tableWrap.hidden = rows.length === 0;
     caption.hidden = rows.length === 0;
     generate.disabled = rows.length === 0;
     found.textContent = needle

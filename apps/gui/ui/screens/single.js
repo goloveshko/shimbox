@@ -2,9 +2,9 @@
 import { t } from '../i18n.js';
 import {
   autofill,
+  field,
   folderOf,
   invoke,
-  labelFor,
   messagePanel,
   nextFieldId,
   note,
@@ -19,20 +19,25 @@ export function renderSingle(root) {
   const form = document.createElement('form');
 
   const target = textInput('single.target.placeholder');
-  form.append(labelFor('single.target', target), withBrowseButton(target, 'pick_file'));
+  form.append(field('single.target', target, withBrowseButton(target, 'pick_file')));
 
   const destination = textInput('single.destination.placeholder');
   form.append(
-    labelFor('single.destination', destination),
-    withBrowseButton(destination, 'pick_folder'),
-    note('single.destination.help')
+    field(
+      'single.destination',
+      destination,
+      withBrowseButton(destination, 'pick_folder'),
+      note('single.destination.help')
+    )
   );
 
   const alias = textInput('single.alias.placeholder');
-  form.append(labelFor('single.alias', alias), alias);
+  form.append(field('single.alias', alias, alias));
 
   const args = textInput('single.arguments.placeholder');
-  form.append(labelFor('single.arguments', args), args, note('single.arguments.help'));
+  form.append(
+    field('single.arguments', args, args, note('single.arguments.help'))
+  );
 
   const variant = document.createElement('select');
   variant.id = nextFieldId();
@@ -43,14 +48,17 @@ export function renderSingle(root) {
     variant.append(option);
   }
   const detected = note();
-  form.append(labelFor('single.variant', variant), variant, detected);
+  form.append(field('single.variant', variant, variant, detected));
 
   const workdir = textInput('single.workdir.placeholder');
   const workdirNote = note();
   form.append(
-    labelFor('single.workdir', workdir),
-    withBrowseButton(workdir, 'pick_folder'),
-    workdirNote
+    field(
+      'single.workdir',
+      workdir,
+      withBrowseButton(workdir, 'pick_folder'),
+      workdirNote
+    )
   );
 
   const generate = document.createElement('button');

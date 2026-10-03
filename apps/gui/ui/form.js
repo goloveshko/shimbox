@@ -27,6 +27,27 @@ export function labelFor(key, control) {
   return label;
 }
 
+/// One labelled block: its caption, its control, and whatever hint belongs
+/// under it. The label still points at the control's id, so the field keeps its
+/// accessible name wherever the form grid puts it.
+export function field(key, control, ...children) {
+  const block = document.createElement('div');
+  block.className = 'field';
+  block.append(labelFor(key, control), ...children);
+  return block;
+}
+
+/// A checkbox whose text is the label itself, which makes the whole line
+/// clickable and gives the control its accessible name without an id.
+export function checkField(key, input) {
+  const label = document.createElement('label');
+  label.className = 'check';
+  const text = document.createElement('span');
+  text.dataset.i18n = key;
+  label.append(input, text);
+  return label;
+}
+
 /// A hint line under a field. Pass no key when the caller writes its text.
 export function note(key) {
   const element = document.createElement('p');
