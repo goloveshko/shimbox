@@ -225,18 +225,24 @@ Two tabs, no other navigation.
 ### 5.1 Mode 1: single shim
 
 * **Source path**: file picker for the target `.exe`.
-* **Destination**: folder picker.
+* **Destination**: folder picker, never prefilled. The pair belongs somewhere on
+  `PATH` (6), not next to the binary it shims, where `<alias>.exe` would collide
+  with the real one and the scan would read the folder as its own output.
 * **Shim name / alias**: text input, prefilled from the target's stem, editable.
 * **Default arguments**: single input field, split into `arg` lines on write.
 * **Runner type**: dropdown `Auto detect` (default) / `CLI (Console)` /
   `GUI (Detached)` -> selects the embedded runner variant. No config field.
   See 5.4.
-* **Working directory**: optional folder picker; empty means the default from
-  3.4, and the form names that resolved folder under the field instead of
-  writing it into the config.
-* **Generate**: write `<destination>\<alias>.exe` then `<destination>\<alias>.shim`;
-  on success, a message below the form with an "Open destination folder" action
-  and a reminder that the destination must be on `PATH` (6).
+* **Working directory**: prefilled with the target's own folder, which is the
+  default the runner falls back to (3.4), and editable from there. Writing the
+  default back into the config would pin a path meant to keep following the
+  target, so the pair is only given a `workdir` when the field names a different
+  folder — case and a trailing separator do not make one different, and the line
+  under the field says which of the two the config will hold.
+* **Generate**: write `<destination>\<alias>.shim` then `<destination>\<alias>.exe`,
+  in that order (5.3); on success, a message below the form with an "Open
+  destination folder" action and a reminder that the destination must be on
+  `PATH` (6).
 * Validates before writing: source exists, destination directory exists and is
   writable, alias is a legal file name.
 
