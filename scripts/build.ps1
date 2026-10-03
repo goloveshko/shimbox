@@ -31,14 +31,18 @@ function Invoke-Cargo {
 }
 
 function Write-SizeRow {
-    param([string]$Label, [string]$Path)
+    param([string]$Label, [string]$Path, [int]$TargetKb)
     if (-not (Test-Path $Path)) {
         Write-Host ("  {0,-14} missing" -f $Label) -ForegroundColor Red
         return
     }
     $bytes = (Get-Item $Path).Length
     $kb = [math]::Round($bytes / 1KB, 1)
-    if ($bytes -le $SizeTargetKb * 1KB) {
+    if ($TargetKb -eq 0) {
+        Write-Host ("  {0,-14} {1,8} KB" -f $Label, $kb)
+        return
+    }
+    if ($bytes -le $TargetKb * 1KB) {
         $verdict = 'within target'
         $color = 'Green'
     }
@@ -46,39 +50,59 @@ function Write-SizeRow {
         $verdict = 'OVER target'
         $color = 'Yellow'
     }
-    Write-Host ("  {0,-14} {1,8} KB  {2} {3} KB" -f $Label, $kb, $verdict, $SizeTargetKb) -ForegroundColor $color
+    Write-Host ("  {0,-14} {1,8} KB  {2} {3} KB" -f $Label, $kb, $verdict, $TargetKb) -ForegroundColor $color
 }
 
-$profileArgs = @()
-if ($Profile -eq 'release') { $profileArgs = @('--release') }
-$artifactDir = Join-Path (Join-Path $Root 'target') $Profile
-$runner = Join-Path $artifactDir 'shim-runner.exe'
+# The runner has its own size profile; the Tauri app builds with the plain
+# release profile. Tests always run unoptimized.
+if ($Profile -eq 'release') {
+    $runnerArgs = @('--profile', 'dist')
+    $guiArgs = @('--release')
+    $runnerDir = Join-Path $Root 'target/dist'
+    $guiDir = Join-Path $Root 'target/release'
+}
+else {
+    $runnerArgs = @()
+    $guiArgs = @()
+    $runnerDir = Join-Path $Root 'target/debug'
+    $guiDir = Join-Path $Root 'target/debug'
+}
+$runner = Join-Path $runnerDir 'shim-runner.exe'
 
 $exitCode = 0
 
 try {
     Push-Location $Root
 
+    if (-not (Test-Path $BinDir)) {
+        New-Item -ItemType Directory -Path $BinDir | Out-Null
+    }
+
+    # The runner is staged before anything is tested or built: the GUI embeds
+    # those bytes, so both later steps need them to exist.
+    Write-Section 'runner: CLI variant (console subsystem)'
+    Invoke-Cargo ((@('build', '-p', 'runner') + $runnerArgs))
+    $cli = Join-Path $BinDir 'runner-cli.exe'
+    Copy-Item $runner $cli -Force
+
+    Write-Section 'runner: GUI variant (windows subsystem)'
+    Invoke-Cargo ((@('build', '-p', 'runner', '--features', 'gui') + $runnerArgs))
+    $gui = Join-Path $BinDir 'runner-gui.exe'
+    Copy-Item $runner $gui -Force
+
     Write-Section 'tests'
-    Invoke-Cargo (@('test', '-p', 'runner') + $profileArgs)
+    Invoke-Cargo @('test', '--workspace')
 
     if (-not $TestOnly) {
-        Write-Section 'runner: CLI variant (console subsystem)'
-        Invoke-Cargo ((@('build', '-p', 'runner') + $profileArgs))
-        if (-not (Test-Path $BinDir)) {
-            New-Item -ItemType Directory -Path $BinDir | Out-Null
-        }
-        $cli = Join-Path $BinDir 'runner-cli.exe'
-        Copy-Item $runner $cli -Force
-
-        Write-Section 'runner: GUI variant (windows subsystem)'
-        Invoke-Cargo ((@('build', '-p', 'runner', '--features', 'gui') + $profileArgs))
-        $gui = Join-Path $BinDir 'runner-gui.exe'
-        Copy-Item $runner $gui -Force
+        Write-Section 'gui: Tauri manager'
+        Invoke-Cargo ((@('build', '-p', 'gui') + $guiArgs))
+        $manager = Join-Path $BinDir 'shimbox.exe'
+        Copy-Item (Join-Path $guiDir 'gui.exe') $manager -Force
 
         Write-Section 'artifacts'
-        Write-SizeRow 'runner-cli' $cli
-        Write-SizeRow 'runner-gui' $gui
+        Write-SizeRow 'runner-cli' $cli $SizeTargetKb
+        Write-SizeRow 'runner-gui' $gui $SizeTargetKb
+        Write-SizeRow 'shimbox' $manager 0
         Write-Host "  $BinDir" -ForegroundColor DarkGray
     }
 
