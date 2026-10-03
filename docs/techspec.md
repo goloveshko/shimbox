@@ -230,7 +230,8 @@ Two tabs, no other navigation.
   `GUI (Detached)` -> selects the embedded runner variant. No config field.
   See 5.4.
 * **Working directory**: optional folder picker; empty means the default from
-  3.4.
+  3.4, and the form names that resolved folder under the field instead of
+  writing it into the config.
 * **Generate**: write `<destination>\<alias>.exe` then `<destination>\<alias>.shim`;
   on success, a message below the form with an "Open destination folder" action
   and a reminder that the destination must be on `PATH` (6).
