@@ -120,11 +120,9 @@ export function renderSingle(root) {
   form.append(labelFor('single.variant', variant), variant, detected);
 
   const workdir = textInput('single.workdir.placeholder');
-  form.append(
-    labelFor('single.workdir', workdir),
-    withBrowseButton(workdir, 'pick_folder'),
-    note('single.workdir.help')
-  );
+  const workdirNote = document.createElement('p');
+  workdirNote.className = 'note';
+  form.append(labelFor('single.workdir', workdir), withBrowseButton(workdir, 'pick_folder'), workdirNote);
 
   const generate = document.createElement('button');
   generate.type = 'submit';
@@ -137,10 +135,22 @@ export function renderSingle(root) {
   const fillAlias = autofill(alias, () => stemOf(target.value));
   const fillDestination = autofill(destination, () => folderOf(target.value));
 
+  // The default is the runner's, not a value we write into the config: naming
+  // the folder here keeps it visible without pinning it into every shim.
+  function showWorkdirDefault() {
+    const folder = workdir.value.trim() ? '' : folderOf(target.value);
+    workdirNote.textContent = folder
+      ? t('single.workdir.default', { folder })
+      : t('single.workdir.help');
+  }
+
+  showWorkdirDefault();
+
   target.addEventListener('change', async () => {
     const path = target.value.trim();
     fillAlias();
     fillDestination();
+    showWorkdirDefault();
     result.clear();
     if (!path) {
       detected.textContent = '';
@@ -149,6 +159,8 @@ export function renderSingle(root) {
     const found = await invoke('detect_variant', { path });
     detected.textContent = t(`single.detected.${found.subsystem}`);
   });
+
+  workdir.addEventListener('input', showWorkdirDefault);
 
   for (const input of [destination, alias, args, variant, workdir]) {
     input.addEventListener('input', result.clear);

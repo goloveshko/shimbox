@@ -26,8 +26,9 @@ export default {
   'single.detected.unknown':
     'Detected: not a readable PE, the console runner will be used.',
   'single.workdir': 'Working directory',
-  'single.workdir.placeholder': 'defaults to the target folder',
+  'single.workdir.placeholder': 'C:\\Tools\\ffmpeg',
   'single.workdir.help': 'Leave empty to run the target from its own folder.',
+  'single.workdir.default': 'Runs from {folder} by default.',
 
   'single.generate': 'Generate shim',
   'single.result': '{name} is ready in {destination}.',
