@@ -107,6 +107,9 @@ pub struct Version {
 }
 
 impl Version {
+    /// The scan itself has no use for this: it prints whatever it found, blank
+    /// or not, so only the tests ask.
+    #[cfg(test)]
     pub fn is_empty(&self) -> bool {
         self.numbers.is_none() && self.text.is_none()
     }

@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 use tauri::Emitter;
 
@@ -282,6 +282,7 @@ fn skipped(path: &str, reason: &'static str) -> Skipped {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     fn scratch(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("shimbox-batch-{}-{name}", std::process::id()));
