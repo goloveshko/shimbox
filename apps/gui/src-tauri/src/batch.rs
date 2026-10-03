@@ -18,6 +18,7 @@ use crate::shim::{self, Failure};
 pub struct Found {
     name: String,
     path: String,
+    size: u64,
     variant: &'static str,
 }
 
@@ -40,9 +41,16 @@ pub struct Summary {
 }
 
 #[tauri::command]
-pub async fn scan(source: String, recursive: bool) -> Result<Vec<Found>, Failure> {
+pub async fn scan(
+    source: String,
+    destination: String,
+    recursive: bool,
+) -> Result<Vec<Found>, Failure> {
     let root = shim::checked_path(&source, false, "source")?;
-    Ok(walk(&root, recursive)
+    // The destination is only an exclusion hint here: half-typing it must not
+    // break a scan of a folder that is perfectly readable.
+    let exclude = std::path::absolute(destination.trim()).ok();
+    Ok(walk(&root, recursive, exclude.as_deref())
         .into_iter()
         .map(|path| Found {
             name: path
@@ -50,6 +58,7 @@ pub async fn scan(source: String, recursive: bool) -> Result<Vec<Found>, Failure
                 .unwrap_or_default()
                 .to_string_lossy()
                 .into_owned(),
+            size: fs::metadata(&path).map(|meta| meta.len()).unwrap_or(0),
             path: path.display().to_string(),
             variant: Variant::from(pe::subsystem_of(&path)).name(),
         })
@@ -84,10 +93,26 @@ struct Progress {
     total: usize,
 }
 
-/// Lists the `.exe` files below `root`. Subdirectories that cannot be read are
-/// passed over: a scan of a whole drive has to survive the ones it is not
-/// allowed to open.
-fn walk(root: &Path, recursive: bool) -> Vec<PathBuf> {
+/// Windows path equality ignores case, and a folder typed with a trailing
+/// separator is the same folder without one; `components` drops both.
+fn same_path(a: &Path, b: &Path) -> bool {
+    let left = a.components();
+    let right = b.components();
+    left.clone().count() == right.clone().count()
+        && left
+            .zip(right)
+            .all(|(a, b)| a.as_os_str().eq_ignore_ascii_case(b.as_os_str()))
+}
+
+/// Lists the `.exe` files below `root`, leaving out two kinds of file that are
+/// never worth a row: one that is already a shim (its sibling `.shim` is the
+/// other half of the pair), and everything inside `exclude`, which is where the
+/// pairs are being written. Subdirectories that cannot be read are passed over:
+/// a scan of a whole drive has to survive the ones it is not allowed to open.
+fn walk(root: &Path, recursive: bool, exclude: Option<&Path>) -> Vec<PathBuf> {
+    if exclude.is_some_and(|skip| same_path(root, skip)) {
+        return Vec::new();
+    }
     let mut found = Vec::new();
     let mut pending = vec![root.to_path_buf()];
     while let Some(dir) = pending.pop() {
@@ -100,12 +125,14 @@ fn walk(root: &Path, recursive: bool) -> Vec<PathBuf> {
             if file_type.is_dir() {
                 // A junction can point back up the tree, and there is no
                 // visited set to break that cycle with.
-                if recursive && !file_type.is_symlink() {
+                let inside = exclude.is_some_and(|skip| same_path(&path, skip));
+                if recursive && !file_type.is_symlink() && !inside {
                     pending.push(path);
                 }
             } else if path
                 .extension()
                 .is_some_and(|extension| extension.eq_ignore_ascii_case("exe"))
+                && !shim::config_of(&path).exists()
             {
                 found.push(path);
             }
@@ -189,8 +216,39 @@ mod tests {
         fs::write(root.join("notes.txt"), b"x").unwrap();
         fs::write(nested.join("Deep.EXE"), b"MZ").unwrap();
 
-        assert_eq!(names(&walk(&root, false)), ["root.exe"]);
-        assert_eq!(names(&walk(&root, true)), ["Deep.EXE", "root.exe"]);
+        assert_eq!(names(&walk(&root, false, None)), ["root.exe"]);
+        assert_eq!(names(&walk(&root, true, None)), ["Deep.EXE", "root.exe"]);
+
+        fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn walk_leaves_out_existing_shims_and_the_destination() {
+        let root = scratch("filtered");
+        let inside = root.join("bin");
+        let other = root.join("other");
+        fs::create_dir_all(&inside).unwrap();
+        fs::create_dir_all(&other).unwrap();
+        fs::write(root.join("real.exe"), b"MZ").unwrap();
+        // A pair from an earlier run: the exe is only a runner copy.
+        fs::write(root.join("shimmed.exe"), b"MZ").unwrap();
+        fs::write(root.join("shimmed.shim"), b"path=C:\\t.exe\n").unwrap();
+        fs::write(inside.join("written.exe"), b"MZ").unwrap();
+        fs::write(inside.join("written.shim"), b"path=C:\\t.exe\n").unwrap();
+        fs::write(other.join("later.exe"), b"MZ").unwrap();
+
+        assert_eq!(names(&walk(&root, true, None)), ["later.exe", "real.exe"]);
+        // The output folder is skipped as a whole, pairs and all.
+        assert_eq!(
+            names(&walk(&root, true, Some(&inside))),
+            ["later.exe", "real.exe"]
+        );
+        // Case is not part of a Windows path identity.
+        assert_eq!(
+            names(&walk(&root, true, Some(&root.join("BIN")))),
+            ["later.exe", "real.exe"]
+        );
+        assert!(walk(&root, true, Some(&root)).is_empty());
 
         fs::remove_dir_all(&root).ok();
     }

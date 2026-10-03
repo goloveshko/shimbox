@@ -75,6 +75,12 @@ pub fn generate(request: Request) -> Result<Created, Failure> {
     )
 }
 
+/// The config half of a pair. Its presence is what marks an `.exe` as a shim
+/// rather than a binary, which is how the scan recognises one (5.2).
+pub(crate) fn config_of(exe: &Path) -> PathBuf {
+    exe.with_extension("shim")
+}
+
 /// Writes one shim pair, refusing to touch an existing one. Mode 1 and the
 /// batch mode both end here, so the collision rule exists once (5.3).
 pub fn write_pair(
@@ -85,8 +91,8 @@ pub fn write_pair(
     workdir: &str,
     variant: Variant,
 ) -> Result<Created, Failure> {
-    let config_path = destination.join(format!("{alias}.shim"));
     let exe_path = destination.join(format!("{alias}.exe"));
+    let config_path = config_of(&exe_path);
     for path in [&config_path, &exe_path] {
         if path.exists() {
             return Err(fail("collision", path.display().to_string()));
