@@ -9,6 +9,7 @@ import {
   nextFieldId,
   note,
   openFolderButton,
+  sameFolder,
   stemOf,
   textInput,
   withBrowseButton,
@@ -61,22 +62,29 @@ export function renderSingle(root) {
   root.append(form, result);
 
   const fillAlias = autofill(alias, () => stemOf(target.value));
-  const fillDestination = autofill(destination, () => folderOf(target.value));
+  // The target's folder is where the target runs, not where the pair belongs:
+  // the destination has to be on `PATH` (6), and a pair written next to the
+  // binary it shims would collide with the name the scan already has there.
+  const fillWorkdir = autofill(workdir, () => folderOf(target.value));
 
-  // The default working directory belongs to the runner, not to the config:
-  // naming the folder here keeps it visible without pinning it into every
-  // shim, which would stop following a target that moves (3.4).
+  /// The prefilled folder is exactly what the runner falls back to, so the line
+  /// under the field says whether the config will name one (3.4).
   function showWorkdirDefault() {
-    const folder = workdir.value.trim() ? '' : folderOf(target.value);
-    workdirNote.textContent = folder
-      ? t('single.workdir.default', { folder })
-      : t('single.workdir.help');
+    const folder = folderOf(target.value);
+    const value = workdir.value.trim();
+    if (!folder && !value) {
+      workdirNote.textContent = t('single.workdir.help');
+    } else if (!value || sameFolder(value, folder)) {
+      workdirNote.textContent = t('single.workdir.default', { folder });
+    } else {
+      workdirNote.textContent = t('single.workdir.custom');
+    }
   }
 
   target.addEventListener('change', async () => {
     const path = target.value.trim();
     fillAlias();
-    fillDestination();
+    fillWorkdir();
     showWorkdirDefault();
     result.clear();
     if (!path) {
@@ -87,7 +95,9 @@ export function renderSingle(root) {
     detected.textContent = t(`single.detected.${found.subsystem}`);
   });
 
-  workdir.addEventListener('input', showWorkdirDefault);
+  for (const event of ['input', 'change']) {
+    workdir.addEventListener(event, showWorkdirDefault);
+  }
   showWorkdirDefault();
 
   for (const input of [destination, alias, args, variant, workdir]) {

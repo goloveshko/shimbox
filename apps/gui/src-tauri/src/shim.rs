@@ -65,14 +65,40 @@ pub fn generate(request: Request) -> Result<Created, Failure> {
         _ => Variant::from(pe::subsystem_of(&target)),
     };
 
+    // The form prefills the working directory with the target's own folder,
+    // which is also what the runner falls back to (3.4). Writing that back into
+    // the config would pin a path meant to keep following the target, so a
+    // field left at the resolved default writes nothing.
+    let workdir = match request.workdir.trim() {
+        "" => "",
+        dir if target
+            .parent()
+            .is_some_and(|parent| same_path(Path::new(dir), parent)) =>
+        {
+            ""
+        }
+        dir => dir,
+    };
+
     write_pair(
         &target,
         &destination,
         &alias,
         &split_arguments(&request.arguments),
-        request.workdir.trim(),
+        workdir,
         variant,
     )
+}
+
+/// Windows path equality ignores case, and a folder typed with a trailing
+/// separator is the same folder without one; `components` drops both.
+pub(crate) fn same_path(a: &Path, b: &Path) -> bool {
+    let left = a.components();
+    let right = b.components();
+    left.clone().count() == right.clone().count()
+        && left
+            .zip(right)
+            .all(|(a, b)| a.as_os_str().eq_ignore_ascii_case(b.as_os_str()))
 }
 
 /// The config half of a pair. Its presence is what marks an `.exe` as a shim
@@ -284,6 +310,45 @@ mod tests {
         let error = generate(request("tool")).unwrap_err();
         assert_eq!(error.code, "collision");
         assert!(error.detail.unwrap().ends_with("tool.shim"));
+
+        fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn writes_workdir_only_when_it_differs_from_the_targets_folder() {
+        let dir = scratch("workdir");
+        let nested = dir.join("bin");
+        fs::create_dir_all(&nested).unwrap();
+        let target = nested.join("tool.exe");
+        fs::write(&target, b"MZ").unwrap();
+        let own = nested.display().to_string();
+
+        let config = |workdir: &str, alias: &str| {
+            let created = generate(Request {
+                target: target.display().to_string(),
+                destination: dir.display().to_string(),
+                alias: alias.to_string(),
+                arguments: String::new(),
+                variant: "cli".to_string(),
+                workdir: workdir.to_string(),
+            })
+            .unwrap();
+            fs::read_to_string(created.config).unwrap()
+        };
+
+        // The value the form prefills, however the user happens to type it.
+        for (index, workdir) in ["", &own, &format!("{own}\\"), &own.to_uppercase()]
+            .into_iter()
+            .enumerate()
+        {
+            assert!(
+                !config(workdir, &format!("a{index}")).contains("workdir="),
+                "wrote the default for {workdir:?}"
+            );
+        }
+        // A folder of the user's own is written, so the runner keeps it.
+        let text = config(&dir.display().to_string(), "b");
+        assert!(text.contains(&format!("workdir={}\n", dir.display())));
 
         fs::remove_dir_all(&dir).ok();
     }

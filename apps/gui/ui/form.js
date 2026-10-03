@@ -66,6 +66,14 @@ export function folderOf(path) {
   return separator > 0 ? path.slice(0, separator) : '';
 }
 
+/// Whether two strings name the same folder, which is what decides if a
+/// `workdir` has to be written at all: Windows ignores case and a trailing
+/// separator, and the backend applies the same rule (3.4).
+export function sameFolder(left, right) {
+  const trim = (path) => path.replace(/[\\/]+$/, '').toLowerCase();
+  return trim(left) === trim(right);
+}
+
 /// Sizes are read by eye, so one decimal is enough to tell 208 KB from 211 KB.
 export function formatSize(bytes) {
   const kb = bytes / 1024;
@@ -80,12 +88,16 @@ export function formatSize(bytes) {
   return gb < 1 ? `${mb.toFixed(1)} MB` : `${gb.toFixed(1)} GB`;
 }
 
-/// Fills a field from another one until the user edits it themselves.
+/// Fills a field from another one until the user edits it themselves. A folder
+/// picked through the Browse button counts as an edit: it arrives as a `change`
+/// the button dispatches, not as typing.
 export function autofill(input, compute) {
   let edited = false;
-  input.addEventListener('input', () => {
-    edited = true;
-  });
+  for (const event of ['input', 'change']) {
+    input.addEventListener(event, () => {
+      edited = true;
+    });
+  }
   return () => {
     if (!edited) {
       input.value = compute();

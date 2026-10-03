@@ -179,24 +179,13 @@ struct Progress {
     total: usize,
 }
 
-/// Windows path equality ignores case, and a folder typed with a trailing
-/// separator is the same folder without one; `components` drops both.
-fn same_path(a: &Path, b: &Path) -> bool {
-    let left = a.components();
-    let right = b.components();
-    left.clone().count() == right.clone().count()
-        && left
-            .zip(right)
-            .all(|(a, b)| a.as_os_str().eq_ignore_ascii_case(b.as_os_str()))
-}
-
 /// Lists the `.exe` files below `root`, leaving out two kinds of file that are
 /// never worth a row: one that is already a shim (its sibling `.shim` is the
 /// other half of the pair), and everything inside `exclude`, which is where the
 /// pairs are being written. Subdirectories that cannot be read are passed over:
 /// a scan of a whole drive has to survive the ones it is not allowed to open.
 fn walk(root: &Path, recursive: bool, exclude: Option<&Path>) -> Vec<PathBuf> {
-    if exclude.is_some_and(|skip| same_path(root, skip)) {
+    if exclude.is_some_and(|skip| shim::same_path(root, skip)) {
         return Vec::new();
     }
     let mut found = Vec::new();
@@ -211,7 +200,7 @@ fn walk(root: &Path, recursive: bool, exclude: Option<&Path>) -> Vec<PathBuf> {
             if file_type.is_dir() {
                 // A junction can point back up the tree, and there is no
                 // visited set to break that cycle with.
-                let inside = exclude.is_some_and(|skip| same_path(&path, skip));
+                let inside = exclude.is_some_and(|skip| shim::same_path(&path, skip));
                 if recursive && !file_type.is_symlink() && !inside {
                     pending.push(path);
                 }
