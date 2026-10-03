@@ -20,17 +20,17 @@ pub struct Request {
 
 #[derive(Debug, serde::Serialize)]
 pub struct Created {
-    exe: String,
-    config: String,
-    variant: &'static str,
+    pub exe: String,
+    pub config: String,
+    pub variant: &'static str,
 }
 
 /// A rejection the UI can translate: a stable code plus the one path that
 /// explains it.
 #[derive(Debug, serde::Serialize)]
 pub struct Failure {
-    code: &'static str,
-    detail: Option<String>,
+    pub code: &'static str,
+    pub detail: Option<String>,
 }
 
 impl From<Subsystem> for Variant {
@@ -56,7 +56,6 @@ pub fn generate(request: Request) -> Result<Created, Failure> {
     let target = checked_path(&request.target, true, "target")?;
     let destination = checked_path(&request.destination, false, "destination")?;
     let alias = checked_alias(&request.alias)?;
-    let workdir = request.workdir.trim();
 
     let variant = match request.variant.as_str() {
         "cli" => Variant::Cli,
@@ -66,6 +65,26 @@ pub fn generate(request: Request) -> Result<Created, Failure> {
         _ => Variant::from(pe::subsystem_of(&target)),
     };
 
+    write_pair(
+        &target,
+        &destination,
+        &alias,
+        &split_arguments(&request.arguments),
+        request.workdir.trim(),
+        variant,
+    )
+}
+
+/// Writes one shim pair, refusing to touch an existing one. Mode 1 and the
+/// batch mode both end here, so the collision rule exists once (5.3).
+pub fn write_pair(
+    target: &Path,
+    destination: &Path,
+    alias: &str,
+    arguments: &[String],
+    workdir: &str,
+    variant: Variant,
+) -> Result<Created, Failure> {
     let config_path = destination.join(format!("{alias}.shim"));
     let exe_path = destination.join(format!("{alias}.exe"));
     for path in [&config_path, &exe_path] {
@@ -74,7 +93,7 @@ pub fn generate(request: Request) -> Result<Created, Failure> {
         }
     }
 
-    let text = config_text(&target, &split_arguments(&request.arguments), workdir);
+    let text = config_text(target, arguments, workdir);
     // The config lands first: a half-generated shim should be a working config
     // without a runner, never a runner reading a stale config (5.3).
     write(&config_path, text.as_bytes())?;
@@ -89,7 +108,11 @@ pub fn generate(request: Request) -> Result<Created, Failure> {
 
 /// Resolves a form field into an absolute path that exists as the requested
 /// kind.
-fn checked_path(text: &str, want_file: bool, code: &'static str) -> Result<PathBuf, Failure> {
+pub(crate) fn checked_path(
+    text: &str,
+    want_file: bool,
+    code: &'static str,
+) -> Result<PathBuf, Failure> {
     let trimmed = text.trim();
     if trimmed.is_empty() {
         return Err(fail(code, String::new()));

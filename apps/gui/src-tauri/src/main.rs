@@ -3,6 +3,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod batch;
 mod pe;
 mod runner;
 mod shim;
@@ -36,7 +37,9 @@ fn main() {
             pick_file,
             pick_folder,
             open_folder,
-            shim::generate
+            shim::generate,
+            batch::scan,
+            batch::generate_batch
         ])
         .run(tauri::generate_context!())
         .expect("shimbox failed to start");
