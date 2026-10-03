@@ -44,8 +44,8 @@ inspect, edit or delete existing ones.
 
 The variant is encoded in the bytes written to `<alias>.exe`. **It is not a
 config field** — the runner contains no branch on it, and the GUI has no reader
-for it. The `CLI (Console)` / `GUI (Detached)` toggle in the UI selects which
-embedded binary to write.
+for it. The runner type dropdown in the UI (5.4) selects which embedded binary
+to write.
 
 Consequences worth keeping in mind:
 - The runner must **not** pipe stdio by hand. Inheritance is what makes
@@ -67,9 +67,17 @@ shimbox/
   Cargo.toml            workspace manifest
   Cargo.lock
   README.md
-  .gitignore            target/, node_modules/, dist-tauri/
+  .gitignore            /target, /bin, node_modules/, dist/
+  bin/                  build output, ignored (runner-cli.exe, runner-gui.exe)
   docs/
     techspec.md
+  scripts/
+    common.ps1          shared helpers, dot-sourced only
+    build.ps1           master: tests + both variants + size report
+    smoke.ps1           end-to-end runner checks against real binaries
+    build.cmd           thin wrappers, no logic
+    test.cmd
+    smoke.cmd
   crates/
     runner/             shim-runner, both variants
   apps/
