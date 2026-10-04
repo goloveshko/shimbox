@@ -1,5 +1,6 @@
 // Mode 1 of the spec (docs/techspec.md 5.1): one shim at a time.
 import { t } from '../i18n.js';
+import { environmentPanel } from '../environment.js';
 import {
   autofill,
   field,
@@ -60,6 +61,14 @@ export function renderSingle(root) {
       workdirNote
     )
   );
+
+  // The variables belong to the target rather than to the pair on `PATH`, and a
+  // secret among them is the one value the config must not carry (3.3, 3.5).
+  const environment = environmentPanel(
+    () => result.clear(),
+    (text, detail) => result.fail(text, detail)
+  );
+  form.append(environment.block);
 
   const generate = document.createElement('button');
   generate.type = 'submit';
@@ -124,6 +133,7 @@ export function renderSingle(root) {
           arguments: args.value,
           variant: variant.value,
           workdir: workdir.value,
+          environment: environment.values(),
         },
       });
       const folder = folderOf(created.exe);
