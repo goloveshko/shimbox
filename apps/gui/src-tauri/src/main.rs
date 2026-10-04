@@ -6,6 +6,7 @@
 mod batch;
 mod pe;
 mod runner;
+mod secret;
 mod shim;
 
 use std::path::Path;
@@ -44,6 +45,9 @@ fn main() {
             pick_file,
             pick_folder,
             open_folder,
+            secret::store_secret,
+            secret::forget_secret,
+            secret::list_secrets,
             shim::generate,
             batch::scan,
             batch::generate_batch

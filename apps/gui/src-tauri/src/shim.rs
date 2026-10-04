@@ -63,7 +63,7 @@ impl From<Subsystem> for Variant {
     }
 }
 
-fn fail(code: &'static str, detail: impl Into<String>) -> Failure {
+pub(crate) fn fail(code: &'static str, detail: impl Into<String>) -> Failure {
     Failure {
         code,
         detail: Some(detail.into()),
