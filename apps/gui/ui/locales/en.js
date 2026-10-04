@@ -58,7 +58,9 @@ export default {
   'env.help': 'Each variable is set for the target alone. A stored secret or a file keeps the value out of the config, which lives in a folder on PATH.',
   'env.secret.title': 'Stored secrets ({count})',
   'env.secret.pick': 'Choose a stored secret',
-  'env.secret.none': 'No secret is stored yet',
+  // Short enough to read whole inside the picker it labels, which is narrower
+  // than the dropdown that opens from it.
+  'env.secret.none': 'No secret stored yet — press Store below',
   'env.secret.name': 'Name',
   'env.secret.name.placeholder': 'github',
   'env.secret.value': 'Secret',

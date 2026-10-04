@@ -165,6 +165,10 @@ export function environmentPanel(report) {
     // pass, so their captions have to be filled in on the way out.
     localize(stored);
     summary.textContent = t('env.secret.title', { count: secrets.length });
+    // An empty store is the one case where this block has to be open to be
+    // found at all: the row that fills it is inside it. Once a name exists the
+    // disclosure earns its keep, and the count is what says there is one.
+    details.open = secrets.length === 0;
   }
 
   put.addEventListener('click', async () => {
