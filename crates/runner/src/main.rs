@@ -5,6 +5,7 @@
 #![cfg_attr(feature = "gui", windows_subsystem = "windows")]
 
 mod config;
+mod env;
 
 use std::ffi::{OsStr, OsString};
 use std::os::windows::ffi::{OsStrExt, OsStringExt};
@@ -20,6 +21,9 @@ const EXIT_NO_CONFIG: u32 = 101;
 const EXIT_BAD_CONFIG: u32 = 102;
 /// Child could not be started.
 const EXIT_SPAWN_FAILED: u32 = 103;
+/// An `envref` names nothing readable, so the child would run without a value
+/// its target expects (4).
+const EXIT_BAD_ENV: u32 = 104;
 
 #[cfg(feature = "gui")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -98,9 +102,24 @@ fn run() -> Result<u32, ShimError> {
     };
     command.current_dir(workdir);
 
+    // Resolved before the child starts: a reference that names nothing fails the
+    // shim rather than handing the target a value it expects and never gets.
+    let references = env::resolve(&config.envref).map_err(|failure| ShimError {
+        code: EXIT_BAD_ENV,
+        message: failure.0,
+    })?;
+
     // Merged into the caller's environment by std, so a name that is already
-    // there is overwritten and an empty value blanks it rather than removing it.
-    command.envs(config.env.iter().map(|(name, value)| (name, value)));
+    // there is overwritten and an empty value sets it to empty rather than
+    // removing it. References come second, so one wins over a plain value of the
+    // same name.
+    command.envs(
+        config
+            .env
+            .iter()
+            .map(|(name, value)| (name, value))
+            .chain(references.iter().map(|(name, value)| (name, value))),
+    );
 
     #[cfg(feature = "gui")]
     command.creation_flags(CREATE_NO_WINDOW);

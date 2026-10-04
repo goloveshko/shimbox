@@ -7,6 +7,9 @@ pub struct Config {
     /// Variables for the child, kept as written: the name is trimmed, the value
     /// is the rest of the line verbatim, so a value may contain `=` itself.
     pub env: Vec<(String, String)>,
+    /// The same pairs, but their value is a `scheme:rest` reference resolved at
+    /// launch, so the config holds no secret (3.5).
+    pub envref: Vec<(String, String)>,
 }
 
 pub fn parse(text: &str) -> Config {
@@ -15,6 +18,7 @@ pub fn parse(text: &str) -> Config {
         args: Vec::new(),
         workdir: None,
         env: Vec::new(),
+        envref: Vec::new(),
     };
 
     for line in text.lines() {
@@ -35,22 +39,25 @@ pub fn parse(text: &str) -> Config {
                     config.workdir = Some(value.to_string());
                 }
             }
-            "env" => {
-                // `NAME=value` inside the value: only the first `=` separates
-                // them, so a value may hold one. A line without it names no
-                // variable and is dropped rather than guessed at.
-                if let Some((name, value)) = value.split_once('=') {
-                    let name = name.trim();
-                    if !name.is_empty() {
-                        config.env.push((name.to_string(), value.to_string()));
-                    }
-                }
-            }
+            "env" => pair(&mut config.env, value),
+            "envref" => pair(&mut config.envref, value),
             _ => {}
         }
     }
 
     config
+}
+
+/// One `NAME=value` on the right of the key. Only the first `=` separates them,
+/// so a value may contain one; a line without it names no variable and is
+/// dropped rather than guessed at.
+fn pair(into: &mut Vec<(String, String)>, text: &str) {
+    if let Some((name, value)) = text.split_once('=') {
+        let name = name.trim();
+        if !name.is_empty() {
+            into.push((name.to_string(), value.to_string()));
+        }
+    }
 }
 
 #[cfg(test)]
@@ -89,6 +96,19 @@ mod tests {
     fn last_path_wins() {
         let config = parse("path=C:\\a.exe\npath=C:\\b.exe");
         assert_eq!(config.path, "C:\\b.exe");
+    }
+
+    #[test]
+    fn reads_envref_pairs_the_same_way() {
+        let config = parse("path=C:\\a.exe\nenvref=GH_TOKEN=cred:shimbox/github\nenvref=KEY=file:C:\\t.txt\n");
+        assert_eq!(
+            config.envref,
+            [
+                ("GH_TOKEN".to_string(), "cred:shimbox/github".to_string()),
+                ("KEY".to_string(), r"file:C:\t.txt".to_string()),
+            ]
+        );
+        assert!(config.env.is_empty());
     }
 
     #[test]
