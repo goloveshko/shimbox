@@ -622,20 +622,23 @@ tr.grouped td:nth-child(2) {
   padding: 0 0.15rem;
 }
 
-/* A result opens over the form rather than under it. */
+/* A result opens over the form rather than under it. The element itself is the
+   frame covering the whole window, so the dimmed area around the card belongs to
+   it and a click there ends the result - a much larger target than the dismiss
+   button, while `showModal()` keeps owning Esc and the focus. */
 dialog {
   display: flex;
-  flex-direction: column;
-  width: min(34rem, calc(100vw - 3rem));
-  max-height: min(28rem, calc(100vh - 3rem));
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
   box-sizing: border-box;
-  padding: 1rem 1.15rem;
-  border: 1px solid var(--stroke-strong);
-  border-radius: var(--radius);
-  background: var(--card-raised);
-  color: var(--text);
-  font: inherit;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 14px 34px rgba(0, 0, 0, 0.22);
+  margin: 0;
+  padding: 1.5rem;
+  border: none;
+  background: transparent;
+  align-items: center;
+  justify-content: center;
 }
 
 /* The `display` above outranks the UA sheet's rule for a closed dialog, which
@@ -648,6 +651,21 @@ dialog::backdrop {
   background: rgba(0, 0, 0, 0.32);
 }
 
+.dialog-card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(34rem, 100%);
+  max-height: 100%;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--stroke-strong);
+  border-radius: var(--radius);
+  background: var(--card-raised);
+  color: var(--text);
+  font: inherit;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 14px 34px rgba(0, 0, 0, 0.22);
+}
+
 /* A batch summary is a list of names, and the window can be shorter than it, so
    the list is the part that gives and the buttons stay in view. */
 .dialog-body {
@@ -656,7 +674,7 @@ dialog::backdrop {
   overflow: auto;
 }
 
-dialog ul {
+.dialog-card ul {
   margin: 0.4rem 0;
   padding-left: 1.1rem;
 }
@@ -674,20 +692,20 @@ dialog ul {
   margin: 0;
 }
 
-dialog.error {
+.dialog-card.error {
   border-left: 3px solid #c42b1c;
 }
 
-dialog.error .dialog-body {
+.dialog-card.error .dialog-body {
   color: color-mix(in srgb, #c42b1c 70%, var(--text));
 }
 
 @media (prefers-color-scheme: dark) {
-  dialog.error {
+  .dialog-card.error {
     border-left-color: #d13438;
   }
 
-  dialog.error .dialog-body {
+  .dialog-card.error .dialog-body {
     color: color-mix(in srgb, #ff99a4 60%, var(--text));
   }
 }

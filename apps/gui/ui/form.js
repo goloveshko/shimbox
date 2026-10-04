@@ -132,6 +132,11 @@ export function autofill(input, compute) {
 /// takes the folder to offer for opening, which an error has none of.
 export function resultDialog() {
   const dialog = document.createElement('dialog');
+  // The dialog is the dimmed frame over the whole window and the card is the box
+  // holding the message, so the empty area around it is part of the dialog too:
+  // a click there is a larger, closer target than the dismiss button (5).
+  const card = document.createElement('div');
+  card.className = 'dialog-card';
   const body = document.createElement('div');
   body.className = 'dialog-body';
 
@@ -142,7 +147,13 @@ export function resultDialog() {
 
   const actions = document.createElement('div');
   actions.className = 'dialog-actions';
-  dialog.append(body, actions);
+  card.append(body, actions);
+  dialog.append(card);
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) {
+      dialog.close();
+    }
+  });
 
   function open(title, content, folder) {
     dialog.setAttribute('aria-label', title);
@@ -163,13 +174,13 @@ export function resultDialog() {
 
   /// `success` and `fail` rather than `show`, which a dialog already owns.
   dialog.success = (folder, build) => {
-    dialog.classList.remove('error');
+    card.classList.remove('error');
     const content = document.createElement('div');
     build(content);
     open(t('result.title'), content, folder);
   };
   dialog.fail = (text, detail) => {
-    dialog.classList.add('error');
+    card.classList.add('error');
     const content = document.createElement('div');
     content.textContent = detail ? `${text} ${detail}` : text;
     open(text, content);
