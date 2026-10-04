@@ -218,7 +218,6 @@ export function renderBatch(root) {
 
     tableWrap.hidden = rows.length === 0;
     caption.hidden = rows.length === 0;
-    generate.disabled = rows.length === 0;
     found.textContent = needle
       ? t('batch.matching', { shown: shown.length, count: rows.length })
       : t('batch.found', { count: rows.length });
@@ -228,9 +227,12 @@ export function renderBatch(root) {
   }
 
   function tally() {
-    selectedCount.textContent = t('batch.selected', {
-      count: rows.filter((row) => row.selected).length,
-    });
+    const count = rows.filter((row) => row.selected).length;
+    selectedCount.textContent = t('batch.selected', { count });
+    // The scan can fill the table before any destination is chosen, and writing
+    // needs both a folder and a row, so the button waits for them instead of
+    // answering an incomplete request with an error (5.2).
+    generate.disabled = !destination.value.trim() || count === 0;
   }
 
   /// Checking a row takes the shim name, which unchecks every other file that
@@ -303,6 +305,7 @@ export function renderBatch(root) {
   }
   destination.addEventListener('input', () => {
     progress.textContent = '';
+    tally();
   });
   recursive.addEventListener('change', () => {
     if (source.value.trim()) {
@@ -319,10 +322,6 @@ export function renderBatch(root) {
     // The selection lives on the rows, so a filtered-out one is still written;
     // the counter next to the filter is what says how many there are.
     const targets = rows.filter((row) => row.selected).map((row) => row.path);
-    if (!targets.length) {
-      result.fail(t('batch.nothing'), '');
-      return;
-    }
     generate.disabled = true;
     const unlisten = await window.__TAURI__.event.listen('batch-progress', (event) => {
       progress.textContent = t('batch.progress', event.payload);
@@ -337,7 +336,7 @@ export function renderBatch(root) {
     } finally {
       unlisten();
       progress.textContent = '';
-      generate.disabled = false;
+      tally();
     }
   });
 }

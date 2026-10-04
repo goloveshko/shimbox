@@ -71,9 +71,24 @@ export function renderSingle(root) {
   const generate = document.createElement('button');
   generate.type = 'submit';
   generate.dataset.i18n = 'single.generate';
+  generate.disabled = true;
   form.append(generate);
 
   root.append(form, result);
+
+  /// A shim needs a target to run, a folder on `PATH` to be found in and the name
+  /// it is found by, so the button waits for those three instead of answering an
+  /// incomplete form with an error (5.1).
+  function checkComplete() {
+    generate.disabled =
+      !target.value.trim() || !destination.value.trim() || !alias.value.trim();
+  }
+
+  for (const input of [target, destination, alias]) {
+    for (const event of ['input', 'change']) {
+      input.addEventListener(event, checkComplete);
+    }
+  }
 
   const fillAlias = autofill(alias, () => stemOf(target.value));
   // The target's folder is where the target runs, not where the pair belongs:
@@ -100,6 +115,8 @@ export function renderSingle(root) {
     fillAlias();
     fillWorkdir();
     showWorkdirDefault();
+    // The alias arrived without an event of its own, so the button is told here.
+    checkComplete();
     if (!path) {
       detected.textContent = '';
       return;
@@ -144,7 +161,7 @@ export function renderSingle(root) {
     } catch (failure) {
       result.fail(t(`error.${failure.code}`), failure.detail);
     } finally {
-      generate.disabled = false;
+      checkComplete();
     }
   });
 }

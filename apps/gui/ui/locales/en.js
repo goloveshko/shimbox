@@ -93,7 +93,6 @@ export default {
   'batch.scanning': 'Scanning…',
   'batch.progress': 'Writing {done} of {total}…',
   'batch.generate': 'Generate shims',
-  'batch.nothing': 'Select at least one executable.',
   'batch.created': 'Created {count} shim pairs in {destination}.',
   'batch.created.none': 'No shim pair was created.',
   'batch.skipped': 'Skipped:',
