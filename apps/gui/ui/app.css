@@ -58,10 +58,9 @@ body {
   /* A definite height, not a min-height: `flex: 1` on the screen only means
      `the space that is left` when the container has one, and without it the
      batch table grows to its content and the whole window starts scrolling.
-     The floor keeps the layout honest in a very short window, where the
-     document scrolls instead of clipping the buttons. */
+     Nothing floors it: a short window leaves the document exactly as tall as
+     the viewport, so the screen is the only thing that ever scrolls. */
   height: 100vh;
-  min-height: 30rem;
   box-sizing: border-box;
   font: 14px/1.45 var(--font);
   color: var(--text);
@@ -495,6 +494,39 @@ td:nth-child(5) {
 th:nth-child(6),
 td:nth-child(6) {
   width: 8rem;
+}
+
+/* Version and size are the columns one reads to compare candidates, and the
+   minimum window is barely wider than a single folder path. Under that width
+   the two are dropped rather than leaving the path a column of ellipsis dots:
+   the name and the runner type are what a choice actually needs. */
+@media (max-width: 46rem) {
+  th:nth-child(4),
+  td:nth-child(4),
+  th:nth-child(5),
+  td:nth-child(5) {
+    display: none;
+  }
+
+  th,
+  td {
+    padding: 0.4rem 0.6rem;
+  }
+
+  th:nth-child(1),
+  td:nth-child(1) {
+    width: 2.2rem;
+  }
+
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 7rem;
+  }
+
+  th:nth-child(6),
+  td:nth-child(6) {
+    width: 7rem;
+  }
 }
 
 thead th {
