@@ -16,7 +16,26 @@ pub struct Request {
     arguments: String,
     variant: String,
     workdir: String,
+    /// No rows at all is a request without an environment, which is what Mode 2
+    /// generates for.
+    #[serde(default)]
+    environment: Vec<EnvRow>,
 }
+
+/// One row of the environment block. `kind` says where the value comes from:
+/// `value` writes it into the config, `cred` and `file` write a reference the
+/// runner resolves at launch, which is what keeps a secret out of a folder on
+/// `PATH` (docs/techspec.md 3.5).
+#[derive(serde::Deserialize)]
+pub struct EnvRow {
+    name: String,
+    kind: String,
+    value: String,
+}
+
+/// The only namespace shimbox reads credentials from, so a name typed into the
+/// form cannot point the runner at some other program's stored secret.
+pub const CRED_PREFIX: &str = "shimbox/";
 
 #[derive(Debug, serde::Serialize)]
 pub struct Created {
@@ -86,8 +105,41 @@ pub fn generate(request: Request) -> Result<Created, Failure> {
         &alias,
         &split_arguments(&request.arguments),
         workdir,
+        &env_lines(&request.environment)?,
         variant,
     )
+}
+
+/// Turns the form's rows into the pairs that go into the config, keyed by the
+/// line they produce. A row with no name is an empty line of the form and
+/// writes nothing.
+fn env_lines(rows: &[EnvRow]) -> Result<Vec<(&'static str, String)>, Failure> {
+    let mut lines = Vec::new();
+    for row in rows {
+        let name = row.name.trim();
+        if name.is_empty() {
+            continue;
+        }
+        let (key, written) = match row.kind.as_str() {
+            // Taken verbatim, as the runner reads it: a trailing space is the
+            // user's, not noise to clean up.
+            "value" => ("env", format!("{name}={}", row.value)),
+            "cred" => {
+                let target = row.value.trim();
+                if !target.starts_with(CRED_PREFIX) {
+                    return Err(fail("env", format!("{name}: {target}")));
+                }
+                ("envref", format!("{name}=cred:{target}"))
+            }
+            "file" => {
+                let path = checked_path(&row.value, true, "env")?;
+                ("envref", format!("{name}=file:{}", path.display()))
+            }
+            other => return Err(fail("env", format!("{name}: {other}"))),
+        };
+        lines.push((key, written));
+    }
+    Ok(lines)
 }
 
 /// Windows path equality ignores case, and a folder typed with a trailing
@@ -115,6 +167,7 @@ pub fn write_pair(
     alias: &str,
     arguments: &[String],
     workdir: &str,
+    environment: &[(&'static str, String)],
     variant: Variant,
 ) -> Result<Created, Failure> {
     let exe_path = destination.join(format!("{alias}.exe"));
@@ -125,7 +178,7 @@ pub fn write_pair(
         }
     }
 
-    let text = config_text(target, arguments, workdir);
+    let text = config_text(target, arguments, workdir, environment)?;
     // The config lands first: a half-generated shim should be a working config
     // without a runner, never a runner reading a stale config (5.3).
     write(&config_path, text.as_bytes())?;
@@ -230,16 +283,35 @@ fn split_arguments(text: &str) -> Vec<String> {
     arguments
 }
 
-fn config_text(target: &Path, arguments: &[String], workdir: &str) -> String {
+fn config_text(
+    target: &Path,
+    arguments: &[String],
+    workdir: &str,
+    environment: &[(&str, String)],
+) -> Result<String, Failure> {
     let mut text = String::from("# shimbox config\n");
-    text.push_str(&format!("path={}\n", target.display()));
+    line(&mut text, "path", &target.display().to_string())?;
     for argument in arguments {
-        text.push_str(&format!("arg={argument}\n"));
+        line(&mut text, "arg", argument)?;
     }
     if !workdir.is_empty() {
-        text.push_str(&format!("workdir={workdir}\n"));
+        line(&mut text, "workdir", workdir)?;
     }
-    text
+    for (key, pair) in environment {
+        line(&mut text, key, pair)?;
+    }
+    Ok(text)
+}
+
+/// One `key=value` line of the config. A value carrying a newline would land as
+/// a second line the runner reads as its own key, and `path` is arbitrary code
+/// from there, so no field gets to contain one.
+fn line(text: &mut String, key: &str, value: &str) -> Result<(), Failure> {
+    if value.contains(['\r', '\n']) {
+        return Err(fail("newline", format!("{key}={value}")));
+    }
+    text.push_str(&format!("{key}={value}\n"));
+    Ok(())
 }
 
 #[cfg(test)]
@@ -261,14 +333,111 @@ mod tests {
             Path::new(r"C:\Tools\ffmpeg\bin\ffmpeg.exe"),
             &["-hide_banner".to_string()],
             "",
-        );
+            &[("env", "NO_COLOR=1".to_string())],
+        )
+        .unwrap();
         assert_eq!(
             text,
-            "# shimbox config\npath=C:\\Tools\\ffmpeg\\bin\\ffmpeg.exe\narg=-hide_banner\n"
+            "# shimbox config\npath=C:\\Tools\\ffmpeg\\bin\\ffmpeg.exe\narg=-hide_banner\nenv=NO_COLOR=1\n"
         );
 
-        let text = config_text(Path::new(r"C:\t.exe"), &[], r"C:\Work");
+        let text = config_text(Path::new(r"C:\t.exe"), &[], r"C:\Work", &[]).unwrap();
         assert_eq!(text, "# shimbox config\npath=C:\\t.exe\nworkdir=C:\\Work\n");
+    }
+
+    #[test]
+    fn writes_each_kind_of_environment_row() {
+        let dir = scratch("env");
+        let token = dir.join("token.txt");
+        fs::write(&token, "x").unwrap();
+
+        let rows = |kind: &str, value: &str| {
+            vec![
+                EnvRow {
+                    name: " IGNORED ".to_string(),
+                    kind: "value".to_string(),
+                    value: "x".to_string(),
+                },
+                EnvRow {
+                    name: "GH_TOKEN".to_string(),
+                    kind: kind.to_string(),
+                    value: value.to_string(),
+                },
+            ]
+        };
+
+        let lines = env_lines(&rows("value", "plain ")).unwrap();
+        // The name is trimmed, a literal value is not.
+        assert_eq!(
+            lines,
+            [
+                ("env", "IGNORED=x".to_string()),
+                ("env", "GH_TOKEN=plain ".to_string())
+            ]
+        );
+
+        let lines = env_lines(&rows("cred", "shimbox/github")).unwrap();
+        assert_eq!(
+            lines[1],
+            ("envref", "GH_TOKEN=cred:shimbox/github".to_string())
+        );
+
+        let lines = env_lines(&rows("file", token.display().to_string().as_str())).unwrap();
+        assert_eq!(
+            lines[1],
+            ("envref", format!("GH_TOKEN=file:{}", token.display()))
+        );
+
+        fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn rejects_a_reference_it_cannot_resolve_later() {
+        let row = |kind: &str, value: &str| EnvRow {
+            name: "GH_TOKEN".to_string(),
+            kind: kind.to_string(),
+            value: value.to_string(),
+        };
+
+        // Another program's credential is not ours to hand to a child.
+        assert_eq!(
+            env_lines(&[row("cred", "GitHub/personal")]).unwrap_err().code,
+            "env"
+        );
+        // A file that is not there would only fail when the shim runs.
+        assert_eq!(
+            env_lines(&[row("file", r"C:\nowhere\token.txt")]).unwrap_err().code,
+            "env"
+        );
+        assert_eq!(
+            env_lines(&[row("registry", "HKCU\\x")]).unwrap_err().code,
+            "env"
+        );
+    }
+
+    #[test]
+    fn refuses_to_write_a_value_that_would_become_a_second_line() {
+        let dir = scratch("newline");
+        let target = dir.join("tool.exe");
+        fs::write(&target, b"MZ").unwrap();
+
+        let failure = generate(Request {
+            target: target.display().to_string(),
+            destination: dir.display().to_string(),
+            alias: "probe".to_string(),
+            arguments: String::new(),
+            variant: "cli".to_string(),
+            workdir: "C:\\Work\npath=C:\\evil.exe".to_string(),
+            environment: Vec::new(),
+        })
+        .unwrap_err();
+
+        assert_eq!(failure.code, "newline");
+        assert!(failure.detail.unwrap().contains("path=C:\\evil.exe"));
+        // Nothing landed: the pair is written whole or not at all.
+        assert!(!config_of(&dir.join("probe.exe")).exists());
+
+        fs::remove_dir_all(&dir).ok();
     }
 
     #[test]
@@ -300,6 +469,7 @@ mod tests {
             arguments: "-v".to_string(),
             variant: "cli".to_string(),
             workdir: String::new(),
+            environment: Vec::new(),
         };
 
         let created = generate(request("tool")).unwrap();
@@ -331,6 +501,7 @@ mod tests {
                 arguments: String::new(),
                 variant: "cli".to_string(),
                 workdir: workdir.to_string(),
+                environment: Vec::new(),
             })
             .unwrap();
             fs::read_to_string(created.config).unwrap()
@@ -363,6 +534,7 @@ mod tests {
             arguments: String::new(),
             variant: "auto".to_string(),
             workdir: String::new(),
+            environment: Vec::new(),
         };
 
         fs::write(dir.join("target.exe"), b"MZ").unwrap();

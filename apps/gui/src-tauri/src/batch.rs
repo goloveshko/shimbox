@@ -255,7 +255,7 @@ fn generate_one(target: &str, destination: &Path, claimed: &mut HashSet<String>,
     }
 
     let variant = Variant::from(pe::subsystem_of(path));
-    match shim::write_pair(path, destination, alias, &[], "", variant) {
+    match shim::write_pair(path, destination, alias, &[], "", &[], variant) {
         Ok(created) => summary.created.push(created.exe),
         Err(failure) => summary.skipped.push(skipped(target, failure.code)),
     }
