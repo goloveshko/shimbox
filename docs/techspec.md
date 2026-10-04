@@ -147,6 +147,8 @@ parses it, so only one parser exists.
 path=C:\Tools\ffmpeg\bin\ffmpeg.exe
 arg=-hide_banner
 workdir=C:\Tools\ffmpeg
+env=FFMPEG_DEBUG=1
+envref=GITHUB_TOKEN=cred:shimbox/github
 ```
 
 * UTF-8, no BOM, CRLF or LF accepted. Lines are split on the first `=`.
@@ -163,6 +165,8 @@ workdir=C:\Tools\ffmpeg
 | `path` | yes | Absolute path to the target executable. |
 | `arg` | no, repeatable | Argument inserted before the caller's arguments, **exactly as written** — the GUI does not add quoting, so `arg=-o "out file.txt"` reaches the child as `-o "out file.txt"`. |
 | `workdir` | no | Working directory for the child. |
+| `env` | no, repeatable | `NAME=value` set for the child, the value exactly as written (3.5). |
+| `envref` | no, repeatable | `NAME=reference` whose value is read at launch, so a secret never sits in the file (3.5). |
 
 `path` is stored absolute. Relative-to-config resolution is deferred
 (section 8), as is anything non-`.exe` in `path`.
@@ -177,6 +181,38 @@ load DLLs and data files relative to their working directory. The caller's cwd
 is still what the shim itself sees, so nothing about stdin/stdout or `.` in the
 child's *arguments* changes — only its `GetCurrentDirectory`. Explicit
 `workdir`, including a path pointing back at the caller's cwd, overrides this.
+
+### 3.5 The child's environment
+
+`env=NAME=value` is the plain case: the pair is added to the environment the
+child inherits, so a name the caller already set is overwritten and an empty
+value sets it empty rather than removing it. Values are verbatim, as everywhere
+else in the file, which means a value may contain `=` — only the first one
+separates the name from it.
+
+`envref=NAME=reference` says where the value lives instead of holding it. The
+reason is the file's own address: a config sits in a folder on `PATH`, in the
+open, next to the runners.
+
+| Reference | Reads |
+| :--- | :--- |
+| `file:<path>` | The whole file, without its trailing newlines. |
+| `cred:<target>` | The blob of a generic credential, i.e. one entry of the Windows Credential Manager. |
+
+* Credentials are named under a `shimbox/` prefix and the GUI only offers names
+  it wrote itself, so a config cannot point the runner at another program's
+  stored secret. A blob is read as UTF-8, which is what shimbox writes, and as
+  UTF-16 when it holds a NUL, which is what `cmdkey` writes.
+* One name serves any number of shims, which is the point of referring by name
+  rather than by value: a token is created once and each shim calls it whatever
+  its target expects.
+* A reference is resolved when the shim runs, and an unresolvable one is a
+  failure rather than a child started without a value it expects (FR-1.8).
+* What this buys is that the value is not **in** the file. It is not secrecy
+  from the account: a generic credential is a DPAPI blob the user's own session
+  can decrypt, so anything running as that user can read it the same way. The
+  system caps a blob at 2560 bytes, which is a token's size and not a data
+  file's — for anything larger, `file:` is the reference to use.
 
 ---
 
@@ -207,6 +243,7 @@ child's *arguments* changes — only its `GetCurrentDirectory`. Explicit
   | config file missing | 101 | |
   | config unreadable, or `path` absent/empty | 102 | |
   | spawn failed | 103 | Last Win32 error is included in the message. |
+  | an `envref` that names nothing readable | 104 | The child is not started: a target that expects a value it never gets fails later and less legibly. |
   | otherwise | child's code | Cannot be distinguished from a child that itself returned 101–103; accepted. |
 
 * **FR-1.6 Error reporting**: on any runner-side failure, the CLI variant writes
@@ -215,6 +252,11 @@ child's *arguments* changes — only its `GetCurrentDirectory`. Explicit
 * **FR-1.7 No fallback discovery**: if the config is missing or `path` is not
   found, the runner fails as above. It does not search `PATH`, does not guess,
   and does not prompt.
+* **FR-1.8 Child environment**: the `env` pairs are applied in the order the
+  file holds them, and the `envref` ones after them, each resolved at launch
+  (3.5), so a reference wins over a literal of the same name and the last of two
+  like it wins. Nothing is removed from the inherited environment: the child
+  sees the caller's variables plus these.
 
 ---
 
@@ -228,10 +270,12 @@ picked by hand — each one is a token declared once per theme, the theme comes
 from `prefers-color-scheme` and the accent from `Highlight`, the colour the user
 chose in the system, so there is no in-app theme switch to keep in step. A field
 is one block of caption, control and hint, and the blocks reflow from two
-columns to one with the window. The window itself does not scroll: the batch
-table takes the height the rest of the screen leaves it and scrolls inside its
-own card, under a header that stays put. The size and the position the window was
-left in are remembered between runs, in `$APPCONFIG/.window-state.json`; the
+columns to one with the window. The batch table takes the height the rest of the
+screen leaves it and scrolls inside its own card, under a header that stays put,
+so that screen never needs a second scrollbar; a screen that is simply taller
+than the window — mode 1 with three environment rows is — scrolls as a whole,
+and the status line below stays where it is. The size and the position the window
+was left in are remembered between runs, in `$APPCONFIG/.window-state.json`; the
 window opens hidden and is shown once that geometry has been applied, so it never
 flashes at the configured default first.
 
@@ -252,6 +296,13 @@ flashes at the configured default first.
   target, so the pair is only given a `workdir` when the field names a different
   folder — case and a trailing separator do not make one different, and the line
   under the field says which of the two the config will hold.
+* **Child environment**: one row per variable — its name, where its value comes
+  from (`Typed value`, `Stored secret`, `Contents of a file`, 3.5), and the
+  control that kind needs: a field written into the config as typed, a picker
+  over the stored names, or a file path with its own picker. The names are
+  listed under the rows, in one place, because a token is created once and then
+  referenced by many shims; storing or forgetting one updates every open picker.
+  Mode 1 only: the batch policy is no per-entry configuration (5.2).
 * **Generate**: write `<destination>\<alias>.shim` then `<destination>\<alias>.exe`,
   in that order (5.3); on success, a message below the form with an "Open
   destination folder" action and a reminder that the destination must be on
@@ -377,6 +428,7 @@ preselection of 5.2 come from the PE resource directory.
 | **4** | Mode 1 | Pickers, alias, arguments, workdir, validation, generation, collision skip, notification. Includes PE `Subsystem` detection (5.4) behind the `Auto detect` dropdown. |
 | **5** | Mode 2 | Directory scan, table with checkboxes, detected `Type` and file version (5.5), a filter, one choice per shim name, batch write, progress, summary with skip reasons. |
 | **6** | Polish | Size/flag pass on the runner, error dialog copy, README with the `Setup` / `PATH` steps. |
+| **7** | Child environment | `env` and `envref` in the config, resolved at launch from a file or a generic credential (3.5, FR-1.8); the row editor and the secret store in mode 1. |
 
 ---
 
@@ -402,6 +454,11 @@ Deferred, explicitly out of v1:
 * `path` relative to the config file, for portable tool sets that move between
   drives.
 * Listing, editing, re-pointing and deleting existing shims.
+* Per-entry configuration in Mode 2, including the child environment: a value
+  that differs per shim has nowhere to go in a table of checkboxes, so the batch
+  policy stays `path` only (5.2) and mode 1 carries the whole editor. Opening a
+  row for its own arguments, working directory and environment is the way in,
+  and the environment is the reason to want it.
 * `PATH` management from the UI.
 * Single-file shims with the config appended to the exe (rejected in review:
   needs a payload container format and self-reading code, reads to behavioural
