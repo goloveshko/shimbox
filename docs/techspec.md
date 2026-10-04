@@ -270,14 +270,20 @@ picked by hand — each one is a token declared once per theme, the theme comes
 from `prefers-color-scheme` and the accent from `Highlight`, the colour the user
 chose in the system, so there is no in-app theme switch to keep in step. A field
 is one block of caption, control and hint, and the blocks reflow from two
-columns to one with the window. The batch table takes the height the rest of the
-screen leaves it and scrolls inside its own card, under a header that stays put,
-so that screen never needs a second scrollbar; a screen that is simply taller
-than the window — mode 1 with three environment rows is — scrolls as a whole,
-and the status line below stays where it is. The size and the position the window
-was left in are remembered between runs, in `$APPCONFIG/.window-state.json`; the
-window opens hidden and is shown once that geometry has been applied, so it never
-flashes at the configured default first.
+columns to one with the window. A result is reported in a dialog over the form
+rather than below it: the form is often taller than the window, and whether the
+write worked is the last thing in it that should need a scroll to be found. The
+dialog dismisses on `Esc`, on its own Close action, and its body is the part that
+gives when a batch summary is longer than the window.
+The batch table takes the height the rest of the screen leaves it and scrolls
+inside its own card, under a header that stays put; below the width where six
+columns no longer fit it drops Version and Size rather than growing a horizontal
+bar, so that screen never shows two scrollbars at once. A screen that is simply
+taller than the window — mode 1 with three environment rows is — scrolls as a
+whole, and the status line below stays where it is. The size and the position the
+window was left in are remembered between runs, in
+`$APPCONFIG/.window-state.json`; the window opens hidden and is shown once that
+geometry has been applied, so it never flashes at the configured default first.
 
 ### 5.1 Mode 1: single shim
 
@@ -302,11 +308,13 @@ flashes at the configured default first.
   over the stored names, or a file path with its own picker. The names are
   listed under the rows, in one place, because a token is created once and then
   referenced by many shims; storing or forgetting one updates every open picker.
-  Mode 1 only: the batch policy is no per-entry configuration (5.2).
+  That list is where a name is created, so while the store is empty the block is
+  open and the picker says so; with a name in it the disclosure collapses back
+  to its count. Mode 1 only: the batch policy is no per-entry configuration (5.2).
 * **Generate**: write `<destination>\<alias>.shim` then `<destination>\<alias>.exe`,
-  in that order (5.3); on success, a message below the form with an "Open
-  destination folder" action and a reminder that the destination must be on
-  `PATH` (6).
+  in that order (5.3); on success, a dialog over the form naming the pair, its
+  resolved runner type and the destination, with an "Open destination folder"
+  action and a reminder that the destination must be on `PATH` (6).
 * Validates before writing: source exists, destination directory exists and is
   writable, alias is a legal file name.
 
@@ -347,7 +355,7 @@ flashes at the configured default first.
 
 * Never overwrite silently. If `<alias>.exe` or `<alias>.shim` already exists in
   the destination, the entry is **skipped** and reported. In Mode 1 the skip is
-  an error shown next to the form, in Mode 2 it is a row in the summary.
+  the failure dialog, in Mode 2 it is a row in the summary.
 * Inside Mode 2, two discovered binaries may share a stem (recursive scan of
   `tools\x\git.exe` and `tools\y\git.exe`). First one wins; every later one is
   reported as skipped with a `duplicate` reason, kept distinct from `collision`,
