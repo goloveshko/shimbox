@@ -182,7 +182,15 @@ export function renderBatch(root) {
   // What is on screen right now, and the checkbox each visible row owns. The
   // selection itself lives on the rows, so filtering cannot lose it.
   let shown = [];
+  // Whether the table is empty because nothing was scanned yet or because a scan
+  // came back with nothing in it. Only the second has anything to report.
+  let scanned = false;
   const checks = new Map();
+
+  // The table and its toolbar belong to a result, so the screen is drawn in that
+  // state from the start rather than showing an empty one that the first click on
+  // the toolbar would then take away.
+  show();
 
   function show() {
     const needle = filter.value.trim().toLowerCase();
@@ -218,6 +226,11 @@ export function renderBatch(root) {
 
     tableWrap.hidden = rows.length === 0;
     caption.hidden = rows.length === 0;
+    // The table is the scan's answer, so when there is no table there has to be
+    // a line saying so; before the first scan the screen stays quiet.
+    if (scanned && rows.length === 0) {
+      progress.textContent = t('batch.empty');
+    }
     found.textContent = needle
       ? t('batch.matching', { shown: shown.length, count: rows.length })
       : t('batch.found', { count: rows.length });
@@ -229,6 +242,11 @@ export function renderBatch(root) {
   function tally() {
     const count = rows.filter((row) => row.selected).length;
     selectedCount.textContent = t('batch.selected', { count });
+    // Neither button has anything to do when the rows on screen already match it:
+    // `Select all` over a chosen set and `Select none` over an empty one both
+    // leave the table as it was, and no rows at all settles neither way.
+    selectAll.disabled = everyNameChosen();
+    deselectAll.disabled = !shown.some((row) => row.selected);
     // The scan can fill the table before any destination is chosen, and writing
     // needs both a folder and a row, so the button waits for them instead of
     // answering an incomplete request with an error (5.2).
@@ -275,10 +293,24 @@ export function renderBatch(root) {
     show();
   }
 
+  /// Whether every shim name the filter leaves visible already has one row
+  /// chosen, which is the case where `Select all` would change nothing: a name
+  /// with a choice keeps it and a name without one has none to gain.
+  function everyNameChosen() {
+    const chosen = new Set();
+    for (const row of shown) {
+      if (row.selected) {
+        chosen.add(row.group);
+      }
+    }
+    return shown.every((row) => chosen.has(row.group));
+  }
+
   async function rescan() {
     const path = source.value.trim();
     if (!path) {
       rows = [];
+      scanned = false;
       show();
       return;
     }
@@ -290,8 +322,10 @@ export function renderBatch(root) {
         recursive: recursive.checked,
       });
       groupRows(rows);
+      scanned = true;
     } catch (failure) {
       rows = [];
+      scanned = false;
       result.fail(t(`error.${failure.code}`), failure.detail);
     } finally {
       progress.textContent = '';

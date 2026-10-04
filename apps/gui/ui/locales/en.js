@@ -91,6 +91,7 @@ export default {
   'batch.column.size': 'Size',
   'batch.column.type': 'Runner type',
   'batch.scanning': 'Scanning…',
+  'batch.empty': 'No executables found.',
   'batch.progress': 'Writing {done} of {total}…',
   'batch.generate': 'Generate shims',
   'batch.created': 'Created {count} shim pairs in {destination}.',
