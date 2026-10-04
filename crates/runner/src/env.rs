@@ -77,24 +77,23 @@ unsafe extern "system" {
     fn CredFree(credential: *mut CredentialW);
 }
 
-/// `CREDENTIALW`, in its own field order and widths.
+/// `CREDENTIALW` from `wincred.h`, field for field. Duplicated from the GUI on
+/// purpose: the runner is a binary crate with no library to share it from, and
+/// the layout belongs to the system, not to us.
 #[repr(C)]
 struct CredentialW {
     flags: u32,
     kind: u32,
+    target_name: *mut u16,
     comment: *mut u16,
     last_written: u64,
-    target_name: *mut u16,
     blob_size: u32,
     blob: *mut u8,
     persist: u32,
     attribute_count: u32,
     attributes: *mut core::ffi::c_void,
     target_alias: *mut u16,
-    friendly_name: *mut u16,
-    device: *mut u16,
-    custom_size: u32,
-    custom: *mut u8,
+    user_name: *mut u16,
 }
 
 const CRED_TYPE_GENERIC: u32 = 1;
