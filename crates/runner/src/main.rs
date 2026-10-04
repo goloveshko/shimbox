@@ -98,6 +98,10 @@ fn run() -> Result<u32, ShimError> {
     };
     command.current_dir(workdir);
 
+    // Merged into the caller's environment by std, so a name that is already
+    // there is overwritten and an empty value blanks it rather than removing it.
+    command.envs(config.env.iter().map(|(name, value)| (name, value)));
+
     #[cfg(feature = "gui")]
     command.creation_flags(CREATE_NO_WINDOW);
 
