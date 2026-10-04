@@ -6,10 +6,9 @@ import {
   field,
   folderOf,
   invoke,
-  messagePanel,
   nextFieldId,
   note,
-  openFolderButton,
+  resultDialog,
   sameFolder,
   stemOf,
   textInput,
@@ -62,12 +61,11 @@ export function renderSingle(root) {
     )
   );
 
+  const result = resultDialog();
+
   // The variables belong to the target rather than to the pair on `PATH`, and a
   // secret among them is the one value the config must not carry (3.3, 3.5).
-  const environment = environmentPanel(
-    () => result.clear(),
-    (text, detail) => result.fail(text, detail)
-  );
+  const environment = environmentPanel(result.fail);
   form.append(environment.block);
 
   const generate = document.createElement('button');
@@ -75,7 +73,6 @@ export function renderSingle(root) {
   generate.dataset.i18n = 'single.generate';
   form.append(generate);
 
-  const result = messagePanel();
   root.append(form, result);
 
   const fillAlias = autofill(alias, () => stemOf(target.value));
@@ -103,7 +100,6 @@ export function renderSingle(root) {
     fillAlias();
     fillWorkdir();
     showWorkdirDefault();
-    result.clear();
     if (!path) {
       detected.textContent = '';
       return;
@@ -116,10 +112,6 @@ export function renderSingle(root) {
     workdir.addEventListener(event, showWorkdirDefault);
   }
   showWorkdirDefault();
-
-  for (const input of [destination, alias, args, variant, workdir]) {
-    input.addEventListener('input', () => result.clear());
-  }
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -137,8 +129,8 @@ export function renderSingle(root) {
         },
       });
       const folder = folderOf(created.exe);
-      result.show((panel) => {
-        panel.append(
+      result.success(folder, (box) => {
+        box.append(
           t('single.result', {
             name: created.exe.slice(folder.length + 1),
             destination: folder,
@@ -146,9 +138,7 @@ export function renderSingle(root) {
           ' ',
           t('single.result.variant', { variant: t(`variant.${created.variant}`) }),
           document.createElement('br'),
-          t('result.path'),
-          document.createElement('br'),
-          openFolderButton(folder)
+          t('result.path')
         );
       });
     } catch (failure) {

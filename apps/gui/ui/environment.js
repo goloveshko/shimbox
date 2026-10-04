@@ -25,10 +25,9 @@ function secretInput(placeholderKey) {
   return input;
 }
 
-/// `changed` runs on any edit, which is how the screen drops a message that no
-/// longer describes the form. `report` takes a failure that has no field of its
-/// own to sit on, such as a secret the store refused.
-export function environmentPanel(changed, report) {
+/// `report` takes a failure that has no field of its own to sit on, such as a
+/// secret the store refused.
+export function environmentPanel(report) {
   const lines = document.createElement('div');
   lines.className = 'env-rows';
 
@@ -100,7 +99,6 @@ export function environmentPanel(changed, report) {
     remove.addEventListener('click', () => {
       picks.delete(pick);
       line.remove();
-      changed();
     });
 
     function show() {
@@ -110,15 +108,7 @@ export function environmentPanel(changed, report) {
       pick.hidden = value !== 'cred';
     }
 
-    kind.addEventListener('change', () => {
-      show();
-      changed();
-    });
-    for (const input of [name, literal, path]) {
-      input.addEventListener('input', changed);
-      input.addEventListener('change', changed);
-    }
-    pick.addEventListener('change', changed);
+    kind.addEventListener('change', show);
     show();
 
     line.append(name, kind, literal, browse, pick, remove);
@@ -164,7 +154,6 @@ export function environmentPanel(changed, report) {
         try {
           await invoke('forget_secret', { target });
           await reload();
-          changed();
         } catch (failure) {
           report(t(`error.${failure.code}`), failure.detail);
         }
@@ -190,7 +179,6 @@ export function environmentPanel(changed, report) {
       secretName.value = '';
       secretValue.value = '';
       await reload();
-      changed();
     } catch (failure) {
       report(t(`error.${failure.code}`), failure.detail);
     } finally {

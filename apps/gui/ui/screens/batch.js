@@ -8,9 +8,8 @@ import {
   formatSize,
   invoke,
   labelFor,
-  messagePanel,
   note,
-  openFolderButton,
+  resultDialog,
   textInput,
   withBrowseButton,
 } from '../form.js';
@@ -165,7 +164,7 @@ export function renderBatch(root) {
   generate.disabled = true;
 
   const progress = note();
-  const result = messagePanel();
+  const result = resultDialog();
 
   // The scroll and the card belong to the wrapper, not the table: a sticky
   // header only stays put inside a box that actually scrolls.
@@ -275,7 +274,6 @@ export function renderBatch(root) {
   }
 
   async function rescan() {
-    result.clear();
     const path = source.value.trim();
     if (!path) {
       rows = [];
@@ -304,7 +302,6 @@ export function renderBatch(root) {
     field.addEventListener('change', rescan);
   }
   destination.addEventListener('input', () => {
-    result.clear();
     progress.textContent = '';
   });
   recursive.addEventListener('change', () => {
@@ -354,24 +351,22 @@ function smallButton(key) {
 
 function showSummary(result, summary) {
   const folder = summary.created.length ? folderOf(summary.created[0]) : '';
-  result.show((panel) => {
-    panel.append(
+  result.success(folder, (box) => {
+    box.append(
       t(summary.created.length ? 'batch.created' : 'batch.created.none', {
         count: summary.created.length,
         destination: folder,
       })
     );
     if (folder) {
-      panel.append(
+      box.append(
         document.createElement('br'),
         list(summary.created.map((path) => path.slice(folder.length + 1))),
-        t('result.path'),
-        document.createElement('br'),
-        openFolderButton(folder)
+        t('result.path')
       );
     }
     if (summary.skipped.length) {
-      panel.append(
+      box.append(
         document.createElement('br'),
         t('batch.skipped'),
         list(summary.skipped.map((row) => `${row.path} - ${t(`batch.skip.${row.reason}`)}`))

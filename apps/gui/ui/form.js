@@ -1,6 +1,6 @@
 // The form widgets both screens build the same way. Nothing here knows about
 // a particular mode.
-import { localize } from './i18n.js';
+import { localize, t } from './i18n.js';
 
 export const invoke = (command, args) => window.__TAURI__.core.invoke(command, args);
 
@@ -126,35 +126,59 @@ export function autofill(input, compute) {
   };
 }
 
-/// The message area below a form: a plain paragraph that can be filled with
-/// text or with built-up content, and cleared by the form on any change.
-export function messagePanel() {
-  const panel = document.createElement('p');
-  panel.className = 'result';
-  panel.hidden = true;
+/// The one place a finished action reports itself. A form is often taller than
+/// the window and its result is the last thing that should need a scroll to be
+/// found, so the message opens over the form instead of under it. `success`
+/// takes the folder to offer for opening, which an error has none of.
+export function resultDialog() {
+  const dialog = document.createElement('dialog');
+  const body = document.createElement('div');
+  body.className = 'dialog-body';
 
-  panel.clear = () => {
-    panel.hidden = true;
-    panel.textContent = '';
-    panel.classList.remove('error');
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.dataset.i18n = 'dialog.close';
+  close.addEventListener('click', () => dialog.close());
+
+  const actions = document.createElement('div');
+  actions.className = 'dialog-actions';
+  dialog.append(body, actions);
+
+  function open(title, content, folder) {
+    dialog.setAttribute('aria-label', title);
+    body.replaceChildren(content);
+    actions.replaceChildren();
+    if (folder) {
+      actions.append(openFolderButton(folder));
+    }
+    actions.append(close);
+    // The dialog is filled long after the screen's one translation pass, so its
+    // own buttons are localised on the way out.
+    localize(dialog);
+    dialog.showModal();
+    // Not the first button in here: opening a result with the dismiss action
+    // focused means Enter always ends it, whatever the summary went on to add.
+    close.focus();
+  }
+
+  /// `success` and `fail` rather than `show`, which a dialog already owns.
+  dialog.success = (folder, build) => {
+    dialog.classList.remove('error');
+    const content = document.createElement('div');
+    build(content);
+    open(t('result.title'), content, folder);
   };
-  panel.fail = (text, detail) => {
-    panel.clear();
-    panel.classList.add('error');
-    panel.textContent = detail ? `${text} ${detail}` : text;
-    panel.hidden = false;
+  dialog.fail = (text, detail) => {
+    dialog.classList.add('error');
+    const content = document.createElement('div');
+    content.textContent = detail ? `${text} ${detail}` : text;
+    open(text, content);
   };
-  panel.show = (build) => {
-    panel.clear();
-    build(panel);
-    localize(panel);
-    panel.hidden = false;
-  };
-  return panel;
+  return dialog;
 }
 
-/// The one action both result panels offer: a destination that is not on
-/// `PATH` is nothing, so being able to look at it matters most (6).
+/// The one action a result offers besides dismissing itself: a destination that
+/// is not on `PATH` is nothing, so being able to look at it matters most (6).
 export function openFolderButton(folder) {
   const button = document.createElement('button');
   button.type = 'button';

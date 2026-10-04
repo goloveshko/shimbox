@@ -10,6 +10,9 @@ export default {
 
   'form.browse': 'Browse',
 
+  'dialog.close': 'Close',
+
+  'result.title': 'Result',
   'result.path': 'Add the destination folder to PATH to start a shim by name.',
   'result.open': 'Open destination folder',
 
