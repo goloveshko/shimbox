@@ -15,6 +15,7 @@ export default {
   'result.title': 'Result',
   'result.path': 'Add the destination folder to PATH to start a shim by name.',
   'result.open': 'Open destination folder',
+  'result.edit': 'Edit PATH…',
 
   'variant.auto': 'Auto detect',
   'variant.cli': 'CLI (Console)',

@@ -160,7 +160,7 @@ export function resultDialog() {
     body.replaceChildren(content);
     actions.replaceChildren();
     if (folder) {
-      actions.append(openFolderButton(folder));
+      actions.append(openFolderButton(folder), editPathButton());
     }
     actions.append(close);
     // The dialog is filled long after the screen's one translation pass, so its
@@ -188,12 +188,23 @@ export function resultDialog() {
   return dialog;
 }
 
-/// The one action a result offers besides dismissing itself: a destination that
-/// is not on `PATH` is nothing, so being able to look at it matters most (6).
-export function openFolderButton(folder) {
+/// The two actions a result offers besides dismissing itself. A destination that
+/// is not on `PATH` is nothing, so the pair comes with the ways to act on it:
+/// look at the folder, and add it where Windows looks a command name up (6).
+function openFolderButton(folder) {
   const button = document.createElement('button');
   button.type = 'button';
   button.dataset.i18n = 'result.open';
   button.addEventListener('click', () => invoke('open_folder', { path: folder }));
+  return button;
+}
+
+/// The `PATH` entry itself belongs to the system, so this only opens the window
+/// that edits it; shimbox never writes the variable.
+function editPathButton() {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.i18n = 'result.edit';
+  button.addEventListener('click', () => invoke('edit_path', {}));
   return button;
 }

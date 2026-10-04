@@ -45,6 +45,7 @@ fn main() {
             pick_file,
             pick_folder,
             open_folder,
+            edit_path,
             secret::store_secret,
             secret::forget_secret,
             secret::list_secrets,
@@ -112,7 +113,7 @@ async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
     Ok(picked.map(|file| file.to_string()))
 }
 
-/// The success panel's "Open destination folder" action (5.1).
+/// The success dialog's "Open destination folder" action (5.1).
 #[tauri::command]
 fn open_folder(path: String) -> Result<(), String> {
     // `explorer` reports a non-zero exit code even when it opened the folder,
@@ -121,5 +122,19 @@ fn open_folder(path: String) -> Result<(), String> {
         .arg(&path)
         .spawn()
         .map_err(|error| format!("cannot open {path}: {error}"))
+        .map(|_| ())
+}
+
+/// The success dialog's "Edit PATH…" action. A folder becomes a command name
+/// through the system's own variable editor, so the user types the entry and
+/// shimbox never writes to the registry (6).
+#[tauri::command]
+fn edit_path() -> Result<(), String> {
+    // One argument, not two: `dll,entry` is rundll32's own syntax. Both it and
+    // the editor it loads are GUI binaries, so no console flashes up behind.
+    Command::new("rundll32.exe")
+        .arg("sysdm.cpl,EditEnvironmentVariables")
+        .spawn()
+        .map_err(|error| format!("cannot open the environment editor: {error}"))
         .map(|_| ())
 }
