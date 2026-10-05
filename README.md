@@ -111,10 +111,12 @@ Every Browse button reopens in the folder you last chose for that field — kept
 dialog no longer opens wherever the target's dialog ended.
 
 The titlebar is ours rather than the system's: the name at the left, and at the
-right **About**, minimize, maximize/restore and close. Drag the window anywhere
-along the strip, or double-click it to maximize. About shows the version, the
-sizes of the runners built into this binary, and the license, author and
-repository lines.
+right **Settings**, **About**, minimize, maximize/restore and close. Drag the
+window anywhere along the strip, or double-click it to maximize. **Settings**
+offers Light, Dark or following Windows, and applies as you pick it — kept in
+`$APPCONFIG/.settings.json`, so it is still there next run. **About** shows the
+version, the sizes of the runners built into this binary, and the license, author
+and repository lines.
 
 ## Configuration reference
 

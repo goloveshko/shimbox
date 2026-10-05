@@ -268,9 +268,17 @@ look at the other mode — nothing is re-asked and nothing is cleared by switchi
 
 The shell reads as a Windows application rather than a web page: the window sits
 on a Mica backdrop and the interface is semi-opaque cards over it. No colour is
-picked by hand — each one is a token declared once per theme, the theme comes
-from `prefers-color-scheme` and the accent from `Highlight`, the colour the user
-chose in the system, so there is no in-app theme switch to keep in step. A field
+picked by hand — each one is a token declared once per theme, and the accent is
+`Highlight`, the colour the user chose in the system. Which of the two themes is
+drawn is a decision made in code rather than a stylesheet branch: the choice is
+`System`, `Light` or `Dark`, `System` asks `prefers-color-scheme` and keeps
+asking while the desktop is changed under it, and the answer is written onto the
+document as `data-theme`, so one block of dark tokens serves both the system's own
+value and an override. Windows is told the same answer, because the backdrop it
+composites, the scrollbars it draws and a native dropdown are not part of the page
+and would otherwise stay on the system's. The choice is stored in
+`$APPCONFIG/.settings.json`; a value the app does not offer, and a file that cannot
+be read, both mean the same thing as no file at all. A field
 is one block of caption, control and hint, and the blocks reflow from two
 columns to one with the window. A result is reported in a dialog over the form
 rather than below it: the form is often taller than the window, and whether the
@@ -297,9 +305,11 @@ glyphs Windows uses for its own caption buttons, so the strip reads as a titleba
 rather than as a web page wearing one, and a double click on the drag area
 maximizes the way a caption's does. Decorations are left out of the saved window
 state on purpose: a state file written while the window still had the native
-caption would put that titlebar back above ours. The strip also opens About, the
-one screen the shell has besides the two modes — the version, the sizes of the
-runners embedded in this binary, and the license, author and repository lines.
+caption would put that titlebar back above ours. The strip also opens the two
+cards the shell has besides the two modes: Settings, whose one choice is the theme
+above, and About — the version, the sizes of the runners embedded in this binary,
+and the license, author and repository lines. Both are cards of the same shape a
+result uses, and both apply and dismiss without an Apply button anywhere.
 
 Every Browse button opens where its own field last looked, so picking the folder
 for shims and then a target does not send the next folder dialog to wherever the
