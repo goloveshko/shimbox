@@ -63,6 +63,16 @@ export function note(key) {
   return element;
 }
 
+/// A push button whose caption is a key. `small` is the one that acts on a single
+/// line of a list rather than on the screen.
+export function button(key, className) {
+  const element = document.createElement('button');
+  element.type = 'button';
+  element.dataset.i18n = key;
+  element.className = className ?? '';
+  return element;
+}
+
 /// `key` names what the button picks rather than which screen holds it, so the
 /// destination of either mode shares one remembered directory, and the backend
 /// opens the dialog there instead of where another field's dialog last ended.

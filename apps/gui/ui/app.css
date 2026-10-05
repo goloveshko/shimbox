@@ -375,8 +375,7 @@ input[type='checkbox'] {
   gap: 0.45rem;
 }
 
-.env-row .row,
-.secrets .row {
+.env-row .row {
   align-items: center;
 }
 
@@ -387,50 +386,10 @@ button.small {
   padding: 0.22rem 0.65rem;
 }
 
-.env > button {
+/* The two ways into the store from the form: add a variable, and open the card
+   that holds the names. Both start their line rather than stretch across it. */
+.env-actions {
   justify-self: start;
-}
-
-/* The secret store belongs to the whole block rather than to the row that
-   opened it, so it is folded under a summary that counts what is in it. */
-.secrets {
-  border-top: 1px solid var(--stroke);
-  padding-top: 0.55rem;
-}
-
-.secrets summary {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.secrets ul {
-  list-style: none;
-  margin: 0.55rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.secrets li {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.85rem;
-}
-
-/* One name per line, and the name is the part worth reading: the namespace in
-   front of it is the same on every entry. */
-.secrets li span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.secrets .row {
-  margin-top: 0.55rem;
 }
 
 button {
@@ -766,6 +725,48 @@ dialog::backdrop {
 .dialog-card ul {
   margin: 0.4rem 0;
   padding-left: 1.1rem;
+}
+
+/* The secret store is a card of its own rather than a block of the form, so its
+   rules sit with the other cards and after the generic list above, whose bullet
+   gutter a list of names has no use for. */
+.secret-store > .group {
+  margin-bottom: 0.55rem;
+}
+
+.secret-store ul {
+  list-style: none;
+  margin: 0 0 0.55rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+/* The `display` above outranks the sheet's own rule for a hidden element, so an
+   empty store would still leave its gap on screen. */
+.secret-store ul[hidden] {
+  display: none;
+}
+
+.secret-store li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+}
+
+/* One name per line, and the name is the part worth reading: the namespace in
+   front of it is the same on every entry. */
+.secret-store li span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.secret-store .row {
+  align-items: center;
+  margin-top: 0.55rem;
 }
 
 /* The About card is a short list of answers rather than prose, so every row

@@ -1,29 +1,15 @@
 // The child environment of mode 1 (docs/techspec.md 3.3, 3.5): one row per
-// variable, and the named secrets a `cred` row points at. Which config key a
+// variable, and the `cred` rows that point at a named secret. Which config key a
 // kind turns into is the backend's call, so nothing here parses or validates.
+import { button, invoke, note, textInput, withBrowseButton } from './form.js';
+import { secretsDialog } from './secrets.js';
 import { t, localize } from './i18n.js';
-import { invoke, note, textInput, withBrowseButton } from './form.js';
 
 const kinds = ['value', 'cred', 'file'];
 
-function button(key, className) {
-  const element = document.createElement('button');
-  element.type = 'button';
-  element.dataset.i18n = key;
-  element.className = className ?? '';
-  return element;
-}
-
-/// A secret is typed once and read by nobody over the shoulder, so it is
-/// masked; what the runner receives is the text, not the dots.
-function secretInput(placeholderKey) {
-  const input = document.createElement('input');
-  input.type = 'password';
-  input.autocomplete = 'off';
-  input.spellcheck = false;
-  input.dataset.i18nPlaceholder = placeholderKey;
-  return input;
-}
+/// The picker's own way out of an empty store, and never a name Windows could
+/// hold, so it cannot collide with a target.
+const create = '+';
 
 /// `report` takes a failure that has no field of its own to sit on, such as a
 /// secret the store refused.
@@ -35,6 +21,30 @@ export function environmentPanel(report) {
   /// them at once: the point of a named secret is that rows share it.
   const picks = new Set();
   let secrets = [];
+
+  /// The picker that opened the card, so a name stored there lands in the row
+  /// that went looking for it.
+  let asked = null;
+
+  const card = secretsDialog({
+    onChanged: (next, created) => {
+      const who = asked;
+      paint(next);
+      if (created && who && next.includes(created)) {
+        who.value = created;
+      }
+    },
+    report,
+  });
+
+  card.dialog.addEventListener('close', () => {
+    // A card closed without storing anything leaves its picker on the option that
+    // opened it, which is not a value a row may send.
+    if (asked?.value === create) {
+      asked.value = '';
+    }
+    asked = null;
+  });
 
   function fill(pick) {
     const chosen = pick.value;
@@ -49,17 +59,22 @@ export function environmentPanel(report) {
       option.textContent = target;
       pick.append(option);
     }
+    // Last, so a long store does not push the way to add one off the list.
+    const fresh = document.createElement('option');
+    fresh.value = create;
+    fresh.textContent = t('env.secret.new');
+    pick.append(fresh);
     // A name forgotten elsewhere in the session is not offered again, and a
     // picker left pointing at it would send a reference that cannot resolve.
     pick.value = secrets.includes(chosen) ? chosen : '';
   }
 
-  async function reload() {
-    secrets = await invoke('list_secrets', {});
-    renderStore();
+  function paint(next) {
+    secrets = next;
     for (const pick of picks) {
       fill(pick);
     }
+    opener.textContent = t('env.secret.title', { count: next.length });
   }
 
   function addLine() {
@@ -93,6 +108,15 @@ export function environmentPanel(report) {
     pick.className = 'pick';
     picks.add(pick);
     fill(pick);
+    // The store is a card, not a part of this screen, so the option that says
+    // "none of these, make one" is what opens it.
+    pick.addEventListener('change', () => {
+      if (pick.value !== create) {
+        return;
+      }
+      asked = pick;
+      card.show();
+    });
 
     const remove = button('env.remove', 'small');
     remove.setAttribute('aria-label', t('env.remove'));
@@ -129,74 +153,17 @@ export function environmentPanel(report) {
   const add = button('env.add', 'small');
   add.addEventListener('click', () => addLine());
 
-  // The store: the same names the pickers list, with a way to add and to remove
-  // one. It is kept behind a disclosure because it is the part a user touches
-  // once per token rather than once per shim.
-  const stored = document.createElement('ul');
-  const summary = document.createElement('summary');
-  // The count is the summary's whole text, so it is filled in before the store
-  // has answered rather than left blank until it does.
-  summary.textContent = t('env.secret.title', { count: 0 });
-  const secretName = textInput('env.secret.name.placeholder');
-  secretName.setAttribute('aria-label', t('env.secret.name'));
-  const secretValue = secretInput('env.secret.value.placeholder');
-  secretValue.setAttribute('aria-label', t('env.secret.value'));
-  const put = button('env.secret.store', 'small');
+  // The store's caption counts what is in it, so it is written rather than keyed:
+  // a translation pass would put the `{count}` back on screen.
+  const opener = document.createElement('button');
+  opener.type = 'button';
+  opener.className = 'small';
+  opener.textContent = t('env.secret.title', { count: 0 });
+  opener.addEventListener('click', () => card.show());
 
-  function renderStore() {
-    stored.replaceChildren();
-    for (const target of secrets) {
-      const entry = document.createElement('li');
-      const label = document.createElement('span');
-      label.textContent = target;
-      const drop = button('env.secret.forget', 'small');
-      drop.addEventListener('click', async () => {
-        try {
-          await invoke('forget_secret', { target });
-          await reload();
-        } catch (failure) {
-          report(t(`error.${failure.code}`), failure.detail);
-        }
-      });
-      entry.append(label, drop);
-      stored.append(entry);
-    }
-    // The Forget buttons are rebuilt here, after the screen's one translation
-    // pass, so their captions have to be filled in on the way out.
-    localize(stored);
-    summary.textContent = t('env.secret.title', { count: secrets.length });
-    // An empty store is the one case where this block has to be open to be
-    // found at all: the row that fills it is inside it. Once a name exists the
-    // disclosure earns its keep, and the count is what says there is one.
-    details.open = secrets.length === 0;
-  }
-
-  put.addEventListener('click', async () => {
-    put.disabled = true;
-    try {
-      await invoke('store_secret', {
-        name: secretName.value,
-        value: secretValue.value,
-      });
-      // Both fields are cleared: the typed token stays in the box only until it
-      // is stored, and a name left behind would be stored twice by accident.
-      secretName.value = '';
-      secretValue.value = '';
-      await reload();
-    } catch (failure) {
-      report(t(`error.${failure.code}`), failure.detail);
-    } finally {
-      put.disabled = false;
-    }
-  });
-
-  const entry = document.createElement('div');
-  entry.className = 'row';
-  entry.append(secretName, secretValue, put);
-
-  const details = document.createElement('details');
-  details.className = 'secrets';
-  details.append(summary, stored, entry, note('env.secret.help'));
+  const actions = document.createElement('div');
+  actions.className = 'row env-actions';
+  actions.append(add, opener);
 
   const title = document.createElement('p');
   title.className = 'group';
@@ -204,11 +171,13 @@ export function environmentPanel(report) {
 
   const block = document.createElement('div');
   block.className = 'field span-all env';
-  block.append(title, lines, add, note('env.help'), details);
+  block.append(title, lines, actions, note('env.help'));
 
-  reload().catch(() => {
-    // An empty store is what the panel was built for, not a reason to complain.
-  });
+  invoke('list_secrets', {})
+    .then(paint)
+    .catch(() => {
+      // An empty store is what the panel was built for, not a reason to complain.
+    });
 
   return {
     block,

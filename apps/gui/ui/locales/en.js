@@ -85,8 +85,11 @@ export default {
   'env.secret.title': 'Stored secrets ({count})',
   'env.secret.pick': 'Choose a stored secret',
   // Short enough to read whole inside the picker it labels, which is narrower
-  // than the dropdown that opens from it.
-  'env.secret.none': 'No secret stored yet — press Store below',
+  // than the dropdown that opens from it. The way out of that is the option
+  // listed right under it, so this does not have to point anywhere.
+  'env.secret.none': 'No secret stored yet',
+  'env.secret.new': 'New secret…',
+  'env.secret.empty': 'Nothing is stored yet.',
   'env.secret.name': 'Name',
   'env.secret.name.placeholder': 'github',
   'env.secret.value': 'Secret',
