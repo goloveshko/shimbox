@@ -11,10 +11,11 @@
     "windows": [
       {
         "title": "shimbox",
-        "width": 900,
-        "height": 660,
+        "width": 1400,
+        "height": 826,
         "minWidth": 620,
         "minHeight": 440,
+        "center": true,
         "decorations": false,
         "visible": false,
         "transparent": true,

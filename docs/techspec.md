@@ -307,6 +307,11 @@ whole, and the status line below stays where it is. The size and the position th
 window was left in are remembered between runs, in
 `$APPCONFIG/.window-state.json`; the window opens hidden and is shown once that
 geometry has been applied, so it never flashes at the configured default first.
+That default is the first run's alone, and it is picked so that run needs no
+scroll: mode 1 is the taller of the two screens, and it lays its fields out in as
+many columns as its width allows, so the default is a width wide enough for three
+of them and a height the whole card fits in. It is centered, since a window left
+where the platform puts one starts in the top-left corner.
 
 The window has no native caption — it is undecorated, and the titlebar is a strip
 of our own: the brand at the left, a drag area taking the rest of the row, and the
