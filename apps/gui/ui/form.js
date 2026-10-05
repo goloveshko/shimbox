@@ -129,27 +129,19 @@ export function autofill(input, compute) {
   };
 }
 
-/// The one place a finished action reports itself. A form is often taller than
-/// the window and its result is the last thing that should need a scroll to be
-/// found, so the message opens over the form instead of under it. `success`
-/// takes the folder to offer for opening, which an error has none of.
-export function resultDialog() {
+/// The one shape a message takes: a card over a frame that dims the window, so a
+/// click anywhere around the card ends it — a larger, closer target than the
+/// dismiss button. The body is the part that gives when content is taller than
+/// the window, and the last action is focused so Enter always ends the message.
+export function modalDialog() {
   const dialog = document.createElement('dialog');
-  // The dialog is the dimmed frame over the whole window and the card is the box
-  // holding the message, so the empty area around it is part of the dialog too:
-  // a click there is a larger, closer target than the dismiss button (5).
   const card = document.createElement('div');
   card.className = 'dialog-card';
   const body = document.createElement('div');
   body.className = 'dialog-body';
-
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.dataset.i18n = 'dialog.close';
-  close.addEventListener('click', () => dialog.close());
-
   const actions = document.createElement('div');
   actions.className = 'dialog-actions';
+
   card.append(body, actions);
   dialog.append(card);
   dialog.addEventListener('click', (event) => {
@@ -158,35 +150,58 @@ export function resultDialog() {
     }
   });
 
-  function open(title, content, folder) {
+  dialog.openModal = (title, content, buttons) => {
     dialog.setAttribute('aria-label', title);
     body.replaceChildren(content);
-    actions.replaceChildren();
-    if (folder) {
-      actions.append(openFolderButton(folder), editPathButton());
-    }
-    actions.append(close);
-    // The dialog is filled long after the screen's one translation pass, so its
+    actions.replaceChildren(...buttons);
+    // The content is filled long after the screen's one translation pass, so its
     // own buttons are localised on the way out.
     localize(dialog);
     dialog.showModal();
-    // Not the first button in here: opening a result with the dismiss action
-    // focused means Enter always ends it, whatever the summary went on to add.
-    close.focus();
+    buttons.at(-1)?.focus();
+  };
+  // A card that dims the whole window belongs to the whole window: inside a
+  // screen it would be hidden along with that screen, and a tab click during a
+  // result would take the message away with it.
+  document.body.append(dialog);
+  return dialog;
+}
+
+/// The dismiss action every message offers, so a card and its Close button are
+/// built the same way wherever one is opened.
+export function closeButton(dialog, key = 'dialog.close') {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.i18n = key;
+  button.addEventListener('click', () => dialog.close());
+  return button;
+}
+
+/// `success` and `fail` rather than `show`, which a dialog already owns. A
+/// destination that is not on `PATH` is nothing, so a result that wrote something
+/// also comes with the ways to act on the folder it wrote into (6).
+export function resultDialog() {
+  const dialog = modalDialog();
+  const card = dialog.querySelector('.dialog-card');
+
+  function show(title, content, folder) {
+    const buttons = folder
+      ? [openFolderButton(folder), editPathButton(), closeButton(dialog)]
+      : [closeButton(dialog)];
+    dialog.openModal(title, content, buttons);
   }
 
-  /// `success` and `fail` rather than `show`, which a dialog already owns.
   dialog.success = (folder, build) => {
     card.classList.remove('error');
     const content = document.createElement('div');
     build(content);
-    open(t('result.title'), content, folder);
+    show(t('result.title'), content, folder);
   };
   dialog.fail = (text, detail) => {
     card.classList.add('error');
     const content = document.createElement('div');
     content.textContent = detail ? `${text} ${detail}` : text;
-    open(text, content);
+    show(text, content);
   };
   return dialog;
 }

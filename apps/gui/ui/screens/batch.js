@@ -197,7 +197,7 @@ export function renderBatch(root) {
   actions.className = 'actions';
   actions.append(generate, progress);
 
-  root.append(form, caption, tableWrap, actions, result);
+  root.append(form, caption, tableWrap, actions);
 
   let rows = [];
   // What is on screen right now, and the checkbox each visible row owns. The

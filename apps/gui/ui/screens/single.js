@@ -74,7 +74,7 @@ export function renderSingle(root) {
   generate.disabled = true;
   form.append(generate);
 
-  root.append(form, result);
+  root.append(form);
 
   /// A shim needs a target to run, a folder on `PATH` to be found in and the name
   /// it is found by, so the button waits for those three instead of answering an
