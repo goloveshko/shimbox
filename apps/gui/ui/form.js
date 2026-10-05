@@ -39,11 +39,16 @@ export function field(key, control, ...children) {
 
 /// A checkbox whose text is the label itself, which makes the whole line
 /// clickable and gives the control its accessible name without an id.
-export function checkField(key, input) {
+export function checkField(key, input, name) {
   const label = document.createElement('label');
   label.className = 'check';
   const text = document.createElement('span');
-  text.dataset.i18n = key;
+  if (name) {
+    // A language names itself the same in every UI, so this one line is not a key.
+    text.textContent = name;
+  } else {
+    text.dataset.i18n = key;
+  }
   label.append(input, text);
   return label;
 }

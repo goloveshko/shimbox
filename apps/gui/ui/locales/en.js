@@ -26,6 +26,10 @@ export default {
   'settings.theme.dark': 'Dark',
   'settings.theme.note': 'Applies as you pick it. The window, its cards and the backdrop behind them all change with it.',
 
+  'settings.language': 'Language',
+  'settings.language.system': 'Follow Windows',
+  'settings.language.note': 'Applies as you pick it. The window is built again in the new language, so anything already typed into the form is lost.',
+
   'about.title': 'About shimbox',
   'about.tagline': 'A small runner beside a <alias>.shim, in a folder on PATH.',
   'about.runners': 'Embedded runners',

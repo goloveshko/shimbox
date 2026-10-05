@@ -1,6 +1,6 @@
 import { aboutDialog } from './about.js';
 import { formatSize } from './form.js';
-import { localize, t } from './i18n.js';
+import { localize, loadLanguage, t } from './i18n.js';
 import { renderBatch } from './screens/batch.js';
 import { renderSingle } from './screens/single.js';
 import { settingsDialog } from './settings.js';
@@ -55,9 +55,9 @@ function show(name) {
   }
 }
 
-// Read before anything is built, so the window opens in the theme it is going to
-// stay in rather than showing the change on the way.
-await loadTheme();
+// Both are read before anything is built, so the window opens in the language and
+// the theme it is going to keep rather than showing the change on the way.
+await Promise.all([loadLanguage(), loadTheme()]);
 
 build();
 // Built before the translation pass, so the brand it carries is filled in too.
