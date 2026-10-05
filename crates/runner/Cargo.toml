@@ -2,6 +2,7 @@
 name = "runner"
 description = "shimbox shim runner: forwards invocation to the real binary"
 version.workspace = true
+license.workspace = true
 edition.workspace = true
 
 [features]
