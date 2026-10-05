@@ -355,7 +355,10 @@ geometry has been applied, so it never flashes at the configured default first.
   the modification date when a file reports no version at all — which is common
   enough (static builds of `ffmpeg` report none) that the date is the rule's
   second half rather than an edge case. `Select all` therefore means one row
-  per name, never the whole table.
+  per name, never the whole table. A rescan answers with its own preselection,
+  so choices made by hand are carried across it by path: one that is still in
+  the results keeps its row and clears the rivals that claim its name, and a
+  name whose chosen file has left the results keeps the scan's pick instead.
 * **Policy**: no per-entry configuration. Each selected binary gets a config
   with `path` only, i.e. default arguments and default working directory, and
   the runner variant resolved by Auto.
