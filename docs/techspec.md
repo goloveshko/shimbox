@@ -356,15 +356,22 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   folder — case and a trailing separator do not make one different, and the line
   under the field says which of the two the config will hold.
 * **Child environment**: one row per variable — its name, where its value comes
-  from (`Typed value`, `Stored secret`, `Contents of a file`, 3.5), and the
-  control that kind needs: a field written into the config as typed, a picker
-  over the stored names, or a file path with its own picker. The names live in a
-  card of their own, opened either by the `Stored secrets (n)` button under the
-  rows or by the `New secret…` option of a row's picker, because a token is
-  created once and then referenced by many shims: storing or forgetting one
-  updates every picker at once, a name stored from the card a row opened lands in
-  that row, and a name forgotten while a row points at it drops out of it rather
-  than being written into a config that could not resolve it.
+  from (`Value`, `Secret`, `File`, 3.5), and the control that kind needs: a field
+  written into the config as typed, a picker over the stored names, or a file path
+  with a folder button beside it. Adding and removing a row carry a glyph rather
+  than a word — `+` on the line naming the block, `−` at the end of each row —
+  because the shape is the same in every language and a caption would set the
+  column every row ends at wider than the rows need. A picker's placeholder names
+  the field in the closed control and is left out of the list that opens from it.
+  The names live in a card of their own, reached only from a row whose kind is
+  `Secret`: the last line of that picker opens the card, and says
+  `Save a first secret…` while the store is empty, since an empty store is the one
+  that leaves the picker without a choice. A button under the rows would point at
+  the card from a row that cannot use it. Because a token is created once and then
+  referenced by many shims, storing or forgetting one updates every picker at
+  once, a name stored from the card a row opened lands in that row, and a name
+  forgotten while a row points at it drops out of it rather than being written
+  into a config that could not resolve it.
   Mode 1 only: the batch policy is no per-entry configuration (5.2).
 * **Generate**: write `<destination>\<alias>.shim` then `<destination>\<alias>.exe`,
   in that order (5.3); on success, a dialog over the form naming the pair, its

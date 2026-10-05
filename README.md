@@ -91,11 +91,12 @@ Arguments are written into the config exactly as you type them, with no quoting
 added.
 
 A variable's value is either typed into the config, read from a file at launch, or
-a stored secret. Secrets go to Windows Credential Manager under `shimbox/<name>`,
-and **Stored secrets** is the card that holds them; a row's own picker reaches the
-same card through **New secret…**, and the name you store there goes straight into
-the row that asked for it. One card serves every row, so a token is typed once and
-referenced by as many shims as need it.
+a stored secret. Secrets go to Windows Credential Manager under `shimbox/<name>`.
+The card holding them opens from a secret row's own picker — its last line reads
+**Manage secrets…**, or **Save a first secret…** while nothing is stored yet — and
+the name you store there goes straight into the row that asked for it. One card
+serves every row, so a token is typed once and referenced by as many shims as need
+it.
 
 **Folder batch** — pick a source directory, scan it (subdirectories optional),
 and tick what to shim. The table shows the detected runner type, the file
