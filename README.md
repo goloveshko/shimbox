@@ -110,6 +110,12 @@ Every Browse button reopens in the folder you last chose for that field — kept
 `$APPCONFIG/.pickers.json` and restored across restarts — so the destination
 dialog no longer opens wherever the target's dialog ended.
 
+The titlebar is ours rather than the system's: the name at the left, and at the
+right **About**, minimize, maximize/restore and close. Drag the window anywhere
+along the strip, or double-click it to maximize. About shows the version, the
+sizes of the runners built into this binary, and the license, author and
+repository lines.
+
 ## Configuration reference
 
 `<alias>.shim` is UTF-8, one `key=value` per line, split on the **first** `=`.

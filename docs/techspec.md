@@ -290,6 +290,17 @@ window was left in are remembered between runs, in
 `$APPCONFIG/.window-state.json`; the window opens hidden and is shown once that
 geometry has been applied, so it never flashes at the configured default first.
 
+The window has no native caption — it is undecorated, and the titlebar is a strip
+of our own: the brand at the left, a drag area taking the rest of the row, and the
+minimize, maximize/restore and close buttons at the right. Those are drawn with the
+glyphs Windows uses for its own caption buttons, so the strip reads as a titlebar
+rather than as a web page wearing one, and a double click on the drag area
+maximizes the way a caption's does. Decorations are left out of the saved window
+state on purpose: a state file written while the window still had the native
+caption would put that titlebar back above ours. The strip also opens About, the
+one screen the shell has besides the two modes — the version, the sizes of the
+runners embedded in this binary, and the license, author and repository lines.
+
 Every Browse button opens where its own field last looked, so picking the folder
 for shims and then a target does not send the next folder dialog to wherever the
 target's ended. The directory a pick left behind is kept per field in
