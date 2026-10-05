@@ -24,7 +24,7 @@ export default {
   'settings.theme.system': 'Follow Windows',
   'settings.theme.light': 'Light',
   'settings.theme.dark': 'Dark',
-  'settings.theme.note': 'Applies as you pick it. The window, its cards and the backdrop behind them all follow.',
+  'settings.theme.note': 'Applies as you pick it. The window, its cards and the backdrop behind them all change with it.',
 
   'about.title': 'About shimbox',
   'about.tagline': 'A small runner beside a <alias>.shim, in a folder on PATH.',
