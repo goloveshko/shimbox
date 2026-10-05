@@ -106,6 +106,10 @@ The result of either mode is a card you can dismiss by clicking anywhere around
 it, with **Open destination folder** and **Edit PATH…** when something was
 written.
 
+Every Browse button reopens in the folder you last chose for that field — kept in
+`$APPCONFIG/.pickers.json` and restored across restarts — so the destination
+dialog no longer opens wherever the target's dialog ended.
+
 ## Configuration reference
 
 `<alias>.shim` is UTF-8, one `key=value` per line, split on the **first** `=`.

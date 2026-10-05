@@ -290,6 +290,17 @@ window was left in are remembered between runs, in
 `$APPCONFIG/.window-state.json`; the window opens hidden and is shown once that
 geometry has been applied, so it never flashes at the configured default first.
 
+Every Browse button opens where its own field last looked, so picking the folder
+for shims and then a target does not send the next folder dialog to wherever the
+target's ended. The directory a pick left behind is kept per field in
+`$APPCONFIG/.pickers.json`, beside the window's geometry, and it survives a
+restart: a field that still holds a path starts there, since what is typed now
+says more than an older pick, and a remembered folder that no longer exists is
+not a starting point either — the dialog then falls back to the system default.
+Keys name what is picked rather than which screen picked it, so the two modes
+share one Destination memory. The file is a convenience, never a dependency:
+unreadable or garbled it reads as empty, and no dialog is refused because of it.
+
 ### 5.1 Mode 1: single shim
 
 * **Source path**: file picker for the target `.exe`.
