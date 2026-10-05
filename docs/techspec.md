@@ -262,7 +262,9 @@ open, next to the runners.
 
 ## 5. Functional Requirements: `shim-gui`
 
-Two tabs, no other navigation.
+Two tabs, no other navigation. Both screens are built once and a tab only shows
+one of them, so a half-written form and a scan someone is still ticking survive a
+look at the other mode — nothing is re-asked and nothing is cleared by switching.
 
 The shell reads as a Windows application rather than a web page: the window sits
 on a Mica backdrop and the interface is semi-opaque cards over it. No colour is
