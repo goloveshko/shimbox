@@ -1,12 +1,16 @@
+import { aboutDialog } from './about.js';
 import { formatSize } from './form.js';
 import { localize, t } from './i18n.js';
 import { renderBatch } from './screens/batch.js';
 import { renderSingle } from './screens/single.js';
+import { titlebar } from './titlebar.js';
 
 const screens = { single: renderSingle, batch: renderBatch };
 const screenRoot = document.getElementById('screen');
 const tabsRoot = document.getElementById('tabs');
 const statusRoot = document.getElementById('status');
+
+const about = aboutDialog();
 
 let current = 'single';
 const tabs = new Map();
@@ -49,6 +53,8 @@ function show(name) {
 }
 
 build();
+// Built before the translation pass, so the brand it carries is filled in too.
+titlebar(() => about.show());
 show(current);
 localize();
 

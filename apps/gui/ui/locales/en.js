@@ -3,6 +3,12 @@
 export default {
   'app.title': 'shimbox',
 
+  'titlebar.about': 'About shimbox',
+  'titlebar.minimize': 'Minimize',
+  'titlebar.maximize': 'Maximize',
+  'titlebar.restore': 'Restore',
+  'titlebar.close': 'Close',
+
   'tab.single': 'Single shim',
   'tab.batch': 'Folder batch',
 
@@ -11,6 +17,13 @@ export default {
   'form.browse': 'Browse',
 
   'dialog.close': 'Close',
+
+  'about.title': 'About shimbox',
+  'about.tagline': 'A small runner beside a <alias>.shim, in a folder on PATH.',
+  'about.runners': 'Embedded runners',
+  'about.license': 'License',
+  'about.author': 'Author',
+  'about.repository': 'Repository',
 
   'result.title': 'Result',
   'result.path': 'Add the destination folder to PATH to start a shim by name.',

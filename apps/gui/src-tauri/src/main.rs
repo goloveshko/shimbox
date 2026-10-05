@@ -39,7 +39,17 @@ fn main() {
         // shows it, already at the saved geometry, instead of letting it flash at
         // the configured one first. Deleting `$APPCONFIG/.window-state.json` is the
         // reset; a first run has no state and gets the size from the config.
-        .plugin(tauri_plugin_window_state::Builder::new().build())
+        // Decorations are deliberately not restored: the caption is drawn by the UI
+        // now, and a state file written while the window still had the native one
+        // would put that titlebar back above ours.
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::all()
+                        - tauri_plugin_window_state::StateFlags::DECORATIONS,
+                )
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             detect_variant,
             embedded_runners,

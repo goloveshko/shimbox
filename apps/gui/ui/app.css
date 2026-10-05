@@ -52,7 +52,7 @@
 
 body {
   margin: 0;
-  padding: 0.9rem 1.15rem 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   /* A definite height, not a min-height: `flex: 1` on the screen only means
@@ -66,6 +66,73 @@ body {
   color: var(--text);
   /* The window backdrop is Mica; a painted background here would hide it. */
   background: transparent;
+}
+
+/* Everything under the strip shares the inset the body used to carry, so the
+   titlebar can span the full width of the window the way a caption does. */
+.content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  box-sizing: border-box;
+  padding: 0.2rem 1.15rem 0;
+}
+
+/* The window is undecorated, so this strip is its caption: it drags the window,
+   and its three buttons are the ones every other window has. Nothing is painted
+   behind it, which is what lets the Mica backdrop be the colour of the bar. */
+.titlebar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  height: 2.1rem;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.titlebar .brand {
+  display: flex;
+  align-items: center;
+  padding: 0 0.7rem;
+  font: 600 0.82rem/1 var(--head);
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+/* The empty middle is the part meant for grabbing, and it is also what keeps the
+   buttons at the corner however wide the window is. */
+.titlebar .drag {
+  flex: 1;
+}
+
+.titlebar button {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  /* The font Windows draws its own caption buttons from, so the glyphs line up
+     with the ones on any other window at the same size. */
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 0.85rem;
+  cursor: default;
+  transition: background 0.12s;
+}
+
+.titlebar button:hover {
+  background: var(--hover);
+}
+
+/* Close is the one button Windows colours, and colours it the same way whatever
+   theme is on. */
+.titlebar .caption-close:hover {
+  background: #c42b1c;
+  color: #fff;
 }
 
 ::-webkit-scrollbar {
@@ -103,9 +170,9 @@ h1 {
 }
 
 /* One segmented control rather than two underlined tabs: the selected mode is a
-   filled pill, which reads at a glance without a coloured line under text. */
+   filled pill, which reads at a glance without a coloured line under text. It
+   starts under the brand now that the brand has moved into the strip. */
 #tabs {
-  margin-left: auto;
   display: flex;
   gap: 2px;
   padding: 2px;
@@ -688,6 +755,49 @@ dialog::backdrop {
 .dialog-card ul {
   margin: 0.4rem 0;
   padding-left: 1.1rem;
+}
+
+/* The About card is a short list of answers rather than prose, so every row
+   keeps its label in one column and the value starts at the same place. */
+.about-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.1rem 0 0;
+  font: 600 1.2rem/1.2 var(--head);
+}
+
+.about-version {
+  padding: 0.08rem 0.5rem;
+  border: 1px solid var(--stroke-strong);
+  border-radius: 999px;
+  background: var(--chip);
+  font: 500 0.75rem/1.4 var(--font);
+  color: var(--muted);
+}
+
+.about-tagline {
+  margin: 0.25rem 0 0.85rem;
+  color: var(--muted);
+}
+
+.about-row {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.6rem;
+  margin: 0.3rem 0;
+}
+
+.about-row > span:first-child {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* One click takes the whole address: the card has no link that could leave the
+   window, so copying it is the action worth making easy. */
+.about-url {
+  user-select: all;
+  overflow-wrap: anywhere;
 }
 
 .dialog-actions {
