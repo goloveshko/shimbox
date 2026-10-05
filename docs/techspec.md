@@ -358,12 +358,14 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
 * **Child environment**: one row per variable — its name, where its value comes
   from (`Typed value`, `Stored secret`, `Contents of a file`, 3.5), and the
   control that kind needs: a field written into the config as typed, a picker
-  over the stored names, or a file path with its own picker. The names are
-  listed under the rows, in one place, because a token is created once and then
-  referenced by many shims; storing or forgetting one updates every open picker.
-  That list is where a name is created, so while the store is empty the block is
-  open and the picker says so; with a name in it the disclosure collapses back
-  to its count. Mode 1 only: the batch policy is no per-entry configuration (5.2).
+  over the stored names, or a file path with its own picker. The names live in a
+  card of their own, opened either by the `Stored secrets (n)` button under the
+  rows or by the `New secret…` option of a row's picker, because a token is
+  created once and then referenced by many shims: storing or forgetting one
+  updates every picker at once, a name stored from the card a row opened lands in
+  that row, and a name forgotten while a row points at it drops out of it rather
+  than being written into a config that could not resolve it.
+  Mode 1 only: the batch policy is no per-entry configuration (5.2).
 * **Generate**: write `<destination>\<alias>.shim` then `<destination>\<alias>.exe`,
   in that order (5.3); on success, a dialog over the form naming the pair, its
   resolved runner type and the destination, with "Open destination folder" and
