@@ -85,7 +85,7 @@ export function environmentPanel(report) {
 
     const path = textInput('env.file.placeholder');
     path.setAttribute('aria-label', t('env.kind.file'));
-    const browse = withBrowseButton(path, 'pick_file');
+    const browse = withBrowseButton(path, 'pick_file', 'env.file');
     browse.hidden = true;
 
     const pick = document.createElement('select');

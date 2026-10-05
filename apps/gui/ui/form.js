@@ -58,7 +58,10 @@ export function note(key) {
   return element;
 }
 
-export function withBrowseButton(input, command) {
+/// `key` names what the button picks rather than which screen holds it, so the
+/// destination of either mode shares one remembered directory, and the backend
+/// opens the dialog there instead of where another field's dialog last ended.
+export function withBrowseButton(input, command, key) {
   const row = document.createElement('div');
   row.className = 'row';
 
@@ -66,7 +69,7 @@ export function withBrowseButton(input, command) {
   button.type = 'button';
   button.dataset.i18n = 'form.browse';
   button.addEventListener('click', async () => {
-    const picked = await invoke(command, {});
+    const picked = await invoke(command, { key, path: input.value });
     if (picked) {
       input.value = picked;
       input.dispatchEvent(new Event('change'));

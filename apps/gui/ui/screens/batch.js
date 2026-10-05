@@ -120,11 +120,11 @@ export function renderBatch(root) {
   const source = textInput('batch.source.placeholder');
   const destination = textInput('batch.destination.placeholder');
   form.append(
-    field('batch.source', source, withBrowseButton(source, 'pick_folder')),
+    field('batch.source', source, withBrowseButton(source, 'pick_folder', 'source')),
     field(
       'batch.destination',
       destination,
-      withBrowseButton(destination, 'pick_folder')
+      withBrowseButton(destination, 'pick_folder', 'destination')
     )
   );
 

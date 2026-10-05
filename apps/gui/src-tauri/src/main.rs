@@ -5,6 +5,7 @@
 
 mod batch;
 mod pe;
+mod pickers;
 mod runner;
 mod secret;
 mod shim;
@@ -86,31 +87,55 @@ fn embedded_runners() -> Vec<EmbeddedRunner> {
     ]
 }
 
+/// Both pickers start where their own field last looked rather than where the
+/// previous field's dialog ended, and remember it for the next time (5).
 #[tauri::command]
-async fn pick_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
+async fn pick_file(
+    app: tauri::AppHandle,
+    key: String,
+    path: String,
+) -> Result<Option<String>, String> {
+    let dialog_app = app.clone();
+    let start = pickers::start_directory(&app, &key, &path);
     // The dialog runs on its own thread; blocking the async worker is not
     // enough to keep it off the event loop.
     let picked = tauri::async_runtime::spawn_blocking(move || {
-        app.dialog()
-            .file()
-            .add_filter("executables", &["exe"])
-            .blocking_pick_file()
+        let dialog = dialog_app.dialog().file().add_filter("executables", &["exe"]);
+        match start {
+            Some(start) => dialog.set_directory(start).blocking_pick_file(),
+            None => dialog.blocking_pick_file(),
+        }
     })
     .await
     .map_err(|error| error.to_string())?;
 
-    Ok(picked.map(|file| file.to_string()))
+    Ok(picked.map(|file| {
+        let picked = file.to_string();
+        pickers::remember(&app, &key, Path::new(&picked));
+        picked
+    }))
 }
 
 #[tauri::command]
-async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    let picked = tauri::async_runtime::spawn_blocking(move || {
-        app.dialog().file().blocking_pick_folder()
+async fn pick_folder(
+    app: tauri::AppHandle,
+    key: String,
+    path: String,
+) -> Result<Option<String>, String> {
+    let dialog_app = app.clone();
+    let start = pickers::start_directory(&app, &key, &path);
+    let picked = tauri::async_runtime::spawn_blocking(move || match start {
+        Some(start) => dialog_app.dialog().file().set_directory(start).blocking_pick_folder(),
+        None => dialog_app.dialog().file().blocking_pick_folder(),
     })
     .await
     .map_err(|error| error.to_string())?;
 
-    Ok(picked.map(|file| file.to_string()))
+    Ok(picked.map(|folder| {
+        let picked = folder.to_string();
+        pickers::remember(&app, &key, Path::new(&picked));
+        picked
+    }))
 }
 
 /// The success dialog's "Open destination folder" action (5.1).

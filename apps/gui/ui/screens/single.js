@@ -19,14 +19,14 @@ export function renderSingle(root) {
   const form = document.createElement('form');
 
   const target = textInput('single.target.placeholder');
-  form.append(field('single.target', target, withBrowseButton(target, 'pick_file')));
+  form.append(field('single.target', target, withBrowseButton(target, 'pick_file', 'target')));
 
   const destination = textInput('single.destination.placeholder');
   form.append(
     field(
       'single.destination',
       destination,
-      withBrowseButton(destination, 'pick_folder'),
+      withBrowseButton(destination, 'pick_folder', 'destination'),
       note('single.destination.help')
     )
   );
@@ -56,7 +56,7 @@ export function renderSingle(root) {
     field(
       'single.workdir',
       workdir,
-      withBrowseButton(workdir, 'pick_folder'),
+      withBrowseButton(workdir, 'pick_folder', 'workdir'),
       workdirNote
     )
   );
