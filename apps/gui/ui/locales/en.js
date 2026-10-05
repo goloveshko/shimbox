@@ -74,21 +74,23 @@ export default {
   'env.name': 'Variable',
   'env.name.placeholder': 'GITHUB_TOKEN',
   'env.kind': 'Where the value comes from',
-  'env.kind.value': 'Typed value',
-  'env.kind.cred': 'Stored secret',
-  'env.kind.file': 'Contents of a file',
+  // The three kinds are read side by side in one dropdown, so they name what the
+  // row holds rather than repeating the word `value` every time.
+  'env.kind.value': 'Value',
+  'env.kind.cred': 'Secret',
+  'env.kind.file': 'File',
   'env.value.placeholder': 'The value the target will see',
   'env.file.placeholder': 'C:\\Tools\\tokens\\github.txt',
   'env.add': 'Add variable',
   'env.remove': 'Remove',
   'env.help': 'Each variable is set for the target alone. A stored secret or a file keeps the value out of the config, which lives in a folder on PATH.',
   'env.secret.title': 'Stored secrets ({count})',
-  'env.secret.pick': 'Choose a stored secret',
-  // Short enough to read whole inside the picker it labels, which is narrower
-  // than the dropdown that opens from it. The way out of that is the option
-  // listed right under it, so this does not have to point anywhere.
+  'env.secret.pick': 'Choose a secret',
+  // Read only in the closed control: a placeholder is hidden from the list that
+  // opens, and the last line of that list is the way into the store itself.
   'env.secret.none': 'No secret stored yet',
-  'env.secret.new': 'New secret…',
+  'env.secret.manage': 'Manage secrets…',
+  'env.secret.first': 'Save a first secret…',
   'env.secret.empty': 'Nothing is stored yet.',
   'env.secret.name': 'Name',
   'env.secret.name.placeholder': 'github',

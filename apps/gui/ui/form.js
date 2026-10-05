@@ -73,17 +73,31 @@ export function button(key, className) {
   return element;
 }
 
+/// A button that says what it does by shape rather than by word, so the name it
+/// carries is its accessible one and its tooltip, not its caption.
+export function iconButton(glyph, key, className) {
+  const element = document.createElement('button');
+  element.type = 'button';
+  element.className = className ? `icon ${className}` : 'icon';
+  element.textContent = glyph;
+  element.setAttribute('aria-label', t(key));
+  element.title = t(key);
+  return element;
+}
+
 /// `key` names what the button picks rather than which screen holds it, so the
 /// destination of either mode shares one remembered directory, and the backend
 /// opens the dialog there instead of where another field's dialog last ended.
-export function withBrowseButton(input, command, key) {
+/// `glyph` swaps the caption for an icon, which is what a row too narrow for a
+/// word needs; the word stays as the tooltip and the accessible name.
+export function withBrowseButton(input, command, key, glyph) {
   const row = document.createElement('div');
   row.className = 'row';
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.i18n = 'form.browse';
-  button.addEventListener('click', async () => {
+  const browse = glyph
+    ? iconButton(glyph, 'form.browse', 'folder')
+    : button('form.browse');
+  browse.addEventListener('click', async () => {
     const picked = await invoke(command, { key, path: input.value });
     if (picked) {
       input.value = picked;
@@ -91,7 +105,7 @@ export function withBrowseButton(input, command, key) {
     }
   });
 
-  row.append(input, button);
+  row.append(input, browse);
   return row;
 }
 

@@ -370,7 +370,7 @@ input[type='checkbox'] {
 
 .env-row {
   display: grid;
-  grid-template-columns: minmax(7rem, 1fr) 9.5rem minmax(9rem, 1.7fr) auto;
+  grid-template-columns: minmax(7rem, 1fr) 7.5rem minmax(9rem, 1.7fr) auto;
   align-items: center;
   gap: 0.45rem;
 }
@@ -386,10 +386,36 @@ button.small {
   padding: 0.22rem 0.65rem;
 }
 
-/* The two ways into the store from the form: add a variable, and open the card
-   that holds the names. Both start their line rather than stretch across it. */
-.env-actions {
-  justify-self: start;
+/* The actions a list of rows needs are the same shape in every language, so they
+   carry a glyph and the word moves to the tooltip and the accessible name. The
+   box is the one a field makes - the same padding, border and line height - so a
+   row holds one height, and the glyph is centered in the box rather than left on
+   a baseline of its own. */
+button.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2.4rem;
+  /* The height a field computes to: 14px of text on the body's 1.45 line, plus
+     the field's padding and its border. A row then holds one height, and the
+     glyph is centered in the box rather than left on a baseline of its own. */
+  height: 2.2rem;
+  padding: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+/* Segoe's own icon font, the same shapes the system's file dialogs draw. */
+button.icon.folder {
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', sans-serif;
+  font-size: 1rem;
+}
+
+/* The caption and the block's one action share a line, so the end of a row is
+   left to the row's own removal and every row ends at the same column. */
+.env-head {
+  align-items: center;
 }
 
 button {
