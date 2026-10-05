@@ -278,7 +278,17 @@ value and an override. Windows is told the same answer, because the backdrop it
 composites, the scrollbars it draws and a native dropdown are not part of the page
 and would otherwise stay on the system's. The choice is stored in
 `$APPCONFIG/.settings.json`; a value the app does not offer, and a file that cannot
-be read, both mean the same thing as no file at all. A field
+be read, both mean the same thing as no file at all. The language is the same kind
+of choice in the same card, and it is offered the same way: follow Windows, which
+asks `navigator.languages`, or one of the languages the app ships. Each is named in
+its own tongue — `English`, `Русский` — because a language has to be recognisable
+before the interface speaks it. It applies by building the window again rather than
+by rewriting the text where it stands: the strings are read once, as each screen is
+made, so a live swap would have to remember which node came from which key. That
+rebuild discards a half-written form, which is what the field's own hint says, and
+it is why the theme, which needs no such thing, does not work the same way. The row
+is only there while there is a choice to make, so a single-language build shows the
+card with its one field again. A field
 is one block of caption, control and hint, and the blocks reflow from two
 columns to one with the window. A result is reported in a dialog over the form
 rather than below it: the form is often taller than the window, and whether the
@@ -306,10 +316,11 @@ rather than as a web page wearing one, and a double click on the drag area
 maximizes the way a caption's does. Decorations are left out of the saved window
 state on purpose: a state file written while the window still had the native
 caption would put that titlebar back above ours. The strip also opens the two
-cards the shell has besides the two modes: Settings, whose one choice is the theme
-above, and About — the version, the sizes of the runners embedded in this binary,
-and the license, author and repository lines. Both are cards of the same shape a
-result uses, and both apply and dismiss without an Apply button anywhere.
+cards the shell has besides the two modes: Settings, whose fields are the theme and
+the language above, and About — the version, the sizes of the runners embedded in
+this binary, and the license, author and repository lines. Both are cards of the
+same shape a result uses, and both apply and dismiss without an Apply button
+anywhere.
 
 Every Browse button opens where its own field last looked, so picking the folder
 for shims and then a target does not send the next folder dialog to wherever the
@@ -503,9 +514,10 @@ Decisions this draft still needs:
 Resolved since draft 3:
 
 * **Frontend**: Vanilla JS, no build step and no npm dependencies, reached
-  through `withGlobalTauri`. UI text is English only for now, but every string
-  goes through `data-i18n` keys and a per-language dictionary file, so adding a
-  language is one file in `ui/locales/` plus one line in `ui/i18n.js`.
+  through `withGlobalTauri`. Every string goes through a `data-i18n` key and a
+  per-language dictionary file, so a language is one file in `ui/locales/` plus one
+  line in `ui/i18n.js`; English and Russian are both registered, and the reader
+  picks between them (5).
 
 Deferred, explicitly out of v1:
 

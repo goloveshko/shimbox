@@ -114,7 +114,10 @@ The titlebar is ours rather than the system's: the name at the left, and at the
 right **Settings**, **About**, minimize, maximize/restore and close. Drag the
 window anywhere along the strip, or double-click it to maximize. **Settings**
 offers Light, Dark or following Windows, and applies as you pick it — kept in
-`$APPCONFIG/.settings.json`, so it is still there next run. **About** shows the
+`$APPCONFIG/.settings.json`, so it is still there next run. Below it, the same
+card asks which language to speak: English, Русский, or following Windows again.
+A language applies by rebuilding the window, so anything still typed into the
+form is lost — the field says so before you pick. **About** shows the
 version, the sizes of the runners built into this binary, and the license, author
 and repository lines.
 
@@ -168,10 +171,10 @@ bin                     staged artifacts (git-ignored)
 ```
 
 The UI has no build step and no npm dependencies; it is embedded into
-`shimbox.exe` at compile time, so a UI change needs a rebuild to show up. Its
-text is English, and every string goes through a `data-i18n` key with one
-dictionary per language, so a second language is one file in
-`apps\gui\ui\locales` plus one line in `i18n.js`.
+`shimbox.exe` at compile time, so a UI change needs a rebuild to show up. Every
+string goes through a `data-i18n` key with one dictionary per language, so a
+language is one file in `apps\gui\ui\locales` plus one line in `i18n.js` — the
+two registered today are English and Russian.
 
 ## Notes
 
