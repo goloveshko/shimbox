@@ -8,6 +8,7 @@ mod pe;
 mod pickers;
 mod runner;
 mod secret;
+mod settings;
 mod shim;
 
 use std::path::Path;
@@ -60,6 +61,8 @@ fn main() {
             secret::store_secret,
             secret::forget_secret,
             secret::list_secrets,
+            settings::get_theme,
+            settings::set_theme,
             shim::generate,
             batch::scan,
             batch::generate_batch

@@ -2,10 +2,14 @@
   Two themes, one accent, and nothing derived from either by hand: every colour
   below is a token set once per theme, and `Highlight` is the Windows accent the
   user picked, so the app follows the system rather than arguing with it.
+
+  Which of the two is drawn is decided in JS (ui/theme.js) and written onto the
+  document as `data-theme`, so an override picked in Settings and the system's own
+  answer arrive at the same single block of dark tokens.
 */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
   --head: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
@@ -27,20 +31,20 @@
   --gap: 0.9rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: rgba(255, 255, 255, 0.89);
-    --muted: rgba(255, 255, 255, 0.6);
-    --stroke: rgba(255, 255, 255, 0.08);
-    --stroke-strong: rgba(255, 255, 255, 0.24);
-    --card: rgba(32, 32, 32, 0.62);
-    --card-raised: rgba(43, 43, 43, 0.92);
-    --field: rgba(255, 255, 255, 0.05);
-    --field-hover: rgba(255, 255, 255, 0.09);
-    --chip: rgba(255, 255, 255, 0.04);
-    --hover: rgba(255, 255, 255, 0.05);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.35);
-  }
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --text: rgba(255, 255, 255, 0.89);
+  --muted: rgba(255, 255, 255, 0.6);
+  --stroke: rgba(255, 255, 255, 0.08);
+  --stroke-strong: rgba(255, 255, 255, 0.24);
+  --card: rgba(32, 32, 32, 0.62);
+  --card-raised: rgba(43, 43, 43, 0.92);
+  --field: rgba(255, 255, 255, 0.05);
+  --field-hover: rgba(255, 255, 255, 0.09);
+  --chip: rgba(255, 255, 255, 0.04);
+  --hover: rgba(255, 255, 255, 0.05);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 /* The widgets that swap themselves in and out of a grid row carry their own
@@ -346,6 +350,13 @@ input[type='checkbox'] {
   gap: 0.55rem;
   font-weight: 400;
   cursor: pointer;
+}
+
+/* The answers of one radio group stack under its caption, so each line reads as
+   a choice rather than as a field of its own. */
+.radios {
+  display: grid;
+  gap: 0.3rem;
 }
 
 /* The environment block is a list rather than a set of fields, so its rows
@@ -821,14 +832,12 @@ dialog::backdrop {
   color: color-mix(in srgb, #c42b1c 70%, var(--text));
 }
 
-@media (prefers-color-scheme: dark) {
-  .dialog-card.error {
-    border-left-color: #d13438;
-  }
+:root[data-theme='dark'] .dialog-card.error {
+  border-left-color: #d13438;
+}
 
-  .dialog-card.error .dialog-body {
-    color: color-mix(in srgb, #ff99a4 60%, var(--text));
-  }
+:root[data-theme='dark'] .dialog-card.error .dialog-body {
+  color: color-mix(in srgb, #ff99a4 60%, var(--text));
 }
 
 footer {

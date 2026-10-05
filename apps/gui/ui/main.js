@@ -3,6 +3,8 @@ import { formatSize } from './form.js';
 import { localize, t } from './i18n.js';
 import { renderBatch } from './screens/batch.js';
 import { renderSingle } from './screens/single.js';
+import { settingsDialog } from './settings.js';
+import { loadTheme } from './theme.js';
 import { titlebar } from './titlebar.js';
 
 const screens = { single: renderSingle, batch: renderBatch };
@@ -11,6 +13,7 @@ const tabsRoot = document.getElementById('tabs');
 const statusRoot = document.getElementById('status');
 
 const about = aboutDialog();
+const settings = settingsDialog();
 
 let current = 'single';
 const tabs = new Map();
@@ -52,9 +55,13 @@ function show(name) {
   }
 }
 
+// Read before anything is built, so the window opens in the theme it is going to
+// stay in rather than showing the change on the way.
+await loadTheme();
+
 build();
 // Built before the translation pass, so the brand it carries is filled in too.
-titlebar(() => about.show());
+titlebar({ onSettings: () => settings.show(), onAbout: () => about.show() });
 show(current);
 localize();
 

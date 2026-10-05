@@ -3,6 +3,7 @@
 export default {
   'app.title': 'shimbox',
 
+  'titlebar.settings': 'Settings',
   'titlebar.about': 'About shimbox',
   'titlebar.minimize': 'Minimize',
   'titlebar.maximize': 'Maximize',
@@ -17,6 +18,13 @@ export default {
   'form.browse': 'Browse',
 
   'dialog.close': 'Close',
+
+  'settings.title': 'Settings',
+  'settings.theme': 'Theme',
+  'settings.theme.system': 'Use my Windows setting',
+  'settings.theme.light': 'Light',
+  'settings.theme.dark': 'Dark',
+  'settings.theme.note': 'Applies as you pick it. The window, its cards and the backdrop behind them all follow.',
 
   'about.title': 'About shimbox',
   'about.tagline': 'A small runner beside a <alias>.shim, in a folder on PATH.',

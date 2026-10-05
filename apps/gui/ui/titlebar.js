@@ -8,6 +8,7 @@ import { t } from './i18n.js';
 // page wearing one. They are private-use codepoints, so they are written as
 // escapes rather than as characters that no editor shows.
 const glyph = {
+  settings: '\uE713',
   minimize: '\uE921',
   maximize: '\uE922',
   restore: '\uE923',
@@ -41,7 +42,7 @@ async function showMaximized() {
   element.title = t(`titlebar.${kind}`);
 }
 
-export function titlebar(onAbout) {
+export function titlebar({ onSettings, onAbout }) {
   const root = document.getElementById('titlebar');
 
   const brand = document.createElement('h1');
@@ -57,6 +58,9 @@ export function titlebar(onAbout) {
   root.append(
     brand,
     drag,
+    // The window's own buttons stay in the corner, so the two cards the app
+    // offers sit to their left rather than beside the brand.
+    button('settings', onSettings),
     button('about', onAbout),
     button('minimize', () => appWindow.minimize()),
     button('maximize', () => appWindow.toggleMaximize().then(showMaximized)),
