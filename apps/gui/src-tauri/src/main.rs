@@ -84,6 +84,8 @@ fn main() {
             secret::list_secrets,
             settings::get_theme,
             settings::set_theme,
+            settings::get_language,
+            settings::set_language,
             shim::generate,
             batch::scan,
             batch::generate_batch
