@@ -273,8 +273,11 @@ is one block of caption, control and hint, and the blocks reflow from two
 columns to one with the window. A result is reported in a dialog over the form
 rather than below it: the form is often taller than the window, and whether the
 write worked is the last thing in it that should need a scroll to be found. The
-dialog dismisses on `Esc`, on its own Close action, and its body is the part that
-gives when a batch summary is longer than the window.
+dialog is a card over a frame that dims the whole window, so a click anywhere
+outside the card ends the result; `Esc` and its own Close action do the same, and
+the body is the part that gives when a batch summary is longer than the window. A
+result that wrote something also offers the two ways to act on the folder it
+wrote into: open it, and open the system editor that puts it on `PATH` (6).
 The batch table takes the height the rest of the screen leaves it and scrolls
 inside its own card, under a header that stays put; below the width where six
 columns no longer fit it drops Version and Size rather than growing a horizontal
@@ -313,10 +316,14 @@ geometry has been applied, so it never flashes at the configured default first.
   to its count. Mode 1 only: the batch policy is no per-entry configuration (5.2).
 * **Generate**: write `<destination>\<alias>.shim` then `<destination>\<alias>.exe`,
   in that order (5.3); on success, a dialog over the form naming the pair, its
-  resolved runner type and the destination, with an "Open destination folder"
-  action and a reminder that the destination must be on `PATH` (6).
+  resolved runner type and the destination, with "Open destination folder" and
+  "Edit PATH…" beside Close, and a reminder that the destination must be on
+  `PATH` (6).
 * Validates before writing: source exists, destination directory exists and is
-  writable, alias is a legal file name.
+  writable, alias is a legal file name. The button waits for those three fields
+  to be filled rather than answering an incomplete form with an error; what the
+  form cannot know without looking — a name already taken, a path that stopped
+  existing — still arrives as one.
 
 ### 5.2 Mode 2: batch
 
@@ -330,7 +337,12 @@ geometry has been applied, so it never flashes at the configured default first.
   to, 5.4). `Select all` / `Select none`, how many were found and how many are
   selected. A `Filter` box above the table narrows it by name or path; it only
   hides rows, so the selection counter is what says how many shims a Generate
-  would write.
+  would write. The table and this toolbar are a scan's output, so neither is on
+  screen before the first one, and a scan that finds no executable says so in
+  words instead of leaving the screen as it was. The two selection buttons are
+  disabled whenever the rows on screen already match them, and Generate waits
+  for a destination and one selected row: the scan can fill the table without
+  either, and writing cannot start from that.
 * **Destination directory**: folder picker.
 * **Left out of the scan**: an `.exe` that has a sibling `.shim` is already a
   shim, and everything under the destination folder is where the pairs are
@@ -412,11 +424,13 @@ preselection of 5.2 come from the PE resource directory.
   installer.
 * **`PATH` is maintained by the user, by hand.** A shim directory is only
   usable once it is on `PATH`, and v1 neither adds, removes, validates nor
-  inspects `PATH`. The user adds the destination directory through
-  *Settings → System → About → Environment Variables* (or `setx`), and a shim
-  invoked before that fails with "not recognized" — expected, not an error to
-  report. The only UI acknowledgement is the reminder in the success message of
-  both modes, and a `Setup` section in the README with those exact steps.
+  inspects `PATH`. The user adds the destination directory in the system's own
+  variable editor — reached from *Settings → System → About → Environment
+  Variables*, from `setx`, or from the "Edit PATH…" action of a successful
+  result, which starts that editor rather than writing the variable itself — and
+  a shim invoked before that fails with "not recognized": expected, not an error
+  to report. The reminder in the success message of both modes says what is
+  still to do, and the README has a `Setup` section with those exact steps.
 * **Antivirus**: the expected shape (small unsigned exe, `CreateProcess`-heavy
   imports, renamed to N different names) is a realistic SmartScreen / Defender
   false-positive trigger, and it is not made worse or better by where the config
