@@ -93,6 +93,27 @@ function groupRows(list) {
   }
 }
 
+/// Keep the files the user had chosen across a rescan. A name keeps one row, so
+/// a carried choice also clears the siblings that now claim the same shim name;
+/// a name whose chosen file is gone from the results keeps whatever the scan
+/// picked instead. (5.2)
+function carry(list, chosen) {
+  if (!chosen.size) {
+    return;
+  }
+  const taken = new Set();
+  for (const row of list) {
+    if (chosen.has(row.path)) {
+      taken.add(row.group);
+    }
+  }
+  for (const row of list) {
+    if (taken.has(row.group)) {
+      row.selected = chosen.has(row.path);
+    }
+  }
+}
+
 export function renderBatch(root) {
   const form = document.createElement('form');
 
@@ -315,6 +336,9 @@ export function renderBatch(root) {
       return;
     }
     progress.textContent = t('batch.scanning');
+    // A scan answers with its own preselection, but here it only follows a
+    // folder the user edited, so the choices made by hand are kept by path.
+    const chosen = new Set(rows.filter((row) => row.selected).map((row) => row.path));
     try {
       rows = await invoke('scan', {
         source: path,
@@ -322,6 +346,7 @@ export function renderBatch(root) {
         recursive: recursive.checked,
       });
       groupRows(rows);
+      carry(rows, chosen);
       scanned = true;
     } catch (failure) {
       rows = [];
