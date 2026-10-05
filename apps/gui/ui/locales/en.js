@@ -21,7 +21,7 @@ export default {
 
   'settings.title': 'Settings',
   'settings.theme': 'Theme',
-  'settings.theme.system': 'Use my Windows setting',
+  'settings.theme.system': 'Follow Windows',
   'settings.theme.light': 'Light',
   'settings.theme.dark': 'Dark',
   'settings.theme.note': 'Applies as you pick it. The window, its cards and the backdrop behind them all follow.',
