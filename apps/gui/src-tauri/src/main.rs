@@ -51,6 +51,27 @@ fn main() {
                 )
                 .build(),
         )
+        .plugin(
+            // The state plugin restores the size while the window is still being
+            // created, before Windows drops the caption it keeps under an undecorated
+            // window's shadow, so that height is measured against a hidden caption:
+            // the window opens a caption taller, saves that size and grows again on
+            // every start. Asked one step later the same size lands exactly, and this
+            // still runs before the first paint. A maximized or fullscreen window has
+            // no size of its own to re-apply and giving it one would drop it back.
+            tauri::plugin::Builder::<tauri::Wry>::new("remembered-size")
+                .on_window_ready(|window| {
+                    use tauri_plugin_window_state::WindowExt;
+                    if window.label() != "main"
+                        || window.is_maximized().unwrap_or_default()
+                        || window.is_fullscreen().unwrap_or_default()
+                    {
+                        return;
+                    }
+                    let _ = window.restore_state(tauri_plugin_window_state::StateFlags::SIZE);
+                })
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             detect_variant,
             embedded_runners,
