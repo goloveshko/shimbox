@@ -322,9 +322,16 @@ maximizes the way a caption's does. Decorations are left out of the saved window
 state on purpose: a state file written while the window still had the native
 caption would put that titlebar back above ours. The strip also opens the two
 cards the shell has besides the two modes: Settings, whose fields are the theme and
-the language above, and About — the version, the sizes of the runners embedded in
-this binary, and the license, author and repository lines. Both are cards of the
-same shape a result uses, and both apply and dismiss without an Apply button
+the language above, and About — the version, which the badge copies to the clipboard
+when it is clicked, since the number answers a question rather than being looked at,
+the sizes of the runners embedded in this binary, and the license, author and
+repository lines. Each of those three is the page it names: the click hands the
+address to the backend, which opens it in the browser instead of letting the webview
+navigate away from the app and leave the card behind the page, and which refuses any
+host the card does not print itself. Where the words are not the address, the tooltip
+says where the link goes. The last row names the folder the app's own files live in —
+what a report of a strange build starts by asking for — and opens it. Both are cards
+of the same shape a result uses, and both apply and dismiss without an Apply button
 anywhere.
 
 Every Browse button opens where its own field last looked, so picking the folder
@@ -367,7 +374,10 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   `Secret`: the last line of that picker opens the card, and says
   `Save a first secret…` while the store is empty, since an empty store is the one
   that leaves the picker without a choice. A button under the rows would point at
-  the card from a row that cannot use it. Because a token is created once and then
+  the card from a row that cannot use it. In the card a name is the line, so it
+  keeps its left edge and the one action that destroys something takes the end:
+  Windows' own trash rather than the `−` a row wears, because the two shapes look
+  alike and mean very different things. Because a token is created once and then
   referenced by many shims, storing or forgetting one updates every picker at
   once, a name stored from the card a row opened lands in that row, and a name
   forgotten while a row points at it drops out of it rather than being written

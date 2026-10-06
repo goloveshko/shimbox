@@ -126,8 +126,11 @@ offers Light, Dark or following Windows, and applies as you pick it — kept in
 card asks which language to speak: English, Русский, or following Windows again.
 A language applies by rebuilding the window, so anything still typed into the
 form is lost — the field says so before you pick. **About** shows the
-version, the sizes of the runners built into this binary, and the license, author
-and repository lines.
+version — click it and it is on the clipboard — the sizes of the runners built into
+this binary, and the license, author and repository lines, each of which opens in
+your browser rather than in this window. The last row names the folder this app keeps
+its own files in, which is the first thing a report of a strange build asks for, and
+opens it.
 
 ## Configuration reference
 
