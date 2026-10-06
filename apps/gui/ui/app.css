@@ -141,12 +141,12 @@ body {
   background: var(--hover);
 }
 
-/* A button of the strip is as tall as the strip, so the ring the shared rule
-   draws outside it is cut off by the top edge of the window and hangs into the
-   screen below. Draw it inside instead, which is how Windows rings the focus of
-   its own caption. */
+/* The strip gets no keyboard ring: a button of it is as tall as the strip, so the
+   ring the shared rule draws hangs outside the window on one side, and a caption
+   is not a place a keyboard user is trying to reach - the pointer having a chip of
+   its own is the whole visible state these buttons have. */
 .titlebar button:focus-visible {
-  outline-offset: -3px;
+  outline: none;
 }
 
 /* Close is the one button Windows colours, and colours it the same way whatever
