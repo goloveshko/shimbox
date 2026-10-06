@@ -92,15 +92,13 @@ export function iconButton(glyph, key, className) {
 /// `key` names what the button picks rather than which screen holds it, so the
 /// destination of either mode shares one remembered directory, and the backend
 /// opens the dialog there instead of where another field's dialog last ended.
-/// `glyph` swaps the caption for an icon, which is what a row too narrow for a
-/// word needs; the word stays as the tooltip and the accessible name.
-export function withBrowseButton(input, command, key, glyph) {
+/// The button says what it does by shape: a folder is what every one of these
+/// picks, and the word it used to wear only took the room the path needs.
+export function withBrowseButton(input, command, key) {
   const row = document.createElement('div');
   row.className = 'row';
 
-  const browse = glyph
-    ? iconButton(glyph, 'form.browse', 'glyph')
-    : button('form.browse');
+  const browse = iconButton(folder, 'form.browse', 'glyph');
   browse.addEventListener('click', async () => {
     const picked = await invoke(command, { key, path: input.value });
     if (picked) {

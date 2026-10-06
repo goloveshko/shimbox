@@ -1,7 +1,7 @@
 // The child environment of mode 1 (docs/techspec.md 3.3, 3.5): one row per
 // variable, and the `cred` rows that point at a named secret. Which config key a
 // kind turns into is the backend's call, so nothing here parses or validates.
-import { folder, iconButton, invoke, note, textInput, withBrowseButton } from './form.js';
+import { iconButton, invoke, note, textInput, withBrowseButton } from './form.js';
 import { secretsDialog } from './secrets.js';
 import { t, localize } from './i18n.js';
 
@@ -104,7 +104,7 @@ export function environmentPanel(report) {
 
     const path = textInput('env.file.placeholder');
     path.setAttribute('aria-label', t('env.kind.file'));
-    const browse = withBrowseButton(path, 'pick_file', 'env.file', folder);
+    const browse = withBrowseButton(path, 'pick_file', 'env.file');
     browse.hidden = true;
 
     const pick = document.createElement('select');
