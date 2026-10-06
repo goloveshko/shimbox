@@ -11,6 +11,19 @@ const themes = [
   { value: 'dark', key: 'settings.theme.dark' },
 ];
 
+// A card is rebuilt every time it opens, so all a reload can leave behind is the
+// knowledge that this one was open when the window changed its language.
+const reopenKey = 'settings.card';
+
+/// Read once by `main.js` after a window is built: a theme applies in place and
+/// the card stays open, and a language has to rebuild the screen around it, which
+/// would otherwise answer a click on a radio with a closed card.
+export function takeSettingsCard() {
+  const wanted = sessionStorage.getItem(reopenKey) === '1';
+  sessionStorage.removeItem(reopenKey);
+  return wanted;
+}
+
 /// A caption, a row of radios and the hint under them. `options` carry either a
 /// key to translate or a name to show as it is, which is how a language can be
 /// recognized in an app that does not speak it yet.
@@ -62,7 +75,10 @@ function languageField() {
       ...languages.map(({ code, name }) => ({ value: code, name })),
     ],
     currentLanguage,
-    chooseLanguage,
+    (value) => {
+      sessionStorage.setItem(reopenKey, '1');
+      return chooseLanguage(value);
+    },
     'settings.language.note'
   );
 }
