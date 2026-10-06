@@ -824,6 +824,12 @@ dialog::backdrop {
   white-space: nowrap;
 }
 
+/* The action goes to the end of the line it acts on, which leaves the names one
+   left edge however different their lengths. */
+.secret-store li > button {
+  margin-left: auto;
+}
+
 .secret-store .row {
   align-items: center;
   margin-top: 0.55rem;

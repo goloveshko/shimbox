@@ -3,8 +3,12 @@
 // block of the form because a token is typed once per secret and read once per
 // shim, so the rare half of the job should not hold the screen the frequent half
 // works on.
-import { button, closeButton, invoke, modalDialog, note, textInput } from './form.js';
-import { localize, t } from './i18n.js';
+import { button, closeButton, iconButton, invoke, modalDialog, note, textInput } from './form.js';
+import { t } from './i18n.js';
+
+/// Segoe's own trash, so the one action that destroys something does not wear the
+/// `−` a row uses for the same-looking but harmless removal.
+const trash = '\uE74D';
 
 /// A secret is typed once and read by nobody over the shoulder, so it is masked;
 /// what the runner receives is the text, not the dots.
@@ -35,13 +39,13 @@ export function secretsDialog({ onChanged, report }) {
   name.setAttribute('aria-label', t('env.secret.name'));
   const value = secretInput('env.secret.value.placeholder');
   value.setAttribute('aria-label', t('env.secret.value'));
-  const put = button('env.secret.store', 'small');
+  const put = button('env.secret.store');
 
   function entry(target) {
     const line = document.createElement('li');
     const label = document.createElement('span');
     label.textContent = target;
-    const drop = button('env.secret.forget', 'small');
+    const drop = iconButton(trash, 'env.secret.forget', 'glyph trash');
     drop.addEventListener('click', async () => {
       try {
         await invoke('forget_secret', { target });
@@ -50,6 +54,8 @@ export function secretsDialog({ onChanged, report }) {
         report(t(`error.${failure.code}`), failure.detail);
       }
     });
+    // The name is what is read and the action what is aimed at, so the name keeps
+    // the left edge of the line and the icon takes its end.
     line.append(label, drop);
     return line;
   }
@@ -59,9 +65,6 @@ export function secretsDialog({ onChanged, report }) {
     list.replaceChildren(...secrets.map(entry));
     list.hidden = secrets.length === 0;
     none.hidden = secrets.length > 0;
-    // A card that is already open has no translation pass coming, so the Forget
-    // buttons built just now are filled in here.
-    localize(list);
     // The caption counts what is stored, so it is rewritten wherever the count
     // changes, including while the card is already open.
     const caption = t('env.secret.title', { count: secrets.length });
