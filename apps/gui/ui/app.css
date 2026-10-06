@@ -855,15 +855,17 @@ dialog::backdrop {
 }
 
 .about-tagline {
-  margin: 0.25rem 0 0.85rem;
+  margin: 0.3rem 0 1.15rem;
   color: var(--muted);
 }
 
+/* Four answers and a name are read one at a time, so the rows keep a line of
+   their own rather than the run-on spacing a paragraph would want. */
 .about-row {
   display: grid;
   grid-template-columns: 9rem 1fr;
-  gap: 0.6rem;
-  margin: 0.3rem 0;
+  gap: 0.8rem;
+  margin: 0.5rem 0;
 }
 
 .about-row > span:first-child {
@@ -871,11 +873,46 @@ dialog::backdrop {
   color: var(--muted);
 }
 
-/* One click takes the whole address: the card has no link that could leave the
-   window, so copying it is the action worth making easy. */
-.about-url {
-  user-select: all;
+/* The path is the long part and opening it is the point, so the button keeps the
+   end of the line and the path gives up its middle to an ellipsis - the whole of
+   it is in the tooltip. */
+.about-folder {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.about-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The path is what shrinks to an ellipsis, so the button keeps its own width. */
+.about-folder > button {
+  flex: none;
+}
+
+/* An answer that names a page is the page: the address opens in the browser
+   instead of being copied out of the window. */
+.about-row a {
+  /* A grid item fills its column, and the empty half of a short answer is not a
+     thing to click on to leave the app. */
+  justify-self: start;
   overflow-wrap: anywhere;
+  color: Highlight;
+  text-decoration: none;
+}
+
+.about-row a:hover {
+  text-decoration: underline;
+}
+
+.about-row a:focus-visible {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
 }
 
 .dialog-actions {

@@ -37,6 +37,10 @@ export default {
   'about.license': 'Лицензия',
   'about.author': 'Автор',
   'about.repository': 'Репозиторий',
+  'about.folder': 'Папка настроек',
+  'about.folder.open': 'Открыть папку',
+  'about.version.copy': 'Скопировать версию',
+  'about.version.copied': 'Скопировано',
 
   'result.title': 'Результат',
   'result.path': 'Добавьте папку назначения в PATH, чтобы запускать шим по имени.',

@@ -13,6 +13,7 @@ mod shim;
 
 use std::path::Path;
 use std::process::Command;
+use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
 
 use runner::Variant;
@@ -78,6 +79,8 @@ fn main() {
             pick_file,
             pick_folder,
             open_folder,
+            open_link,
+            app_folder,
             edit_path,
             secret::store_secret,
             secret::forget_secret,
@@ -183,6 +186,42 @@ fn open_folder(path: String) -> Result<(), String> {
         .arg(&path)
         .spawn()
         .map_err(|error| format!("cannot open {path}: {error}"))
+        .map(|_| ())
+}
+
+/// The About card's "settings folder" row: the folder the app's own files live
+/// in, which is what a report of a strange build starts by asking for.
+#[tauri::command]
+fn app_folder(app: tauri::AppHandle) -> Option<String> {
+    app.path().app_config_dir().ok().map(|dir| dir.display().to_string())
+}
+
+/// The About card's links (5): an address is handed to the browser rather than
+/// navigated to, so the window keeps showing the app.
+#[tauri::command]
+fn open_link(url: String) -> Result<(), String> {
+    // The two pages the card names, and nothing else: a command that opens any
+    // string the page holds is a way to point the browser anywhere, which the
+    // card has no use for.
+    const HOSTS: [&str; 2] = ["github.com", "sergey.is-a.dev"];
+    let host = url
+        .strip_prefix("https://")
+        .unwrap_or_default()
+        .split(['/', '?', '#'])
+        .next()
+        .unwrap_or_default()
+        .split(':')
+        .next()
+        .unwrap_or_default();
+    if !HOSTS.contains(&host) {
+        return Err(format!("refusing to open {url}"));
+    }
+    // `explorer` takes an address the way it takes a folder and hands it to the
+    // default browser, and reports a non-zero exit code either way.
+    Command::new("explorer")
+        .arg(&url)
+        .spawn()
+        .map_err(|error| format!("cannot open {url}: {error}"))
         .map(|_| ())
 }
 
