@@ -24,6 +24,12 @@
   --field-hover: rgba(255, 255, 255, 0.92);
   --chip: rgba(0, 0, 0, 0.03);
   --hover: rgba(0, 0, 0, 0.04);
+  /* The two states a button passes through under the pointer. A field brightens
+     because it waits to be typed in; a button darkens because it is the thing
+     being aimed at, which is how the system's own controls read. */
+  --btn-hover: rgba(0, 0, 0, 0.055);
+  --btn-active: rgba(0, 0, 0, 0.095);
+  --danger: #c42b1c;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 6px 16px rgba(0, 0, 0, 0.05);
 
   --radius: 8px;
@@ -44,6 +50,9 @@
   --field-hover: rgba(255, 255, 255, 0.09);
   --chip: rgba(255, 255, 255, 0.04);
   --hover: rgba(255, 255, 255, 0.05);
+  --btn-hover: rgba(255, 255, 255, 0.075);
+  --btn-active: rgba(255, 255, 255, 0.12);
+  --danger: #ff9b94;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
@@ -379,37 +388,51 @@ input[type='checkbox'] {
   align-items: center;
 }
 
-/* The buttons that act on one line of a list are not the form's own action and
-   should not look like it. */
-button.small {
-  font-size: 0.8rem;
-  padding: 0.22rem 0.65rem;
-}
-
 /* The actions a list of rows needs are the same shape in every language, so they
    carry a glyph and the word moves to the tooltip and the accessible name. The
-   box is the one a field makes - the same padding, border and line height - so a
-   row holds one height, and the glyph is centered in the box rather than left on
-   a baseline of its own. */
+   box is the one a field makes - the same height and the same radius - so a row
+   holds one height, and the glyph is centered in the box rather than left on a
+   baseline of its own. It is drawn without a border and a fill of its own: a
+   control that repeats on every line would put a grid of boxes over the list,
+   and the pointer getting a chip is the whole reason to have a hover state. */
 button.icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 2.4rem;
+  /* A square, since the hover state now draws the box and a rectangle of it would
+     read as a mistake rather than as a hit area. */
+  width: 2.2rem;
   /* The height a field computes to: 14px of text on the body's 1.45 line, plus
-     the field's padding and its border. A row then holds one height, and the
-     glyph is centered in the box rather than left on a baseline of its own. */
+     the field's padding and its border. A row then holds one height. */
   height: 2.2rem;
   padding: 0;
   font-size: 1.15rem;
   line-height: 1;
+  background: transparent;
+  border-color: transparent;
+}
+
+button.icon:hover:not(:disabled) {
+  background: var(--btn-hover);
+  border-color: transparent;
+}
+
+button.icon:active:not(:disabled) {
+  background: var(--btn-active);
+  border-color: transparent;
 }
 
 /* Segoe's own icon font, the same shapes the system's file dialogs draw. */
-button.icon.folder {
+button.icon.glyph {
   font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', sans-serif;
   font-size: 1rem;
+}
+
+/* Forgetting a secret is the one action the app cannot undo afterwards, so it
+   colours itself before the click rather than apologising after it. */
+button.icon.trash:hover:not(:disabled) {
+  color: var(--danger);
 }
 
 /* The caption and the block's one action share a line, so the end of a row is
@@ -418,23 +441,31 @@ button.icon.folder {
   align-items: center;
 }
 
+/* The vertical padding is the field's own, so a button and the box beside it come
+   out the same height and a row holds one line rather than two. */
 button {
-  padding: 0.4rem 1rem;
+  padding: 0.42rem 1rem;
   background: var(--field);
   border: 1px solid var(--stroke-strong);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     background 0.12s,
-    border-color 0.12s;
+    border-color 0.12s,
+    color 0.12s;
 }
 
+/* A button answers the pointer by going slightly darker and taking a stroke as
+   strong as its own text - the pair the system's own controls use. A field does
+   the opposite on hover, brightening toward being typed in, which is what tells
+   the two apart before anything is clicked. */
 button:hover:not(:disabled) {
-  background: var(--field-hover);
+  background: var(--btn-hover);
+  border-color: var(--text);
 }
 
 button:active:not(:disabled) {
-  background: var(--hover);
+  background: var(--btn-active);
 }
 
 button:disabled {
@@ -446,7 +477,7 @@ button.primary,
 form button[type='submit'] {
   grid-column: 1 / -1;
   justify-self: start;
-  padding: 0.45rem 1.4rem;
+  padding: 0.42rem 1.4rem;
   font-weight: 600;
   color: #fff;
   /* Where the system offers it, the accent's own contrast colour wins. */
@@ -459,6 +490,9 @@ form button[type='submit'] {
 button.primary:hover:not(:disabled),
 form button[type='submit']:hover:not(:disabled) {
   background: color-mix(in srgb, Highlight 88%, white);
+  /* The accent fill is the whole shape, so the generic hover stroke would draw a
+     dark outline around it. */
+  border-color: transparent;
 }
 
 .note {

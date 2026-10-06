@@ -73,6 +73,10 @@ export function button(key, className) {
   return element;
 }
 
+/// Segoe's folder glyph, the shape the system's own file dialogs draw. Written as
+/// an escape because a private-use character does not survive an editor.
+export const folder = '\uE8B7';
+
 /// A button that says what it does by shape rather than by word, so the name it
 /// carries is its accessible one and its tooltip, not its caption.
 export function iconButton(glyph, key, className) {
@@ -95,7 +99,7 @@ export function withBrowseButton(input, command, key, glyph) {
   row.className = 'row';
 
   const browse = glyph
-    ? iconButton(glyph, 'form.browse', 'folder')
+    ? iconButton(glyph, 'form.browse', 'glyph')
     : button('form.browse');
   browse.addEventListener('click', async () => {
     const picked = await invoke(command, { key, path: input.value });

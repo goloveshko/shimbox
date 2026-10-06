@@ -1,7 +1,7 @@
 // The child environment of mode 1 (docs/techspec.md 3.3, 3.5): one row per
 // variable, and the `cred` rows that point at a named secret. Which config key a
 // kind turns into is the backend's call, so nothing here parses or validates.
-import { iconButton, invoke, note, textInput, withBrowseButton } from './form.js';
+import { folder, iconButton, invoke, note, textInput, withBrowseButton } from './form.js';
 import { secretsDialog } from './secrets.js';
 import { t, localize } from './i18n.js';
 
@@ -10,9 +10,6 @@ const kinds = ['value', 'cred', 'file'];
 /// The picker's own way to the store, and never a name Windows could hold, so it
 /// cannot collide with a target.
 const manage = '+';
-
-/// Segoe's folder glyph, the shape the system's own file dialogs draw.
-const folder = '\uE8B7';
 
 /// `report` takes a failure that has no field of its own to sit on, such as a
 /// secret the store refused.
