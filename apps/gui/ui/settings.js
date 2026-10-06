@@ -74,7 +74,15 @@ export function settingsDialog() {
     // Built on every look, so the card opens on the choice that is in effect now
     // rather than on the one that was current when the window was.
     const body = document.createElement('div');
+    body.className = 'settings';
+    // The card's own caption says which card this is, the way the store's does:
+    // the dialog's title is only read by a screen reader, and two questions
+    // without a heading over them read as a piece of the form behind.
+    const title = document.createElement('p');
+    title.className = 'group';
+    title.dataset.i18n = 'settings.title';
     body.append(
+      title,
       themeField(),
       // One language is not a choice, so the row only appears once a second
       // dictionary is registered in i18n.js.

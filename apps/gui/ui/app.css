@@ -835,6 +835,53 @@ dialog::backdrop {
   margin-top: 0.55rem;
 }
 
+/* A card's own caption names the card and the captions inside it name one
+   question each, so the two are not written the same size. */
+.settings > .group:first-child,
+.secret-store > .group {
+  font-size: 1rem;
+}
+
+.settings > .group {
+  margin-bottom: 0.7rem;
+}
+
+.settings .field + .field {
+  margin-top: 0.9rem;
+}
+
+.settings .radios {
+  gap: 0.15rem;
+}
+
+/* An answer here is a line one taps rather than a dot one aims at, so a row
+   takes the hover chip every control has, and the chosen one says so with the
+   accent around the whole line rather than with a small circle alone. */
+.settings .check {
+  padding: 0.34rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.settings .check:hover {
+  background: var(--btn-hover);
+}
+
+.settings .check:has(input:checked) {
+  border-color: Highlight;
+  background: color-mix(in srgb, Highlight 7%, transparent);
+}
+
+.settings input[type='radio'] {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: Highlight;
+}
+
 /* The About card is a short list of answers rather than prose, so every row
    keeps its label in one column and the value starts at the same place. */
 .about-head {
