@@ -286,7 +286,9 @@ before the interface speaks it. It applies by building the window again rather t
 by rewriting the text where it stands: the strings are read once, as each screen is
 made, so a live swap would have to remember which node came from which key. That
 rebuild discards a half-written form, which is what the field's own hint says, and
-it is why the theme, which needs no such thing, does not work the same way. The row
+it is the only way the two answers differ: the card the question was asked in is
+opened again once the window is built, so a language leaves the screen where a theme
+leaves it. The row
 is only there while there is a choice to make, so a single-language build shows the
 card with its one field again. A field
 is one block of caption, control and hint, and the blocks reflow from two
@@ -342,7 +344,9 @@ around that line.
 
 Every Browse button opens where its own field last looked, so picking the folder
 for shims and then a target does not send the next folder dialog to wherever the
-target's ended. The directory a pick left behind is kept per field in
+target's ended. Each of them says what it does by shape — the folder glyph the About
+card's own folder row wears — because the word only took the width the path needs,
+and it stays as the tooltip and the accessible name. The directory a pick left behind is kept per field in
 `$APPCONFIG/.pickers.json`, beside the window's geometry, and it survives a
 restart: a field that still holds a path starts there, since what is typed now
 says more than an older pick, and a remembered folder that no longer exists is
