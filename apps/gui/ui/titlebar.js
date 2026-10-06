@@ -59,9 +59,12 @@ export function titlebar({ onSettings, onAbout }) {
     brand,
     drag,
     // The window's own buttons stay in the corner, so the two cards the app
-    // offers sit to their left rather than beside the brand.
-    button('settings', onSettings),
+    // offers sit to their left rather than beside the brand. The one a person
+    // reaches for keeps the place nearest the corner and the one they only need
+    // once moves out of its way, which also reads left to right as `what this
+    // is` then `how it behaves`.
     button('about', onAbout),
+    button('settings', onSettings),
     button('minimize', () => appWindow.minimize()),
     button('maximize', () => appWindow.toggleMaximize().then(showMaximized)),
     button('close', () => appWindow.close())
