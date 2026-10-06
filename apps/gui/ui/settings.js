@@ -86,7 +86,7 @@ function languageField() {
 export function settingsDialog() {
   const dialog = modalDialog();
 
-  function show() {
+  function show(reopened = false) {
     // Built on every look, so the card opens on the choice that is in effect now
     // rather than on the one that was current when the window was.
     const body = document.createElement('div');
@@ -104,7 +104,10 @@ export function settingsDialog() {
       // dictionary is registered in i18n.js.
       ...(languages.length > 1 ? [languageField()] : [])
     );
-    dialog.openModal(t('settings.title'), body, [closeButton(dialog)]);
+    // A card the window rebuilt around is opened without the focus on its `Close`
+    // button: nothing has been clicked in the new document, so that focus would
+    // read as a keyboard one and ring the button twice over.
+    dialog.openModal(t('settings.title'), body, [closeButton(dialog)], reopened);
   }
 
   return { dialog, show };

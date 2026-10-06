@@ -164,10 +164,16 @@ export function autofill(input, compute) {
 /// click anywhere around the card ends it — a larger, closer target than the
 /// dismiss button. The body is the part that gives when content is taller than
 /// the window, and the last action is focused so Enter always ends the message.
+/// `focusCard` is for a card that comes back on its own after the window rebuilt
+/// itself: in a document where nothing has been clicked yet, a focused button is
+/// taken for a keyboard one and wears a ring the click that opened it never drew.
 export function modalDialog() {
   const dialog = document.createElement('dialog');
   const card = document.createElement('div');
   card.className = 'dialog-card';
+  // Focusable by script, never by Tab: the place a card puts its focus when it
+  // should open without a ring around one of its controls.
+  card.tabIndex = -1;
   const body = document.createElement('div');
   body.className = 'dialog-body';
   const actions = document.createElement('div');
@@ -181,7 +187,7 @@ export function modalDialog() {
     }
   });
 
-  dialog.openModal = (title, content, buttons) => {
+  dialog.openModal = (title, content, buttons, focusCard = false) => {
     dialog.setAttribute('aria-label', title);
     body.replaceChildren(content);
     actions.replaceChildren(...buttons);
@@ -189,7 +195,7 @@ export function modalDialog() {
     // own buttons are localised on the way out.
     localize(dialog);
     dialog.showModal();
-    buttons.at(-1)?.focus();
+    (focusCard ? card : buttons.at(-1))?.focus();
   };
   // A card that dims the whole window belongs to the whole window: inside a
   // screen it would be hidden along with that screen, and a tab click during a

@@ -67,7 +67,7 @@ localize();
 // The card that asked for a language is the one screen a reload cannot leave
 // standing, so it asks to be opened again and this is where it is opened.
 if (takeSettingsCard()) {
-  settings.show();
+  settings.show(true);
 }
 
 async function reportEmbeddedRunners() {
