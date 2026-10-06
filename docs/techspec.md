@@ -321,8 +321,10 @@ rather than as a web page wearing one, and a double click on the drag area
 maximizes the way a caption's does. Decorations are left out of the saved window
 state on purpose: a state file written while the window still had the native
 caption would put that titlebar back above ours. The strip also opens the two
-cards the shell has besides the two modes: Settings, whose fields are the theme and
-the language above, and About — the version, which the badge copies to the clipboard
+cards the shell has besides the two modes. They sit to the left of its own buttons
+rather than beside the brand, the one a person goes back to nearest the corner:
+Settings, whose fields are the theme and the language above, and About outside it —
+the version, which the badge copies to the clipboard
 when it is clicked, since the number answers a question rather than being looked at,
 the sizes of the runners embedded in this binary, and the license, author and
 repository lines. Each of those three is the page it names: the click hands the
@@ -332,7 +334,11 @@ host the card does not print itself. Where the words are not the address, the to
 says where the link goes. The last row names the folder the app's own files live in —
 what a report of a strange build starts by asking for — and opens it. Both are cards
 of the same shape a result uses, and both apply and dismiss without an Apply button
-anywhere.
+anywhere. Each names itself at the top, since a dialog's title only reaches a screen
+reader and a card with nothing over its questions reads as a piece of the screen
+behind it; in Settings an answer is the whole line rather than the dot beside it,
+because a line is what a pointer aims at, and the chosen one says so with the accent
+around that line.
 
 Every Browse button opens where its own field last looked, so picking the folder
 for shims and then a target does not send the next folder dialog to wherever the

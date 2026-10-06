@@ -119,7 +119,7 @@ Every Browse button reopens in the folder you last chose for that field — kept
 dialog no longer opens wherever the target's dialog ended.
 
 The titlebar is ours rather than the system's: the name at the left, and at the
-right **Settings**, **About**, minimize, maximize/restore and close. Drag the
+right **About**, **Settings**, minimize, maximize/restore and close. Drag the
 window anywhere along the strip, or double-click it to maximize. **Settings**
 offers Light, Dark or following Windows, and applies as you pick it — kept in
 `$APPCONFIG/.settings.json`, so it is still there next run. Below it, the same
