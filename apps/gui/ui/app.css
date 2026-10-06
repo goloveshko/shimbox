@@ -864,6 +864,7 @@ dialog::backdrop {
 .about-row {
   display: grid;
   grid-template-columns: 9rem 1fr;
+  align-items: center;
   gap: 0.8rem;
   margin: 0.5rem 0;
 }
@@ -890,9 +891,13 @@ dialog::backdrop {
   white-space: nowrap;
 }
 
-/* The path is what shrinks to an ellipsis, so the button keeps its own width. */
+/* The path is what shrinks to an ellipsis, so the button keeps its own width. A
+   row of this card is a line of text rather than a field, so the chip is the
+   height of that line and does not push the row past the ones above it. */
 .about-folder > button {
   flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 /* An answer that names a page is the page: the address opens in the browser
