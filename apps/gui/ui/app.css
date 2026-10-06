@@ -141,6 +141,14 @@ body {
   background: var(--hover);
 }
 
+/* A button of the strip is as tall as the strip, so the ring the shared rule
+   draws outside it is cut off by the top edge of the window and hangs into the
+   screen below. Draw it inside instead, which is how Windows rings the focus of
+   its own caption. */
+.titlebar button:focus-visible {
+  outline-offset: -3px;
+}
+
 /* Close is the one button Windows colours, and colours it the same way whatever
    theme is on. */
 .titlebar .caption-close:hover {
