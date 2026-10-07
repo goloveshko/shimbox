@@ -147,6 +147,16 @@ your browser rather than in this window. The last row names the folder this app 
 its own files in, which is the first thing a report of a strange build asks for, and
 opens it.
 
+A newer release is found rather than installed: a few seconds after the window
+opens, and at most once a day, the manager asks GitHub for this repository's latest
+release. When that number is ahead of the one this build carries, a card shows both
+of them with the release notes, and **Open release** takes you to the release page
+in your browser. The only thing kept about it is the moment of the ask, in
+`$APPCONFIG/.update.json`, so a day of restarts asks once; an ask that goes
+unanswered — offline, or a repository with no release yet — stays quiet. This is the
+app's only network request, and it is the same one a browser makes to read a release
+page.
+
 ## Configuration reference
 
 `<alias>.shim` is UTF-8, one `key=value` per line, split on the **first** `=`.

@@ -1023,6 +1023,21 @@ dialog::backdrop {
   outline-offset: 2px;
 }
 
+/* The update card is one line of its own and the notes under it, so both are
+   spaced against the card's padding rather than with the paragraph default. */
+.update-head {
+  margin: 0.1rem 0 0;
+}
+
+/* A release body is written in lines and its longest word is usually a URL. */
+.update-notes {
+  margin: 0.6rem 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .dialog-actions {
   flex: 0 0 auto;
   display: flex;

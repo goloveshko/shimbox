@@ -138,6 +138,7 @@ shimbox/
         secrets.js      the store a `cred` row points at
         settings.js     the card holding the theme and language choices
         about.js        the card naming the build
+        update.js       the once-a-day question about a newer release
         app.css
         locales/        one file per language
         screens/        one file per mode
@@ -545,6 +546,40 @@ preselection of 5.2 come from the PE resource directory.
   normal; the display string falls back to the four numbers.
 * Nothing is ever failed over a version: no resource, no PE, unreadable file all
   mean an empty cell and the modification date deciding 5.2.
+
+### 5.6 Update check
+
+The manager asks GitHub whether a newer release exists, at most once a day, and
+says so in a card. This is the only network request the app makes.
+
+* **Who asks**: the webview, with a plain `fetch` of this repository's
+  `releases/latest`, which answers any origin. The window already is a browser,
+  so no HTTP or TLS client is added to the app for one public JSON file; the
+  content policy names `https://api.github.com` under `connect-src` and nothing
+  else may be reached.
+* **Who decides**: the Rust side, because that is where a comparison is worth a
+  unit test. `update_due` answers whether a day has passed since the last ask;
+  `update_seen` records the ask and compares the tag against the running
+  version — a leading `v` is a tag's spelling and a `-rc.1` label is not a
+  number, so only a bigger version counts as newer. The one number of state
+  lives in `$APPCONFIG/.update.json` beside the theme and the pickers' folders,
+  and it is written whether or not the ask was answered: a machine with no
+  network is not served by asking again on every start.
+* **The card**: the same shape Settings and About use, and the third one of the
+  shell — the only one nobody opens. The two version numbers in one line, the
+  release notes as their
+  author wrote them (plain lines, no markdown renderer added for the sake of
+  bullets), and *Open release*, which hands the release page to `open_link` —
+  the same host allow-list the About card's links pass through, so an answer
+  from the network cannot point the browser anywhere else. *Close* is the
+  focused button, as in every other card.
+* **When**: two seconds after the window is up, so a check is never what stands
+  between a person and the form they opened the app for.
+* **Silence**: a refused request, a 404 and a tag that is not a number all bring
+  no message, and no error dialog is offered for a network nobody was asking
+  about. Nothing identifies the machine: the request is the same one a browser
+  makes for a release page, and GitHub counts it as such — which is also why the
+  day between asks is the point rather than the 60-an-hour limit.
 
 ---
 

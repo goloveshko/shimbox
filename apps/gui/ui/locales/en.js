@@ -41,6 +41,12 @@ export default {
   'about.version.copy': 'Copy the version',
   'about.version.copied': 'Copied',
 
+  // The once-a-day card. Its body is the release notes, which are written by
+  // whoever made the release and are shown as they come.
+  'update.title': 'Update available',
+  'update.head': 'shimbox {version} is available; this build is {current}.',
+  'update.open': 'Open release',
+
   'result.title': 'Result',
   'result.path': 'Add the destination folder to PATH to start a shim by name.',
   'result.open': 'Open destination folder',

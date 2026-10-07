@@ -6,6 +6,7 @@ import { renderSingle } from './screens/single.js';
 import { settingsDialog } from './settings.js';
 import { loadTheme } from './theme.js';
 import { titlebar } from './titlebar.js';
+import { checkForUpdate } from './update.js';
 
 const screens = { single: renderSingle, batch: renderBatch };
 const screenRoot = document.getElementById('screen');
@@ -74,3 +75,11 @@ async function reportEmbeddedRunners() {
 reportEmbeddedRunners().catch((error) => {
   statusRoot.textContent = String(error);
 });
+
+// Left to run after the window is up rather than waited for: the screen someone
+// opened the app for is not worth hiding behind a card about a version, and a
+// network that answers slowly should not hold the form. A rejection here would be
+// a message about a check nobody asked to see, so it goes unheard.
+setTimeout(() => {
+  checkForUpdate().catch(() => {});
+}, 2000);

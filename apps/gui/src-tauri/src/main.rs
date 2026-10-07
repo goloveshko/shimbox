@@ -10,6 +10,7 @@ mod runner;
 mod secret;
 mod settings;
 mod shim;
+mod update;
 
 use std::path::Path;
 use std::process::Command;
@@ -91,7 +92,9 @@ fn main() {
             settings::set_language,
             shim::generate,
             batch::scan,
-            batch::generate_batch
+            batch::generate_batch,
+            update::update_due,
+            update::update_seen
         ])
         .run(tauri::generate_context!())
         .expect("shimbox failed to start");

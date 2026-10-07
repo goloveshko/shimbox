@@ -42,6 +42,10 @@ export default {
   'about.version.copy': 'Скопировать версию',
   'about.version.copied': 'Скопировано',
 
+  'update.title': 'Доступно обновление',
+  'update.head': 'Доступен shimbox {version}; у вас {current}.',
+  'update.open': 'Открыть релиз',
+
   'result.title': 'Результат',
   'result.path': 'Добавьте папку назначения в PATH, чтобы запускать шим по имени.',
   'result.open': 'Открыть папку назначения',
