@@ -1037,19 +1037,11 @@ dialog::backdrop {
 }
 
 .dialog-card.error {
-  border-left: 3px solid #c42b1c;
+  border-left: 3px solid var(--danger);
 }
 
 .dialog-card.error .dialog-body {
-  color: color-mix(in srgb, #c42b1c 70%, var(--text));
-}
-
-:root[data-theme='dark'] .dialog-card.error {
-  border-left-color: #d13438;
-}
-
-:root[data-theme='dark'] .dialog-card.error .dialog-body {
-  color: color-mix(in srgb, #ff99a4 60%, var(--text));
+  color: color-mix(in srgb, var(--danger) 70%, var(--text));
 }
 
 footer {
