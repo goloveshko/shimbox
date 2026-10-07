@@ -175,6 +175,8 @@ envref=GITHUB_TOKEN=cred:shimbox/github
 
 * UTF-8, CRLF or LF accepted, and a leading byte-order mark tolerated rather than
   treated as part of the first key. Lines are split on the first `=`.
+* The key is what precedes that `=`, trimmed and read without case, so
+  ` Path =C:\Tools\x` is a `path`. It is the value that is taken literally.
 * The value is the remainder of the line **verbatim**, with only a trailing
   `\r` removed. Values are not quoted, escaped or trimmed — backslashes and
   spaces are literal, so no escaping rules exist to get wrong.
@@ -239,6 +241,41 @@ open, next to the runners.
   can decrypt, so anything running as that user can read it the same way. The
   system caps a blob at 2560 bytes, which is a token's size and not a data
   file's — for anything larger, `file:` is the reference to use.
+
+### 3.6 The same extension as Scoop
+
+`.shim` is not an unclaimed name: Scoop's `scoop-shim` uses it for the same
+shape — a text config sharing the base name of a stub executable copied into a
+folder on `PATH`. Checked against the implementation that is in Scoop today
+(`ScoopInstaller/Shim`, `rust/shim.rs`) rather than assumed, and the two formats
+are not interchangeable in either direction:
+
+| | shimbox | scoop-shim |
+| :--- | :--- | :--- |
+| separator | the first `=` | a literal `" = "`, spaces and all |
+| value | verbatim | trimmed left, one pair of surrounding quotes removed, `%VAR%` and `%~dp0` expanded |
+| arguments | `arg=`, repeatable, one argument per line | `args =`, one line split by `CommandLineToArgvW` |
+| comments | `#` | `#`, `;`, `//` |
+| a repeated `path` | last wins | first wins |
+| unknown keys | ignored | become variables for the child |
+
+Both sides trim the key and read it without case, which is the one place they
+agree — and it is enough to make a mix-up loud rather than wrong:
+
+* The runner matches a Scoop config's `path` key but keeps its value as written,
+  leading space and quotes included, and says so:
+  `cannot start C:\Shims "C:\Tools\x.exe": … (os error 267)`, exit **103**. The
+  quotes in the message are their own explanation. This one was run against a
+  real Scoop config rather than reasoned about.
+* scoop-shim reads a shimbox config as no lines at all, because `path=C:\…`
+  holds no `" = "` to find, and reports
+  `Shim: 'path' not found in shim file '…'` — their string, from the same file.
+
+The extension is kept regardless. Since neither tool can run the other's file,
+nothing is won by renaming it: `ffmpeg.shim` beside `ffmpeg.exe` already says
+what it is to anyone who has met Scoop, and a folder holding both kinds is
+handled — mode 2 neither overwrites an existing `.shim` nor offers a file that
+already has one beside it (5.3), and mode 1 refuses to write over one.
 
 ---
 
@@ -625,17 +662,23 @@ says so in a card. This is the only network request the app makes.
 
 Decisions still open:
 
-1. **`.shim` file extension**: worth checking it does not collide with an
-   existing convention before shipping — unverified suspicion, not a finding.
-2. **Hard links instead of copies** for Mode 2: saves space and makes runner
+1. **Hard links instead of copies** for Mode 2: saves space and makes runner
    updates land on all shims at once, but requires FR-1.1 to key off `argv[0]`.
-3. **A backslash-quote case in the raw command-line round trip**: the reason
+2. **A backslash-quote case in the raw command-line round trip**: the reason
    FR-1.3 exists, and so far covered only by the parser's own unit test. What a
    child is handed is asserted through an argument with a double space, which is
    the half of it a `cmd.exe` can echo back honestly.
+3. **How a release gets built and shipped**: decided in favour of a CI workflow
+   that runs the tests and attaches one zip, and the portable-zip-only shape
+   that answer implies — neither the workflow nor the packaging exists yet, so
+   the release day so far is `scripts\build.cmd` and a hand-made archive.
 
 Resolved since draft 3:
 
+* **`.shim` file extension**: the collision with Scoop that this question feared
+  is real — `scoop-shim` uses the same extension for the same idea — and it
+  turned out to cost nothing, because the two formats cannot be misread as each
+  other in either direction and both failures name themselves (3.6). Kept.
 * **Frontend**: Vanilla JS, no build step and no npm dependencies, reached
   through `withGlobalTauri`. Every string goes through a `data-i18n` key and a
   per-language dictionary file, so a language is one file in `ui/locales/` plus

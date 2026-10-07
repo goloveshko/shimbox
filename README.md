@@ -164,6 +164,13 @@ Values are taken verbatim: no quoting, no escapes, no trimming, so backslashes
 and spaces mean exactly what they say. A line starting with `#` is a comment and
 unknown keys are ignored.
 
+`.shim` is also the extension Scoop uses for a file of the same purpose, and the
+two formats are not interchangeable in either direction: Scoop separates a key
+with a spaced `=` and quotes its path, so a Scoop file read here keeps those
+quotes as part of the value and the runner reports it instead of guessing, and a
+file written here is one Scoop cannot read at all. The comparison, and why the
+name is kept anyway, is in `docs/techspec.md` 3.6.
+
 | Key | Required | Meaning |
 | :--- | :--- | :--- |
 | `path` | yes | Absolute path to the target executable. |
