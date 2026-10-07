@@ -67,6 +67,12 @@ Consequences worth keeping in mind:
     (section 3), and the Win32 calls it needs (`GetCommandLineW`, `MessageBoxW`,
     and `CredReadW`/`CredFree` for a `cred:` reference) are declared as
     `extern "system"` rather than pulled in via the `windows` crate.
+  * `build.rs` writes the `VERSIONINFO` resource a shim carries — a generated
+    `<alias>.exe` is a byte copy of the runner, so that resource is the only
+    place the tool can explain one of its own files to somebody who opens
+    Properties without having read the README. `tauri-winres` is a
+    build-dependency for it: the crate contributes the ~1 KB of metadata and
+    nothing to the code.
   * Size target: **<= 400 KB** per variant with `opt-level = "z"`, `lto = "fat"`,
     `codegen-units = 1`, `panic = "abort"`, `strip`. Draft 1 targeted 150 KB,
     which is not reachable while linking `std`; going below it requires
@@ -86,6 +92,11 @@ Consequences worth keeping in mind:
     them — a runner rebuilt without the GUI rebuilding is a build error rather
     than a silent embedding of the old one. `scripts\build.cmd` keeps the order;
     building the GUI alone fails until `bin\` holds a runner.
+  * Its own `VERSIONINFO` is written by `tauri-build` out of `tauri.conf.json`,
+    which is the only route that does not fight the linker over who owns the
+    resource. That leaves the version number written twice — once in the
+    workspace, once in the config — and `build.rs` compares the two and fails the
+    build on a difference, so the duplication is guarded rather than trusted.
 
 ### 2.3 Repository layout
 
@@ -352,8 +363,9 @@ rather than beside the brand, the one a person goes back to nearest the corner:
 Settings, whose fields are the theme and the language above, and About outside it —
 the version, which the badge copies to the clipboard
 when it is clicked, since the number answers a question rather than being looked at
-(it is read from the workspace `Cargo.toml`, and `tauri.conf.json` carries no version
-of its own so the two cannot disagree),
+(it is read from the workspace `Cargo.toml`, the same number `build.rs` holds
+against the copy in `tauri.conf.json` that Windows reads, so the card and the
+file's own properties cannot drift apart),
 the sizes of the runners embedded in this binary, and the license, author and
 repository lines. Each of those three is the page it names: the click hands the
 address to the backend, which opens it in the browser instead of letting the webview

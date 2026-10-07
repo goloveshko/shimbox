@@ -12,6 +12,11 @@ edition.workspace = true
 default = []
 gui = []
 
+[build-dependencies]
+# Only to write the VERSIONINFO resource every shim carries; nothing of it ends
+# up in the binary beyond the ~1 KB of metadata itself.
+tauri-winres = "0.3"
+
 [dependencies]
 
 [[bin]]

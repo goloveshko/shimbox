@@ -2525,6 +2525,9 @@ dependencies = [
 [[package]]
 name = "runner"
 version = "1.0.0"
+dependencies = [
+ "tauri-winres",
+]
 
 [[package]]
 name = "rustc-hash"
