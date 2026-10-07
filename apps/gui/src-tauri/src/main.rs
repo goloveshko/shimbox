@@ -136,10 +136,19 @@ async fn pick_file(
 ) -> Result<Option<String>, String> {
     let dialog_app = app.clone();
     let start = pickers::start_directory(&app, &key, &path);
+    // Which files the dialog offers belongs to the field, not to the command:
+    // the target is an executable, while the file a variable reads its value
+    // from is a text file that the same filter would hide.
+    let only_executables = key == "target";
     // The dialog runs on its own thread; blocking the async worker is not
     // enough to keep it off the event loop.
     let picked = tauri::async_runtime::spawn_blocking(move || {
-        let dialog = dialog_app.dialog().file().add_filter("executables", &["exe"]);
+        let dialog = dialog_app.dialog().file();
+        let dialog = if only_executables {
+            dialog.add_filter("executables", &["exe"])
+        } else {
+            dialog
+        };
         match start {
             Some(start) => dialog.set_directory(start).blocking_pick_file(),
             None => dialog.blocking_pick_file(),
