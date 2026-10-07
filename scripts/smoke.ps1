@@ -2,7 +2,9 @@
 # End-to-end checks for the runner against real binaries (docs/techspec.md 4).
 # Run build.ps1 first: this reads its shim templates from bin/.
 [CmdletBinding()]
-param()
+param(
+    [switch]$NoPause
+)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
@@ -10,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 trap {
     Write-Host ''
     Write-Host $_.Exception.Message -ForegroundColor Red
-    Set-PauseIfDoubleClicked
+    Set-PauseIfDoubleClicked -Enabled (-not $NoPause)
     exit 1
 }
 
@@ -130,7 +132,7 @@ Write-Host '  - break the config of a GUI shim: a message box appears, no silent
 Write-Host ''
 Write-Host ("{0} passed, {1} failed" -f $script:passed, $script:failed) -ForegroundColor $(if ($script:failed) { 'Red' } else { 'Green' })
 
-Set-PauseIfDoubleClicked
+Set-PauseIfDoubleClicked -Enabled (-not $NoPause)
 
 if ($script:failed) {
     exit 1
