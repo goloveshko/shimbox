@@ -230,8 +230,10 @@ h1 {
 main {
   flex: 1;
   min-height: 0;
-  /* A single screen with three environment rows is taller than the window, and
-     content that only overflows its box paints straight through the footer. */
+  /* Neither screen should reach this now that each card scrolls its own content,
+     but a window dragged shorter than a card's own minimum still needs somewhere
+     to go: content that only overflows its box paints straight through the
+     footer. */
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -260,12 +262,42 @@ form,
 
 form {
   padding: 1.15rem 1.2rem;
+}
+
+/* Two columns at the default width: a folder path needs room to be read, and
+   three columns turn every field into an ellipsis. */
+form,
+.fields {
   display: grid;
-  /* Two columns at the default width: a folder path needs room to be read, and
-     three columns turn every field into an ellipsis. */
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
   gap: var(--gap) 1.2rem;
   align-items: start;
+}
+
+/* Mode 1 is the screen that grows - every variable the target needs adds a line -
+   so its card takes the height the window leaves instead of pushing the window
+   past it: the fields scroll inside the card and the button that ends the form
+   stays on its bottom edge, where a command belongs. */
+#panel-single form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#panel-single .fields {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  /* The columns are as wide with the bar as without it, so adding the variable
+     that brings the bar cannot shift the fields beside it. */
+  scrollbar-gutter: stable;
+}
+
+#panel-single form > button {
+  flex: 0 0 auto;
+  align-self: start;
+  margin-top: var(--gap);
 }
 
 /* A field is its own block now, so a caption, a control and its hint cannot
@@ -557,6 +589,9 @@ form button[type='submit']:hover:not(:disabled) {
   flex: 1;
   min-height: 6rem;
   overflow: auto;
+  /* A scan of one file and a scan of forty are the same table, so the columns
+     keep their widths for the bar the second one needs. */
+  scrollbar-gutter: stable;
 }
 
 /* A fixed layout is what lets the path column be the one that gives: with the

@@ -17,12 +17,17 @@ import {
 
 export function renderSingle(root) {
   const form = document.createElement('form');
+  // The fields are a block of their own so the card can stretch to the window and
+  // only they scroll inside it, leaving the button on the bottom edge.
+  const fields = document.createElement('div');
+  fields.className = 'fields';
+  form.append(fields);
 
   const target = textInput('single.target.placeholder');
-  form.append(field('single.target', target, withBrowseButton(target, 'pick_file', 'target')));
+  fields.append(field('single.target', target, withBrowseButton(target, 'pick_file', 'target')));
 
   const destination = textInput('single.destination.placeholder');
-  form.append(
+  fields.append(
     field(
       'single.destination',
       destination,
@@ -32,10 +37,10 @@ export function renderSingle(root) {
   );
 
   const alias = textInput('single.alias.placeholder');
-  form.append(field('single.alias', alias, alias));
+  fields.append(field('single.alias', alias, alias));
 
   const args = textInput('single.arguments.placeholder');
-  form.append(
+  fields.append(
     field('single.arguments', args, args, note('single.arguments.help'))
   );
 
@@ -48,11 +53,11 @@ export function renderSingle(root) {
     variant.append(option);
   }
   const detected = note();
-  form.append(field('single.variant', variant, variant, detected));
+  fields.append(field('single.variant', variant, variant, detected));
 
   const workdir = textInput('single.workdir.placeholder');
   const workdirNote = note();
-  form.append(
+  fields.append(
     field(
       'single.workdir',
       workdir,
@@ -66,7 +71,7 @@ export function renderSingle(root) {
   // The variables belong to the target rather than to the pair on `PATH`, and a
   // secret among them is the one value the config must not carry (3.3, 3.5).
   const environment = environmentPanel(result.fail);
-  form.append(environment.block);
+  fields.append(environment.block);
 
   const generate = document.createElement('button');
   generate.type = 'submit';

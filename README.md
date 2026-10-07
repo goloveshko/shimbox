@@ -67,6 +67,9 @@ Building just the manager with `cargo build -p gui` fails on purpose until
 `bin\` holds a runner, because embedding a stale runner is the one mistake this
 layout makes easy to miss.
 
+Both runners are embedded into `shimbox.exe` and written out beside a `.shim` when
+one is generated, so a release carries the manager alone.
+
 ## Setup
 
 1. Make a folder for the shims, for example `C:\Shims`.

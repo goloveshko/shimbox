@@ -303,14 +303,19 @@ wrote into: open it, and open the system editor that puts it on `PATH` (6).
 The batch table takes the height the rest of the screen leaves it and scrolls
 inside its own card, under a header that stays put; below the width where six
 columns no longer fit it drops Version and Size rather than growing a horizontal
-bar, so that screen never shows two scrollbars at once. A screen that is simply
-taller than the window — mode 1 with three environment rows is — scrolls as a
-whole, and the status line below stays where it is. The size and the position the
+bar, so that screen never shows two scrollbars at once. Mode 1 is the screen that
+grows — every variable the target needs adds a line — so its card takes the height
+the window leaves it as well: the fields scroll inside the card while the button
+that ends the form stays on the card's bottom edge, where adding the fourth
+variable cannot carry a command out of view. Neither screen scrolls as a whole, so
+the status line stays where it is, and the room a scrollbar needs is left standing
+whether or not one is drawn, so the columns beside it do not shift when the line
+that brings the bar arrives. The size and the position the
 window was left in are remembered between runs, in
 `$APPCONFIG/.window-state.json`; the window opens hidden and is shown once that
 geometry has been applied, so it never flashes at the configured default first.
 That default is the first run's alone, and it is picked so that run needs no
-scroll: mode 1 is the taller of the two screens, and it lays its fields out in as
+scroll: mode 1 lays its fields out in as
 many columns as its width allows, so the default is a width wide enough for three
 of them and a height the whole card fits in. It is centered, since a window left
 where the platform puts one starts in the top-left corner.
