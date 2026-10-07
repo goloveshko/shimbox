@@ -116,10 +116,15 @@ function carry(list, chosen) {
 
 export function renderBatch(root) {
   const form = document.createElement('form');
+  // One card for the whole screen, as in mode 1: the folders at its top, the
+  // scan in the middle, the command on its bottom edge.
+  const fields = document.createElement('div');
+  fields.className = 'fields';
+  form.append(fields);
 
   const source = textInput('batch.source.placeholder');
   const destination = textInput('batch.destination.placeholder');
-  form.append(
+  fields.append(
     field('batch.source', source, withBrowseButton(source, 'pick_folder', 'source')),
     field(
       'batch.destination',
@@ -140,7 +145,7 @@ export function renderBatch(root) {
     note('batch.scan.help'),
     note('batch.group.help')
   );
-  form.append(help);
+  fields.append(help);
 
   const found = note();
   const selectedCount = note();
@@ -197,7 +202,8 @@ export function renderBatch(root) {
   actions.className = 'actions';
   actions.append(generate, progress);
 
-  root.append(form, caption, tableWrap, actions);
+  form.append(caption, tableWrap, actions);
+  root.append(form);
 
   let rows = [];
   // What is on screen right now, and the checkbox each visible row owns. The

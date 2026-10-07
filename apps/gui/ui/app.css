@@ -252,8 +252,7 @@ main > [role='tabpanel'] {
   gap: var(--gap);
 }
 
-form,
-.table-wrap {
+form {
   background: var(--card);
   border: 1px solid var(--stroke);
   border-radius: var(--radius);
@@ -266,38 +265,50 @@ form {
 
 /* Two columns at the default width: a folder path needs room to be read, and
    three columns turn every field into an ellipsis. */
-form,
 .fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
   gap: var(--gap) 1.2rem;
   align-items: start;
+  min-height: 0;
 }
 
-/* Mode 1 is the screen that grows - every variable the target needs adds a line -
-   so its card takes the height the window leaves instead of pushing the window
-   past it: the fields scroll inside the card and the button that ends the form
-   stays on its bottom edge, where a command belongs. */
-#panel-single form {
+/* A card is the whole screen, so it takes the height the window leaves rather
+   than pushing the window past it, and one region inside it gives: the fields in
+   mode 1, where every variable the target needs adds a line, and the scan in mode
+   2, where a folder can hold forty programs. The command that ends the screen
+   stays on the card's bottom edge either way, where it is looked for. */
+main form {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--gap);
 }
 
-#panel-single .fields {
+main form > .fields,
+main form > .table-wrap {
   flex: 1;
-  min-height: 0;
   overflow: auto;
-  /* The columns are as wide with the bar as without it, so adding the variable
-     that brings the bar cannot shift the fields beside it. */
+  /* The room a scrollbar needs is left standing whether or not one is drawn, so
+     the columns beside it cannot shift when the row that brings the bar arrives. */
   scrollbar-gutter: stable;
 }
 
-#panel-single form > button {
+/* Mode 2's two folders are a pair of fields, not a list, so its scan is the only
+   part of the card that grows. */
+#panel-batch form > .fields {
+  flex: 0 0 auto;
+}
+
+/* The row that ends a card - one button in mode 1, the button and its progress
+   line in mode 2 - is never the part that gives, and the auto margin is the
+   spacer that holds it to the bottom edge while the card has room to spare. */
+main form > .actions,
+main form > button {
   flex: 0 0 auto;
   align-self: start;
-  margin-top: var(--gap);
+  margin-top: auto;
 }
 
 /* A field is its own block now, so a caption, a control and its hint cannot
@@ -551,6 +562,13 @@ form button[type='submit']:hover:not(:disabled) {
   padding: 0 0.15rem;
 }
 
+/* The row is the head of the scan, and the card now holds the folders above it
+   too, so a line is what keeps the two from reading as one list of fields. */
+main form > .caption {
+  border-top: 1px solid var(--stroke);
+  padding-top: var(--gap);
+}
+
 .caption button {
   font-size: 0.8rem;
   padding: 0.2rem 0.7rem;
@@ -582,16 +600,11 @@ form button[type='submit']:hover:not(:disabled) {
   width: auto;
 }
 
-/* The table takes the height the rest of the screen leaves and scrolls inside
-   its own card, so the header stays over the rows it labels and the window
-   never grows a second scrollbar. */
+/* The scan is the region of mode 2's card that gives, under a header that stays
+   put; the height it is never allowed to fall below is the one that still shows
+   a header and a row. */
 .table-wrap {
-  flex: 1;
   min-height: 6rem;
-  overflow: auto;
-  /* A scan of one file and a scan of forty are the same table, so the columns
-     keep their widths for the bar the second one needs. */
-  scrollbar-gutter: stable;
 }
 
 /* A fixed layout is what lets the path column be the one that gives: with the
@@ -691,14 +704,6 @@ thead th {
   color: var(--muted);
   background: var(--card-raised);
   border-bottom-color: color-mix(in srgb, var(--stroke-strong) 60%, transparent);
-}
-
-thead th:first-child {
-  border-top-left-radius: calc(var(--radius) - 1px);
-}
-
-thead th:last-child {
-  border-top-right-radius: calc(var(--radius) - 1px);
 }
 
 tbody tr:last-child td {

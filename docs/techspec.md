@@ -300,17 +300,16 @@ outside the card ends the result; `Esc` and its own Close action do the same, an
 the body is the part that gives when a batch summary is longer than the window. A
 result that wrote something also offers the two ways to act on the folder it
 wrote into: open it, and open the system editor that puts it on `PATH` (6).
-The batch table takes the height the rest of the screen leaves it and scrolls
-inside its own card, under a header that stays put; below the width where six
-columns no longer fit it drops Version and Size rather than growing a horizontal
-bar, so that screen never shows two scrollbars at once. Mode 1 is the screen that
-grows — every variable the target needs adds a line — so its card takes the height
-the window leaves it as well: the fields scroll inside the card while the button
-that ends the form stays on the card's bottom edge, where adding the fourth
-variable cannot carry a command out of view. Neither screen scrolls as a whole, so
-the status line stays where it is, and the room a scrollbar needs is left standing
-whether or not one is drawn, so the columns beside it do not shift when the line
-that brings the bar arrives. The size and the position the
+Each screen is one card that takes the height the window leaves rather than pushing
+the window past it, and one region inside it gives: the fields in mode 1, where
+every variable the target needs adds a line, and the scan in mode 2, where a folder
+can hold forty programs — scrolling under a header that stays put, and dropping
+Version and Size below the width where six columns no longer fit rather than
+growing a horizontal bar. The command that ends the screen sits on the card's
+bottom edge either way, so adding the fourth variable cannot carry it out of view
+and neither screen scrolls as a whole; the status line stays where it is. The room
+a scrollbar needs is left standing whether or not one is drawn, so the columns
+beside it do not shift when the row that brings the bar arrives. The size and the position the
 window was left in are remembered between runs, in
 `$APPCONFIG/.window-state.json`; the window opens hidden and is shown once that
 geometry has been applied, so it never flashes at the configured default first.
