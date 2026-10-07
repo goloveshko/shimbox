@@ -270,6 +270,12 @@ form {
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
   gap: var(--gap) 1.2rem;
   align-items: start;
+  /* A grid whose box is taller than its rows shares the spare height between
+     them, which in mode 1 - where the block is the part that gives - turned
+     every gap between two fields into most of the card. The rows stay their own
+     height and the room they are not using is left under them, where mode 2
+     already leaves it. */
+  align-content: start;
   min-height: 0;
 }
 
