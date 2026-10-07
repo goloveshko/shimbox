@@ -4,7 +4,7 @@
 // shim, so the rare half of the job should not hold the screen the frequent half
 // works on.
 import { button, closeButton, iconButton, invoke, modalDialog, note, textInput } from './form.js';
-import { t } from './i18n.js';
+import { setLabel, setText } from './i18n.js';
 
 /// Segoe's own trash, so the one action that destroys something does not wear the
 /// `−` a row uses for the same-looking but harmless removal.
@@ -36,9 +36,9 @@ export function secretsDialog({ onChanged, report }) {
   const none = note('env.secret.empty');
 
   const name = textInput('env.secret.name.placeholder');
-  name.setAttribute('aria-label', t('env.secret.name'));
+  setLabel(name, 'env.secret.name');
   const value = secretInput('env.secret.value.placeholder');
-  value.setAttribute('aria-label', t('env.secret.value'));
+  setLabel(value, 'env.secret.value');
   const put = button('env.secret.store');
 
   function entry(target) {
@@ -51,7 +51,7 @@ export function secretsDialog({ onChanged, report }) {
         await invoke('forget_secret', { target });
         await refresh(null);
       } catch (failure) {
-        report(t(`error.${failure.code}`), failure.detail);
+        report(`error.${failure.code}`, failure.detail);
       }
     });
     // The name is what is read and the action what is aimed at, so the name keeps
@@ -67,9 +67,8 @@ export function secretsDialog({ onChanged, report }) {
     none.hidden = secrets.length > 0;
     // The caption counts what is stored, so it is rewritten wherever the count
     // changes, including while the card is already open.
-    const caption = t('env.secret.title', { count: secrets.length });
-    title.textContent = caption;
-    dialog.setAttribute('aria-label', caption);
+    setText(title, 'env.secret.title', { count: secrets.length });
+    setLabel(dialog, 'env.secret.title', { count: secrets.length });
     // The rows' pickers list these same names, and the point of a named secret is
     // that rows share it, so all of them hear about a change at once.
     onChanged(secrets, created);
@@ -90,7 +89,7 @@ export function secretsDialog({ onChanged, report }) {
       value.value = '';
       await refresh(stored);
     } catch (failure) {
-      report(t(`error.${failure.code}`), failure.detail);
+      report(`error.${failure.code}`, failure.detail);
     } finally {
       put.disabled = false;
     }
@@ -106,9 +105,10 @@ export function secretsDialog({ onChanged, report }) {
 
   async function show() {
     // Read on every look, so the card opens on what is stored now rather than on
-    // what was stored when the window was built.
+    // what was stored when the window was built. The count the card is named by
+    // is left on it as a key by `refresh`, so the name is the language's own.
     await refresh(null);
-    dialog.openModal(title.textContent, body, [closeButton(dialog)]);
+    dialog.openModal('env.secret.title', body, [closeButton(dialog)]);
   }
 
   return { dialog, show };

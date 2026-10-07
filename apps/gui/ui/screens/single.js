@@ -1,5 +1,5 @@
 // Mode 1 of the spec (docs/techspec.md 5.1): one shim at a time.
-import { t } from '../i18n.js';
+import { setText, t } from '../i18n.js';
 import { environmentPanel } from '../environment.js';
 import {
   autofill,
@@ -107,11 +107,11 @@ export function renderSingle(root) {
     const folder = folderOf(target.value);
     const value = workdir.value.trim();
     if (!folder && !value) {
-      workdirNote.textContent = t('single.workdir.help');
+      setText(workdirNote, 'single.workdir.help');
     } else if (!value || sameFolder(value, folder)) {
-      workdirNote.textContent = t('single.workdir.default', { folder });
+      setText(workdirNote, 'single.workdir.default', { folder });
     } else {
-      workdirNote.textContent = t('single.workdir.custom');
+      setText(workdirNote, 'single.workdir.custom');
     }
   }
 
@@ -123,11 +123,11 @@ export function renderSingle(root) {
     // The alias arrived without an event of its own, so the button is told here.
     checkComplete();
     if (!path) {
-      detected.textContent = '';
+      setText(detected, null);
       return;
     }
     const found = await invoke('detect_variant', { path });
-    detected.textContent = t(`single.detected.${found.subsystem}`);
+    setText(detected, `single.detected.${found.subsystem}`);
   });
 
   for (const event of ['input', 'change']) {
@@ -164,7 +164,7 @@ export function renderSingle(root) {
         );
       });
     } catch (failure) {
-      result.fail(t(`error.${failure.code}`), failure.detail);
+      result.fail(`error.${failure.code}`, failure.detail);
     } finally {
       checkComplete();
     }

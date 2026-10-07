@@ -29,7 +29,7 @@ export default {
 
   'settings.language': 'Язык',
   'settings.language.system': 'Следовать за Windows',
-  'settings.language.note': 'Применяется сразу при выборе. Окно перестроится на новом языке, а всё, что уже введено в форме, потеряется.',
+  'settings.language.note': 'Применяется сразу при выборе: меняются все слова в окне, а всё, что уже введено в форме, остаётся на месте.',
 
   'about.title': 'О shimbox',
   'about.tagline': 'Небольшой runner рядом с <alias>.shim, в папке на PATH.',

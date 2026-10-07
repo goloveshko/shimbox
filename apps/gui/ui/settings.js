@@ -2,7 +2,7 @@
 // it is picked, so the card has nothing to confirm and nothing to cancel
 // (docs/techspec.md 5).
 import { checkField, closeButton, modalDialog, note } from './form.js';
-import { chooseLanguage, currentLanguage, languages, t } from './i18n.js';
+import { chooseLanguage, currentLanguage, languages } from './i18n.js';
 import { chooseTheme, currentTheme } from './theme.js';
 
 const themes = [
@@ -10,19 +10,6 @@ const themes = [
   { value: 'light', key: 'settings.theme.light' },
   { value: 'dark', key: 'settings.theme.dark' },
 ];
-
-// A card is rebuilt every time it opens, so all a reload can leave behind is the
-// knowledge that this one was open when the window changed its language.
-const reopenKey = 'settings.card';
-
-/// Read once by `main.js` after a window is built: a theme applies in place and
-/// the card stays open, and a language has to rebuild the screen around it, which
-/// would otherwise answer a click on a radio with a closed card.
-export function takeSettingsCard() {
-  const wanted = sessionStorage.getItem(reopenKey) === '1';
-  sessionStorage.removeItem(reopenKey);
-  return wanted;
-}
 
 /// A caption, a row of radios and the hint under them. `options` carry either a
 /// key to translate or a name to show as it is, which is how a language can be
@@ -75,10 +62,7 @@ function languageField() {
       ...languages.map(({ code, name }) => ({ value: code, name })),
     ],
     currentLanguage,
-    (value) => {
-      sessionStorage.setItem(reopenKey, '1');
-      return chooseLanguage(value);
-    },
+    (value) => chooseLanguage(value),
     'settings.language.note'
   );
 }
@@ -86,7 +70,7 @@ function languageField() {
 export function settingsDialog() {
   const dialog = modalDialog();
 
-  function show(reopened = false) {
+  function show() {
     // Built on every look, so the card opens on the choice that is in effect now
     // rather than on the one that was current when the window was.
     const body = document.createElement('div');
@@ -104,10 +88,7 @@ export function settingsDialog() {
       // dictionary is registered in i18n.js.
       ...(languages.length > 1 ? [languageField()] : [])
     );
-    // A card the window rebuilt around is opened without the focus on its `Close`
-    // button: nothing has been clicked in the new document, so that focus would
-    // read as a keyboard one and ring the button twice over.
-    dialog.openModal(t('settings.title'), body, [closeButton(dialog)], reopened);
+    dialog.openModal('settings.title', body, [closeButton(dialog)]);
   }
 
   return { dialog, show };

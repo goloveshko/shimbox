@@ -3,7 +3,7 @@
 // kind turns into is the backend's call, so nothing here parses or validates.
 import { iconButton, invoke, note, textInput, withBrowseButton } from './form.js';
 import { secretsDialog } from './secrets.js';
-import { t, localize } from './i18n.js';
+import { setLabel, setText } from './i18n.js';
 
 const kinds = ['value', 'cred', 'file'];
 
@@ -51,11 +51,11 @@ export function environmentPanel(report) {
     pick.replaceChildren();
     const empty = document.createElement('option');
     empty.value = '';
-    empty.textContent = secrets.length ? t('env.secret.pick') : t('env.secret.none');
     // The line names the field rather than offering a choice, so it is what the
     // closed picker reads and is left out of the list that opens from it.
     empty.disabled = true;
     empty.hidden = true;
+    setText(empty, secrets.length ? 'env.secret.pick' : 'env.secret.none');
     pick.append(empty);
     for (const target of secrets) {
       const option = document.createElement('option');
@@ -67,8 +67,7 @@ export function environmentPanel(report) {
     // store is asked for by name, since that is where a first name is created.
     const fresh = document.createElement('option');
     fresh.value = manage;
-    fresh.textContent = t(secrets.length ? 'env.secret.manage' : 'env.secret.first');
-    pick.append(fresh);
+    pick.append(setText(fresh, secrets.length ? 'env.secret.manage' : 'env.secret.first'));
     // A name forgotten elsewhere in the session is not offered again, and a
     // picker left pointing at it would send a reference that cannot resolve.
     pick.value = secrets.includes(chosen) ? chosen : '';
@@ -86,29 +85,28 @@ export function environmentPanel(report) {
     line.className = 'env-row';
 
     const name = textInput('env.name.placeholder');
-    name.setAttribute('aria-label', t('env.name'));
+    setLabel(name, 'env.name');
 
     const kind = document.createElement('select');
-    kind.setAttribute('aria-label', t('env.kind'));
+    setLabel(kind, 'env.kind');
     for (const value of kinds) {
       const option = document.createElement('option');
       option.value = value;
-      option.textContent = t(`env.kind.${value}`);
-      kind.append(option);
+      kind.append(setText(option, `env.kind.${value}`));
     }
 
     // One control per kind, kept alive while the row is, so switching back to a
     // kind does not lose what was typed into the one that was showing.
     const literal = textInput('env.value.placeholder');
-    literal.setAttribute('aria-label', t('env.kind.value'));
+    setLabel(literal, 'env.kind.value');
 
     const path = textInput('env.file.placeholder');
-    path.setAttribute('aria-label', t('env.kind.file'));
+    setLabel(path, 'env.kind.file');
     const browse = withBrowseButton(path, 'pick_file', 'env.file');
     browse.hidden = true;
 
     const pick = document.createElement('select');
-    pick.setAttribute('aria-label', t('env.kind.cred'));
+    setLabel(pick, 'env.kind.cred');
     pick.className = 'pick';
     picks.add(pick);
     fill(pick);
@@ -148,8 +146,6 @@ export function environmentPanel(report) {
     });
 
     lines.append(line);
-    // The screen's one `localize()` pass happened before this row existed.
-    localize(line);
     name.focus();
   }
 

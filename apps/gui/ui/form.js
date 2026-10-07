@@ -1,6 +1,6 @@
 // The form widgets both screens build the same way. Nothing here knows about
 // a particular mode.
-import { localize, t } from './i18n.js';
+import { localize, setLabel, setTitle, t } from './i18n.js';
 
 export const invoke = (command, args) => window.__TAURI__.core.invoke(command, args);
 
@@ -17,6 +17,11 @@ export function textInput(placeholderKey) {
   input.type = 'text';
   input.id = nextFieldId();
   input.dataset.i18nPlaceholder = placeholderKey;
+  // A screen writes its keys once, when it is built, and a field added later -
+  // a row of the environment panel - is not there to see that. The hint is
+  // written with the key so the control is right the moment it is made, and the
+  // key is what a later language rewrites it from.
+  input.placeholder = t(placeholderKey);
   return input;
 }
 
@@ -84,9 +89,8 @@ export function iconButton(glyph, key, className) {
   element.type = 'button';
   element.className = className ? `icon ${className}` : 'icon';
   element.textContent = glyph;
-  element.setAttribute('aria-label', t(key));
-  element.title = t(key);
-  return element;
+  setLabel(element, key);
+  return setTitle(element, key);
 }
 
 /// `key` names what the button picks rather than which screen holds it, so the
@@ -164,16 +168,12 @@ export function autofill(input, compute) {
 /// click anywhere around the card ends it — a larger, closer target than the
 /// dismiss button. The body is the part that gives when content is taller than
 /// the window, and the last action is focused so Enter always ends the message.
-/// `focusCard` is for a card that comes back on its own after the window rebuilt
-/// itself: in a document where nothing has been clicked yet, a focused button is
-/// taken for a keyboard one and wears a ring the click that opened it never drew.
+/// `title` is the key the card is named by rather than its sentence, so a card
+/// that stays open across a language change is still named in the new one.
 export function modalDialog() {
   const dialog = document.createElement('dialog');
   const card = document.createElement('div');
   card.className = 'dialog-card';
-  // Focusable by script, never by Tab: the place a card puts its focus when it
-  // should open without a ring around one of its controls.
-  card.tabIndex = -1;
   const body = document.createElement('div');
   body.className = 'dialog-body';
   const actions = document.createElement('div');
@@ -187,15 +187,17 @@ export function modalDialog() {
     }
   });
 
-  dialog.openModal = (title, content, buttons, focusCard = false) => {
-    dialog.setAttribute('aria-label', title);
+  dialog.openModal = (title, content, buttons) => {
     body.replaceChildren(content);
     actions.replaceChildren(...buttons);
+    // The card's own name is bound to its key here rather than filled with a
+    // sentence, so a language change reaches a card that is already open.
+    setLabel(dialog, title);
     // The content is filled long after the screen's one translation pass, so its
-    // own buttons are localised on the way out.
+    // own strings are localised on the way out.
     localize(dialog);
     dialog.showModal();
-    (focusCard ? card : buttons.at(-1))?.focus();
+    buttons.at(-1)?.focus();
   };
   // A card that dims the whole window belongs to the whole window: inside a
   // screen it would be hidden along with that screen, and a tab click during a
@@ -232,13 +234,16 @@ export function resultDialog() {
     card.classList.remove('error');
     const content = document.createElement('div');
     build(content);
-    show(t('result.title'), content, folder);
+    show('result.title', content, folder);
   };
-  dialog.fail = (text, detail) => {
+  /// `key` is the error's own, so the card's title is the sentence the next
+  /// language pass can rewrite; the detail beside it is what the backend said.
+  dialog.fail = (key, detail) => {
     card.classList.add('error');
     const content = document.createElement('div');
+    const text = t(key);
     content.textContent = detail ? `${text} ${detail}` : text;
-    show(text, content);
+    show(key, content);
   };
   return dialog;
 }

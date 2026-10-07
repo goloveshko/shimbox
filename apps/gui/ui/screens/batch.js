@@ -1,6 +1,6 @@
 // Mode 2 of the spec (docs/techspec.md 5.2): a whole folder at once. No
 // per-entry parameters, so the table is a list of names and nothing else.
-import { t } from '../i18n.js';
+import { setText, t } from '../i18n.js';
 import {
   checkField,
   field,
@@ -246,7 +246,7 @@ export function renderBatch(root) {
         pathCell(row.path),
         versionCell(row.version),
         sizeCell(row.size),
-        cell(t(`variant.${row.variant}`))
+        setText(cell(''), `variant.${row.variant}`)
       );
       body.append(entry);
     }
@@ -256,11 +256,13 @@ export function renderBatch(root) {
     // The table is the scan's answer, so when there is no table there has to be
     // a line saying so; before the first scan the screen stays quiet.
     if (scanned && rows.length === 0) {
-      progress.textContent = t('batch.empty');
+      setText(progress, 'batch.empty');
     }
-    found.textContent = needle
-      ? t('batch.matching', { shown: shown.length, count: rows.length })
-      : t('batch.found', { count: rows.length });
+    if (needle) {
+      setText(found, 'batch.matching', { shown: shown.length, count: rows.length });
+    } else {
+      setText(found, 'batch.found', { count: rows.length });
+    }
     // The buttons only reach the rows the filter leaves visible, so say what
     // is actually going to be written.
     tally();
@@ -268,7 +270,7 @@ export function renderBatch(root) {
 
   function tally() {
     const count = rows.filter((row) => row.selected).length;
-    selectedCount.textContent = t('batch.selected', { count });
+    setText(selectedCount, 'batch.selected', { count });
     // Neither button has anything to do when the rows on screen already match it:
     // `Select all` over a chosen set and `Select none` over an empty one both
     // leave the table as it was, and no rows at all settles neither way.
@@ -341,7 +343,7 @@ export function renderBatch(root) {
       show();
       return;
     }
-    progress.textContent = t('batch.scanning');
+    setText(progress, 'batch.scanning');
     // A scan answers with its own preselection, but here it only follows a
     // folder the user edited, so the choices made by hand are kept by path.
     const chosen = new Set(rows.filter((row) => row.selected).map((row) => row.path));
@@ -357,9 +359,9 @@ export function renderBatch(root) {
     } catch (failure) {
       rows = [];
       scanned = false;
-      result.fail(t(`error.${failure.code}`), failure.detail);
+      result.fail(`error.${failure.code}`, failure.detail);
     } finally {
-      progress.textContent = '';
+      setText(progress, null);
     }
     show();
   }
@@ -369,7 +371,7 @@ export function renderBatch(root) {
     field.addEventListener('change', rescan);
   }
   destination.addEventListener('input', () => {
-    progress.textContent = '';
+    setText(progress, null);
     tally();
   });
   recursive.addEventListener('change', () => {
@@ -389,7 +391,7 @@ export function renderBatch(root) {
     const targets = rows.filter((row) => row.selected).map((row) => row.path);
     generate.disabled = true;
     const unlisten = await window.__TAURI__.event.listen('batch-progress', (event) => {
-      progress.textContent = t('batch.progress', event.payload);
+      setText(progress, 'batch.progress', event.payload);
     });
     try {
       const summary = await invoke('generate_batch', {
@@ -397,10 +399,10 @@ export function renderBatch(root) {
       });
       showSummary(result, summary);
     } catch (failure) {
-      result.fail(t(`error.${failure.code}`), failure.detail);
+      result.fail(`error.${failure.code}`, failure.detail);
     } finally {
       unlisten();
-      progress.textContent = '';
+      setText(progress, null);
       tally();
     }
   });

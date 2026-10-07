@@ -1,9 +1,9 @@
 import { aboutDialog } from './about.js';
 import { formatSize } from './form.js';
-import { localize, loadLanguage, t } from './i18n.js';
+import { localize, loadLanguage, setText } from './i18n.js';
 import { renderBatch } from './screens/batch.js';
 import { renderSingle } from './screens/single.js';
-import { settingsDialog, takeSettingsCard } from './settings.js';
+import { settingsDialog } from './settings.js';
 import { loadTheme } from './theme.js';
 import { titlebar } from './titlebar.js';
 
@@ -64,16 +64,11 @@ build();
 titlebar({ onSettings: () => settings.show(), onAbout: () => about.show() });
 show(current);
 localize();
-// The card that asked for a language is the one screen a reload cannot leave
-// standing, so it asks to be opened again and this is where it is opened.
-if (takeSettingsCard()) {
-  settings.show(true);
-}
 
 async function reportEmbeddedRunners() {
   const runners = await window.__TAURI__.core.invoke('embedded_runners');
   const sizes = runners.map((runner) => `${runner.variant} ${formatSize(runner.size)}`);
-  statusRoot.textContent = t('status.runners', { size: sizes.join(' / ') });
+  setText(statusRoot, 'status.runners', { size: sizes.join(' / ') });
 }
 
 reportEmbeddedRunners().catch((error) => {

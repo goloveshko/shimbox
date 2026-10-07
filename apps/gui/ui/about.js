@@ -112,7 +112,7 @@ export function aboutDialog() {
       ...(configDir ? [folderRow(configDir)] : [])
     );
 
-    dialog.openModal(t('about.title'), body, [closeButton(dialog)]);
+    dialog.openModal('about.title', body, [closeButton(dialog)]);
   }
 
   return { dialog, show };

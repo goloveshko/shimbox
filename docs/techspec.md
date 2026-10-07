@@ -282,13 +282,15 @@ be read, both mean the same thing as no file at all. The language is the same ki
 of choice in the same card, and it is offered the same way: follow Windows, which
 asks `navigator.languages`, or one of the languages the app ships. Each is named in
 its own tongue — `English`, `Русский` — because a language has to be recognisable
-before the interface speaks it. It applies by building the window again rather than
-by rewriting the text where it stands: the strings are read once, as each screen is
-made, so a live swap would have to remember which node came from which key. That
-rebuild discards a half-written form, which is what the field's own hint says, and
-it is the only way the two answers differ: the card the question was asked in is
-opened again once the window is built, so a language leaves the screen where a theme
-leaves it. The row
+before the interface speaks it. It applies the way a theme does, by rewriting the
+text that stands on the screen rather than by building the window again: every
+string the window shows is left on its node by key, in each of the places one can
+stand — visible text, a placeholder, an accessible name, a tooltip — so a change is
+one pass over the document and a half-written form keeps what it holds. A sentence
+that counts something keeps its numbers beside its key, so the next language
+rebuilds that sentence instead of repeating the old one. A result card and the
+About card are written when they open, so they are read in the language that is in
+effect at that moment. The row
 is only there while there is a choice to make, so a single-language build shows the
 card with its one field again. A field
 is one block of caption, control and hint, and the blocks reflow from two

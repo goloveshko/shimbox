@@ -1,7 +1,7 @@
 // The strip that replaced the native caption (docs/techspec.md 5). The window is
 // undecorated, so this is the part that drags it and the part whose buttons
 // minimize, maximize and close it.
-import { t } from './i18n.js';
+import { setLabel, setTitle } from './i18n.js';
 
 // The glyphs come from the icon font Windows itself uses for its caption
 // buttons, so the strip reads as another window titlebar rather than as a web
@@ -24,8 +24,8 @@ function button(kind, action) {
   element.className = `caption-${kind}`;
   element.textContent = glyph[kind];
   // A button of one glyph has nothing to read, so its name is also its tooltip.
-  element.setAttribute('aria-label', t(`titlebar.${kind}`));
-  element.title = t(`titlebar.${kind}`);
+  setLabel(element, `titlebar.${kind}`);
+  setTitle(element, `titlebar.${kind}`);
   element.addEventListener('click', action);
   return element;
 }
@@ -38,8 +38,10 @@ async function showMaximized() {
   const maximized = await appWindow.isMaximized();
   const kind = maximized ? 'restore' : 'maximize';
   element.textContent = glyph[kind];
-  element.setAttribute('aria-label', t(`titlebar.${kind}`));
-  element.title = t(`titlebar.${kind}`);
+  // The key goes with the glyph, so a language applied later names the button
+  // for the state it is in now rather than for the one it was made in.
+  setLabel(element, `titlebar.${kind}`);
+  setTitle(element, `titlebar.${kind}`);
 }
 
 export function titlebar({ onSettings, onAbout }) {

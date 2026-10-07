@@ -128,8 +128,8 @@ window anywhere along the strip, or double-click it to maximize. **Settings**
 offers Light, Dark or following Windows, and applies as you pick it — kept in
 `$APPCONFIG/.settings.json`, so it is still there next run. Below it, the same
 card asks which language to speak: English, Русский, or following Windows again.
-A language applies by rebuilding the window, so anything still typed into the
-form is lost — the field says so before you pick. **About** shows the
+A language applies the same way, and what is already typed into the form stays
+where it is. **About** shows the
 version — click it and it is on the clipboard — the sizes of the runners built into
 this binary, and the license, author and repository lines, each of which opens in
 your browser rather than in this window. The last row names the folder this app keeps

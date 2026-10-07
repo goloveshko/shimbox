@@ -28,7 +28,7 @@ export default {
 
   'settings.language': 'Language',
   'settings.language.system': 'Follow Windows',
-  'settings.language.note': 'Applies as you pick it. The window is built again in the new language, so anything already typed into the form is lost.',
+  'settings.language.note': 'Applies as you pick it. Every word in the window changes with it, and what the form already holds stays in it.',
 
   'about.title': 'About shimbox',
   'about.tagline': 'A small runner beside a <alias>.shim, in a folder on PATH.',
