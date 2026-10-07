@@ -1174,7 +1174,7 @@ dependencies = [
 
 [[package]]
 name = "gui"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2524,7 +2524,7 @@ dependencies = [
 
 [[package]]
 name = "runner"
-version = "0.1.0"
+version = "1.0.0"
 
 [[package]]
 name = "rustc-hash"
