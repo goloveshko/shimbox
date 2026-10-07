@@ -15,6 +15,13 @@ function Test-DoubleClicked {
     return $false
 }
 
+function Write-Section {
+    param([string]$Text)
+
+    Write-Host ''
+    Write-Host "== $Text" -ForegroundColor Cyan
+}
+
 function Set-PauseIfDoubleClicked {
     param([bool]$Enabled = $true)
 

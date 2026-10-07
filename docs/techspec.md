@@ -109,8 +109,10 @@ shimbox/
   README.md
   LICENSE
   .gitignore            /target, /bin, tauri's generated schemas
+  .github/workflows/
+    ci.yml              the same three scripts, on a Windows runner
   bin/                  build output, ignored
-                        (runner-cli.exe, runner-gui.exe, shimbox.exe)
+                        (runner-cli.exe, runner-gui.exe, shimbox.exe, one zip)
   docs/
     techspec.md
     images/             the screenshots the README shows
@@ -118,9 +120,11 @@ shimbox/
     common.ps1          shared helpers, dot-sourced only
     build.ps1           master: tests + both variants + size report
     smoke.ps1           end-to-end runner checks against real binaries
+    package.ps1         the release archive, from what bin/ already holds
     build.cmd           thin wrappers, no logic
     test.cmd
     smoke.cmd
+    package.cmd
   crates/
     runner/             shim-runner, both variants
   apps/
@@ -655,6 +659,7 @@ says so in a card. This is the only network request the app makes.
 | **5** | Mode 2 | Directory scan, table with checkboxes, detected `Type` and file version (5.5), a filter, one choice per shim name, batch write, progress, summary with skip reasons. |
 | **6** | Polish | Size/flag pass on the runner, error dialog copy, README with the `Setup` / `PATH` steps. |
 | **7** | Child environment | `env` and `envref` in the config, resolved at launch from a file or a generic credential (3.5, FR-1.8); the row editor and the secret store in mode 1. |
+| **8** | Release pipeline | `scripts/package.ps1` making one archive, and a workflow that runs the build, the tests and the smoke checks on a Windows runner, with the archive on a draft release for a person to publish. |
 
 ---
 
@@ -668,13 +673,23 @@ Decisions still open:
    FR-1.3 exists, and so far covered only by the parser's own unit test. What a
    child is handed is asserted through an argument with a double space, which is
    the half of it a `cmd.exe` can echo back honestly.
-3. **How a release gets built and shipped**: decided in favour of a CI workflow
-   that runs the tests and attaches one zip, and the portable-zip-only shape
-   that answer implies — neither the workflow nor the packaging exists yet, so
-   the release day so far is `scripts\build.cmd` and a hand-made archive.
 
 Resolved since draft 3:
 
+* **How a release gets built and shipped**: one archive, built by the pipeline
+  that now exists. `.github/workflows/ci.yml` runs the three masters already in
+  `scripts/` — it invents no fourth build path — on a `windows-latest` runner
+  under Windows PowerShell, which is the shell their `#Requires` line asks for.
+  There the size target of 2.2 stops being a line in a report and becomes a
+  failed build (`build.ps1 -StrictSize`). `package.ps1` then wraps the manager,
+  the README and the license into `bin\shimbox-<version>-windows-x64.zip`, and
+  reads the version from the workspace manifest so a `v*` tag that disagrees with
+  what was built stops the package. A tagged push uploads the archive to a
+  **draft** release: publishing it, and writing the notes the app's own update
+  card shows (5.6), stays a human step, because that text is a promise to a
+  reader rather than something a pipeline can invent. Nothing here needs the
+  remote to be GitHub — the workflow is inert until the repository moves there,
+  and every step of it runs locally the same way.
 * **`.shim` file extension**: the collision with Scoop that this question feared
   is real — `scoop-shim` uses the same extension for the same idea — and it
   turned out to cost nothing, because the two formats cannot be misread as each

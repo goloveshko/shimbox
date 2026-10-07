@@ -5,7 +5,11 @@ param(
     [ValidateSet('release', 'debug')]
     [string]$Profile = 'release',
     [switch]$TestOnly,
-    [switch]$NoPause
+    [switch]$NoPause,
+    # For CI: the size target of 2.2 is a requirement, not a report, so a build
+    # that misses it is a failed one. A double-clicked build keeps printing the
+    # line and leaves the deciding to whoever reads it.
+    [switch]$StrictSize
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,12 +18,6 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 $BinDir = Join-Path $Root 'bin'
 $SizeTargetKb = 400
-
-function Write-Section {
-    param([string]$Text)
-    Write-Host ''
-    Write-Host "== $Text" -ForegroundColor Cyan
-}
 
 function Invoke-Cargo {
     param([string[]]$Arguments)
@@ -49,6 +47,9 @@ function Write-SizeRow {
     else {
         $verdict = 'OVER target'
         $color = 'Yellow'
+        if ($StrictSize) {
+            throw "$Label is $([math]::Round($bytes / 1KB, 1)) KB, over the $TargetKb KB target"
+        }
     }
     Write-Host ("  {0,-14} {1,8} KB  {2} {3} KB" -f $Label, $kb, $verdict, $TargetKb) -ForegroundColor $color
 }

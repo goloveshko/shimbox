@@ -59,10 +59,11 @@ scripts\build.cmd                     # both runner variants, tests, the manager
 scripts\build.cmd -Profile debug      # the same, unoptimized
 scripts\test.cmd                      # runner and tests, no manager
 scripts\smoke.cmd                     # end-to-end runner checks against real binaries
+scripts\package.cmd                   # the release archive out of bin\
 ```
 
-Each `.cmd` is a wrapper of two lines over `scripts\build.ps1` / `smoke.ps1`, which
-is where the logic lives; `smoke.cmd` reads the runners from `bin\`, so build
+Each `.cmd` is a wrapper of two lines over a `scripts\*.ps1` master, which
+is where the logic lives; `smoke.cmd` and `package.cmd` read `bin\`, so build
 first. Double-clicking a wrapper leaves the window open until you press a key —
 `-NoPause`, or `SHIMBOX_NO_PAUSE=1` in the environment, skips that. The results
 land in `bin\`:
@@ -79,6 +80,17 @@ layout makes easy to miss.
 
 Both runners are embedded into `shimbox.exe` and written out beside a `.shim` when
 one is generated, so a release carries the manager alone.
+
+`scripts\package.cmd` wraps that one file into
+`bin\shimbox-<version>-windows-x64.zip`, with this README and the license beside
+it. The version is read from the workspace `Cargo.toml`, and a `v*` tag that
+disagrees with it stops the package rather than shipping a mismatched pair.
+
+The same three scripts run on every push to `main` and on every pull request
+(`.github\workflows\ci.yml`), on a Windows runner and under Windows PowerShell —
+and there the runner size target is a failed build rather than a line in the log.
+A `v*` tag additionally gets a **draft** release holding the archive: publishing
+one, and writing the text the app's own update card shows, stays a human step.
 
 ## Setup
 
