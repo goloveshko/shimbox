@@ -781,7 +781,9 @@ tr.grouped td:nth-child(2) {
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  padding: 0 0.15rem;
+  /* No inset of its own: the row is the last thing inside a card now, and the
+     0.15rem it used to keep for the window's edge started mode 2's button 2.4px
+     right of mode 1's, which is a jump on every tab change. */
 }
 
 /* A result opens over the form rather than under it. The element itself is the
