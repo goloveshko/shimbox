@@ -263,8 +263,8 @@ form {
   padding: 1.15rem 1.2rem;
 }
 
-/* Two columns at the default width: a folder path needs room to be read, and
-   three columns turn every field into an ellipsis. */
+/* Three columns at the default width, which is what a 20rem floor allows and no
+   more: a fourth would turn every field of the form into an ellipsis. */
 .fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));

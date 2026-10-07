@@ -1,7 +1,8 @@
-# Technical Specification: Shim Manager (Desktop GUI)
+# Technical Specification: shimbox
 
-Status: draft 3. Draft 1 was reviewed and its findings folded in; the remaining
-open items are listed in section 8.
+Status: v1.0. Sections 2 to 6 describe what the shipped code does; section 7 is
+how it was built and section 8 what is still open. Draft 1 was reviewed and its
+findings folded in.
 
 ## 1. Project Overview
 
@@ -9,11 +10,11 @@ A lightweight executable-shimming tool for Windows: it generates tiny proxy
 executables that live in a directory on `PATH` and forward invocations to the
 real binaries. Two modules:
 
-1. **`shim-runner`**: a minimal Rust executable, shipped in two variants
-   (console / windows subsystem). Reads its companion config file and launches
-   the target with the caller's arguments.
-2. **`shim-gui`**: a Tauri desktop app that generates individual shims and
-   batch-generates them for a whole directory.
+1. **`shim-runner`** (crate `runner`): a minimal Rust executable, shipped in two
+   variants (console / windows subsystem). Reads its companion config file and
+   launches the target with the caller's arguments.
+2. **`shimbox`** (crate `gui`): a Tauri desktop app that generates individual
+   shims and batch-generates them for a whole directory.
 
 v1 scope is **generation only**: the app creates shims, it does not list,
 inspect, edit or delete existing ones.
@@ -58,6 +59,34 @@ Consequences worth keeping in mind:
 - Which variant a given target needs is decided by the GUI at generation time,
   never by the runner (5.4).
 
+### 2.2 Components
+
+* **`shim-runner` (crate `runner`)**
+  * Windows-only in v1.
+  * No third-party crates in the runtime path: the config parser is hand-written
+    (section 3), and the Win32 calls it needs (`GetCommandLineW`, `MessageBoxW`,
+    and `CredReadW`/`CredFree` for a `cred:` reference) are declared as
+    `extern "system"` rather than pulled in via the `windows` crate.
+  * Size target: **<= 400 KB** per variant with `opt-level = "z"`, `lto = "fat"`,
+    `codegen-units = 1`, `panic = "abort"`, `strip`. Draft 1 targeted 150 KB,
+    which is not reachable while linking `std`; going below it requires
+    `-Z build-std` or dropping `std`.
+  * Added latency target: **<= 3 ms** over a direct invocation. Process creation
+    alone costs roughly 0.5–1.5 ms, so anything under ~3 ms is unmeasurable
+    against the noise.
+
+* **`shimbox` (crate / Tauri app `gui`)**
+  * Backend: Rust (Tauri v2). Frontend: Vanilla JS with no build step and no npm
+    dependencies (section 8); the UI is two tabs and one table, so no
+    build-chain-heavy stack is needed for its sake.
+  * Embeds **both** runner variants via `include_bytes!` and writes the selected
+    one.
+  * Dev loop: the embedded bytes go stale against a freshly built runner, so
+    `build.rs` copies the staged `bin\runner-*.exe` into `OUT_DIR` and watches
+    them — a runner rebuilt without the GUI rebuilding is a build error rather
+    than a silent embedding of the old one. `scripts\build.cmd` keeps the order;
+    building the GUI alone fails until `bin\` holds a runner.
+
 ### 2.3 Repository layout
 
 The root stays small: build tooling and generated artifacts live below it.
@@ -67,11 +96,13 @@ shimbox/
   Cargo.toml            workspace manifest
   Cargo.lock
   README.md
+  LICENSE
   .gitignore            /target, /bin, tauri's generated schemas
   bin/                  build output, ignored
                         (runner-cli.exe, runner-gui.exe, shimbox.exe)
   docs/
     techspec.md
+    images/             the screenshots the README shows
   scripts/
     common.ps1          shared helpers, dot-sourced only
     build.ps1           master: tests + both variants + size report
@@ -87,9 +118,15 @@ shimbox/
       src-tauri/        Rust backend, embeds ui/ and both runners
       ui/               frontend: no build step, no npm dependencies
         index.html
-        main.js         tab switching, status line
-        i18n.js         language resolution and lookup
+        main.js         the two tabs, the status line, what is built when
+        i18n.js         language resolution and the keys left on the nodes
+        theme.js        the theme, and what Windows is told about it
+        titlebar.js     the strip that replaced the native caption
         form.js         widgets both screens build the same way
+        environment.js  the child-environment rows of mode 1
+        secrets.js      the store a `cred` row points at
+        settings.js     the card holding the theme and language choices
+        about.js        the card naming the build
         app.css
         locales/        one file per language
         screens/        one file per mode
@@ -97,33 +134,6 @@ shimbox/
 
 Rule of thumb: nothing new is added to the root directory without a reason;
 scratch scripts go to `scripts/`, notes to `docs/`.
-
-### 2.2 Components
-
-* **`shim-runner` (crate `runner`)**
-  * Windows-only in v1.
-  * No third-party crates in the runtime path: the config parser is hand-written
-    (section 3), and the two Win32 calls that are needed (`GetCommandLineW`,
-    `MessageBoxW`) are declared as `extern "system"` rather than pulled in via
-    the `windows` crate.
-  * Size target: **<= 400 KB** per variant with `opt-level = "z"`, `lto = "fat"`,
-    `codegen-units = 1`, `panic = "abort"`, `strip`. Draft 1 targeted 150 KB,
-    which is not reachable while linking `std`; going below it requires
-    `-Z build-std` or dropping `std`.
-  * Added latency target: **<= 3 ms** over a direct invocation. Process creation
-    alone costs roughly 0.5–1.5 ms, so anything under ~3 ms is unmeasurable
-    against the noise.
-
-* **`shim-gui` (crate / Tauri app `gui`)**
-  * Backend: Rust (Tauri v2). Frontend: Vanilla JS with no build step and no npm
-    dependencies (section 8); the UI is two tabs and one table, so no
-    build-chain-heavy stack is needed for its sake.
-  * Embeds **both** runner variants via `include_bytes!` and writes the selected
-    one.
-  * Dev loop: the embedded bytes go stale against a freshly built runner, so the
-    workspace is ordered (`build.rs` or a cargo workspace dependency) so the GUI
-    always embeds the just-built runner. In debug builds the runner is read from
-    `target/` instead of being embedded.
 
 ---
 
@@ -151,7 +161,8 @@ env=FFMPEG_DEBUG=1
 envref=GITHUB_TOKEN=cred:shimbox/github
 ```
 
-* UTF-8, no BOM, CRLF or LF accepted. Lines are split on the first `=`.
+* UTF-8, CRLF or LF accepted, and a leading byte-order mark tolerated rather than
+  treated as part of the first key. Lines are split on the first `=`.
 * The value is the remainder of the line **verbatim**, with only a trailing
   `\r` removed. Values are not quoted, escaped or trimmed — backslashes and
   spaces are literal, so no escaping rules exist to get wrong.
@@ -199,10 +210,13 @@ open, next to the runners.
 | `file:<path>` | The whole file, without its trailing newlines. |
 | `cred:<target>` | The blob of a generic credential, i.e. one entry of the Windows Credential Manager. |
 
-* Credentials are named under a `shimbox/` prefix and the GUI only offers names
-  it wrote itself, so a config cannot point the runner at another program's
-  stored secret. A blob is read as UTF-8, which is what shimbox writes, and as
-  UTF-16 when it holds a NUL, which is what `cmdkey` writes.
+* Credentials are named under a `shimbox/` prefix and the GUI only writes and
+  offers names under it, so a generated config cannot point at another program's
+  stored secret. The runner itself does not check the prefix — it reads the name
+  it is given, which is why a hand-written `cred:` line can still ask for any
+  credential of this user. A blob is read as UTF-8, which is what
+  shimbox writes, and as UTF-16 when it holds a NUL, which is what `cmdkey`
+  writes.
 * One name serves any number of shims, which is the point of referring by name
   rather than by value: a token is created once and each shim calls it whatever
   its target expects.
@@ -240,15 +254,16 @@ open, next to the runners.
 
   | Condition | Exit code | Note |
   | :--- | :--- | :--- |
-  | config file missing | 101 | |
-  | config unreadable, or `path` absent/empty | 102 | |
+  | the config cannot be read — missing, locked, or not UTF-8 | 101 | The name the runner tried is in the message, which is also how a missing config and an unreadable one are told apart by eye. |
+  | the config reads but names no `path`, or the runner cannot derive its own name | 102 | |
   | spawn failed | 103 | Last Win32 error is included in the message. |
   | an `envref` that names nothing readable | 104 | The child is not started: a target that expects a value it never gets fails later and less legibly. |
-  | otherwise | child's code | Cannot be distinguished from a child that itself returned 101–103; accepted. |
+  | otherwise | child's code | Cannot be distinguished from a child that itself returned 101–103; accepted. A child that reported no code at all, because it was killed, leaves 103 in its place. |
 
 * **FR-1.6 Error reporting**: on any runner-side failure, the CLI variant writes
-  one line to stderr naming the config file and the reason; the GUI variant
-  shows a `MessageBoxW` with the same text, since it has no console.
+  one line to stderr naming what failed — the config, the target or the
+  reference — and the reason; the GUI variant shows a `MessageBoxW` with the same
+  text, since it has no console.
 * **FR-1.7 No fallback discovery**: if the config is missing or `path` is not
   found, the runner fails as above. It does not search `PATH`, does not guess,
   and does not prompt.
@@ -260,16 +275,18 @@ open, next to the runners.
 
 ---
 
-## 5. Functional Requirements: `shim-gui`
+## 5. Functional Requirements: `shimbox`
 
 Two tabs, no other navigation. Both screens are built once and a tab only shows
 one of them, so a half-written form and a scan someone is still ticking survive a
 look at the other mode — nothing is re-asked and nothing is cleared by switching.
 
 The shell reads as a Windows application rather than a web page: the window sits
-on a Mica backdrop and the interface is semi-opaque cards over it. No colour is
-picked by hand — each one is a token declared once per theme, and the accent is
-`Highlight`, the colour the user chose in the system. Which of the two themes is
+on a Mica backdrop and the interface is semi-opaque cards over it. No colour of
+the palette is picked by hand — each one is a token declared once per theme, and
+the accent is `Highlight`, the colour the user chose in the system. The one value
+written outside the tokens is the caption's close red, which Windows paints the
+same way under either theme. Which of the two themes is
 drawn is a decision made in code rather than a stylesheet branch: the choice is
 `System`, `Light` or `Dark`, `System` asks `prefers-color-scheme` and keeps
 asking while the desktop is changed under it, and the answer is written onto the
@@ -293,9 +310,10 @@ About card are written when they open, so they are read in the language that is 
 effect at that moment. The row
 is only there while there is a choice to make, so a single-language build shows the
 card with its one field again. A field
-is one block of caption, control and hint, and the blocks reflow from two
-columns to one with the window. A result is reported in a dialog over the form
-rather than below it: the form is often taller than the window, and whether the
+is one block of caption, control and hint, and the blocks reflow from as many
+columns as the width allows — three at the default window — down to one with it.
+A result is reported in a dialog over the form rather than below it: the form is
+often taller than the window, and whether the
 write worked is the last thing in it that should need a scroll to be found. The
 dialog is a card over a frame that dims the whole window, so a click anywhere
 outside the card ends the result; `Esc` and its own Close action do the same, and
@@ -333,7 +351,9 @@ cards the shell has besides the two modes. They sit to the left of its own butto
 rather than beside the brand, the one a person goes back to nearest the corner:
 Settings, whose fields are the theme and the language above, and About outside it —
 the version, which the badge copies to the clipboard
-when it is clicked, since the number answers a question rather than being looked at,
+when it is clicked, since the number answers a question rather than being looked at
+(it is read from the workspace `Cargo.toml`, and `tauri.conf.json` carries no version
+of its own so the two cannot disagree),
 the sizes of the runners embedded in this binary, and the license, author and
 repository lines. Each of those three is the page it names: the click hands the
 address to the backend, which opens it in the browser instead of letting the webview
@@ -368,6 +388,11 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   `PATH` (6), not next to the binary it shims, where `<alias>.exe` would collide
   with the real one and the scan would read the folder as its own output.
 * **Shim name / alias**: text input, prefilled from the target's stem, editable.
+  A trailing `.exe` is dropped from what is typed, since a pasted file name is
+  the common answer and `git.exe.exe` would only be a surprise later, and a name
+  Windows could not create — a reserved device name, a character a file name
+  cannot hold, a trailing dot or space — is refused with the same message as an
+  empty one.
 * **Default arguments**: single input field, split into `arg` lines on write.
 * **Runner type**: dropdown `Auto detect` (default) / `CLI (Console)` /
   `GUI (Detached)` -> selects the embedded runner variant. No config field.
@@ -381,7 +406,9 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
 * **Environment variables**: one row per variable — its name, where its value
   comes from (`Value`, `Secret`, `File`, 3.5), and the control that kind needs:
   a field written into the config as typed, a picker over the stored names, or a
-  file path with a folder button beside it. Adding and removing a row carry a
+  file path with the same folder-glyph button beside it, which opens a file
+  picker over any file rather than one filtered to executables. Adding and
+  removing a row carry a
   glyph rather than a word — `+` on the line naming the block, `−` at the end of
   each row — because the shape is the same in every language and a caption would
   set the column every row ends at wider than the rows need. A picker's
@@ -405,8 +432,8 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   resolved runner type and the destination, with "Open destination folder" and
   "Edit PATH…" beside Close, and a reminder that the destination must be on
   `PATH` (6).
-* Validates before writing: source exists, destination directory exists and is
-  writable, alias is a legal file name. The button waits for those three fields
+* Validates before writing: source exists, destination directory exists, alias
+  is a legal file name. The button waits for those three fields
   to be filled rather than answering an incomplete form with an error; what the
   form cannot know without looking — a name already taken, a path that stopped
   existing — still arrives as one.
@@ -448,7 +475,7 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
 * **Policy**: no per-entry configuration. Each selected binary gets a config
   with `path` only, i.e. default arguments and default working directory, and
   the runner variant resolved by Auto.
-* **Generate All**: progress indicator ("Writing 12 of 25…") then a summary
+* **Generate shims**: progress indicator ("Writing 12 of 25…") then a summary
   listing what was created and what was skipped with the reason, plus the same
   `PATH` reminder (6).
 
@@ -460,7 +487,10 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
 * Inside Mode 2, two discovered binaries may share a stem (recursive scan of
   `tools\x\git.exe` and `tools\y\git.exe`). First one wins; every later one is
   reported as skipped with a `duplicate` reason, kept distinct from `collision`,
-  which means a file already sitting in the destination. Disambiguating suffixes
+  which means a file already sitting in the destination. A row whose file has
+  left the disk since the scan is skipped as `missing`, and one the write itself
+  refused as `write`, so the summary's reasons are the same codes mode 1 reports
+  as failures. Disambiguating suffixes
   are deliberately not generated — a skipped-and-reported batch is honest, a
   silently renamed one is not.
 * The generated `.exe` is written **after** a successful `.shim` write, so a
@@ -514,8 +544,9 @@ preselection of 5.2 come from the PE resource directory.
 * **`PATH` is maintained by the user, by hand.** A shim directory is only
   usable once it is on `PATH`, and v1 neither adds, removes, validates nor
   inspects `PATH`. The user adds the destination directory in the system's own
-  variable editor — reached from *Settings → System → About → Environment
-  Variables*, from `setx`, or from the "Edit PATH…" action of a successful
+  variable editor — reached from *Settings → System → About → Advanced system
+  settings → Environment Variables*, from `setx` in a terminal, or from the
+  "Edit PATH…" action of a successful
   result, which starts that editor rather than writing the variable itself — and
   a shim invoked before that fails with "not recognized": expected, not an error
   to report. The reminder in the success message of both modes says what is
@@ -534,8 +565,8 @@ preselection of 5.2 come from the PE resource directory.
 | Stage | Milestone | Deliverables |
 | :--- | :--- | :--- |
 | **1** | Core runner | Both variants build; config parser; raw command-line forwarding; stdio inheritance; exit codes; CLI stderr + GUI MessageBoxW. Verified from a terminal before any GUI exists. |
-| **2** | Runner tests | Scripted checks: quoting round trip through `raw_arg` (backslash-quote cases), exit-code propagation, missing/invalid config, interactive stdin, workdir default. |
-| **3** | Tauri scaffold | Tauri v2 + frontend template, both runners embedded, workspace ordering so debug builds read the freshly built runner. |
+| **2** | Runner tests | Scripted checks: an argument that survives `raw_arg` untouched (one holding a double space, which re-serialising would split), exit-code propagation, missing/invalid config, interactive stdin, workdir default. |
+| **3** | Tauri scaffold | Tauri v2 + frontend template, both runners embedded, `build.rs` staging and watching the runner bytes so a stale embedding is a build error. |
 | **4** | Mode 1 | Pickers, alias, arguments, workdir, validation, generation, collision skip, notification. Includes PE `Subsystem` detection (5.4) behind the `Auto detect` dropdown. |
 | **5** | Mode 2 | Directory scan, table with checkboxes, detected `Type` and file version (5.5), a filter, one choice per shim name, batch write, progress, summary with skip reasons. |
 | **6** | Polish | Size/flag pass on the runner, error dialog copy, README with the `Setup` / `PATH` steps. |
@@ -545,19 +576,24 @@ preselection of 5.2 come from the PE resource directory.
 
 ## 8. Open Decisions & Deferred Work
 
-Decisions this draft still needs:
+Decisions still open:
 
 1. **`.shim` file extension**: worth checking it does not collide with an
    existing convention before shipping — unverified suspicion, not a finding.
 2. **Hard links instead of copies** for Mode 2: saves space and makes runner
    updates land on all shims at once, but requires FR-1.1 to key off `argv[0]`.
+3. **A backslash-quote case in the raw command-line round trip**: the reason
+   FR-1.3 exists, and so far covered only by the parser's own unit test. What a
+   child is handed is asserted through an argument with a double space, which is
+   the half of it a `cmd.exe` can echo back honestly.
 
 Resolved since draft 3:
 
 * **Frontend**: Vanilla JS, no build step and no npm dependencies, reached
   through `withGlobalTauri`. Every string goes through a `data-i18n` key and a
-  per-language dictionary file, so a language is one file in `ui/locales/` plus one
-  line in `ui/i18n.js`; English and Russian are both registered, and the reader
+  per-language dictionary file, so a language is one file in `ui/locales/` plus
+  three lines in `ui/i18n.js` — the import, the entry in `languages`, the entry
+  in `dictionaries`; English and Russian are both registered, and the reader
   picks between them (5).
 
 Deferred, explicitly out of v1:

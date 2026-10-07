@@ -51,7 +51,7 @@ scripts\test.cmd                      # runner and tests, no manager
 scripts\smoke.cmd                     # end-to-end runner checks against real binaries
 ```
 
-Each `.cmd` is a two-line wrapper over `scripts\build.ps1` / `smoke.ps1`, which
+Each `.cmd` is a wrapper of two lines over `scripts\build.ps1` / `smoke.ps1`, which
 is where the logic lives; `smoke.cmd` reads the runners from `bin\`, so build
 first. Double-clicking a wrapper leaves the window open until you press a key —
 `-NoPause`, or `SHIMBOX_NO_PAUSE=1` in the environment, skips that. The results
@@ -86,9 +86,10 @@ the shim is simply not found, which is expected rather than an error.
 
 ## Using the manager
 
-**Single shim** — pick the target executable, get its folder and file stem
-offered as the destination and name, then adjust: alias, arguments, working
-directory, runner variant, and the environment variables the target runs with.
+**Single shim** — pick the target executable, get its file stem offered as the
+name and its own folder as the working directory, then adjust: alias, the
+destination folder, arguments, runner variant, and the environment variables the
+target runs with.
 The `Generate` button waits until the target, the destination and the name are
 all filled in.
 Arguments are written into the config exactly as you type them, with no quoting
@@ -188,7 +189,8 @@ bin                     staged artifacts (git-ignored)
 The UI has no build step and no npm dependencies; it is embedded into
 `shimbox.exe` at compile time, so a UI change needs a rebuild to show up. Every
 string goes through a `data-i18n` key with one dictionary per language, so a
-language is one file in `apps\gui\ui\locales` plus one line in `i18n.js` — the
+language is one file in `apps\gui\ui\locales` plus three lines in `i18n.js` (the
+import, and its entry in `languages` and `dictionaries`) — the
 two registered today are English and Russian.
 
 ## Notes
