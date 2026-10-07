@@ -21,6 +21,16 @@ Two parts, one workspace:
 v1 **generates**. It does not list, inspect, re-point or delete shims that
 already exist — see `docs/techspec.md` 8 for that and the other deferred items.
 
+## The manager
+
+One window, two screens: a single shim whose every field you set yourself, and a
+whole folder scanned into a table. Light and dark, and the same in Russian.
+
+| Light | Dark |
+| :--- | :--- |
+| ![Single shim in the light theme](docs/images/single-light.png) | ![Single shim in the dark theme](docs/images/single-dark.png) |
+| ![Folder batch in the light theme](docs/images/batch-light.png) | ![Folder batch in the dark theme](docs/images/batch-dark.png) |
+
 ## How a shim works
 
 A shim is two files that share a base name, in the same folder:
@@ -182,6 +192,7 @@ crates\runner           the shim runner, both variants from one source
 apps\gui\src-tauri      the manager's Rust commands (scan, generate, secrets)
 apps\gui\ui             its frontend: plain HTML, CSS and ES modules
 docs\techspec.md        the specification every change is made against
+docs\images             the screenshots above
 scripts                 build, test and smoke entry points
 bin                     staged artifacts (git-ignored)
 ```
