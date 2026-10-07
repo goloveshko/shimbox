@@ -74,7 +74,7 @@ export default {
   'single.result': '{name} is ready in {destination}.',
   'single.result.variant': 'Runner type: {variant}.',
 
-  'env.title': 'Child environment',
+  'env.title': 'Environment variables',
   'env.name': 'Variable',
   'env.name.placeholder': 'GITHUB_TOKEN',
   'env.kind': 'Where the value comes from',

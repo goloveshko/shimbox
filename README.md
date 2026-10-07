@@ -88,8 +88,9 @@ the shim is simply not found, which is expected rather than an error.
 
 **Single shim** — pick the target executable, get its folder and file stem
 offered as the destination and name, then adjust: alias, arguments, working
-directory, runner variant, and the child's environment. The `Generate` button
-waits until the target, the destination and the name are all filled in.
+directory, runner variant, and the environment variables the target runs with.
+The `Generate` button waits until the target, the destination and the name are
+all filled in.
 Arguments are written into the config exactly as you type them, with no quoting
 added.
 

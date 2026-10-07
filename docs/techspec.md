@@ -376,14 +376,15 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   target, so the pair is only given a `workdir` when the field names a different
   folder — case and a trailing separator do not make one different, and the line
   under the field says which of the two the config will hold.
-* **Child environment**: one row per variable — its name, where its value comes
-  from (`Value`, `Secret`, `File`, 3.5), and the control that kind needs: a field
-  written into the config as typed, a picker over the stored names, or a file path
-  with a folder button beside it. Adding and removing a row carry a glyph rather
-  than a word — `+` on the line naming the block, `−` at the end of each row —
-  because the shape is the same in every language and a caption would set the
-  column every row ends at wider than the rows need. A picker's placeholder names
-  the field in the closed control and is left out of the list that opens from it.
+* **Environment variables**: one row per variable — its name, where its value
+  comes from (`Value`, `Secret`, `File`, 3.5), and the control that kind needs:
+  a field written into the config as typed, a picker over the stored names, or a
+  file path with a folder button beside it. Adding and removing a row carry a
+  glyph rather than a word — `+` on the line naming the block, `−` at the end of
+  each row — because the shape is the same in every language and a caption would
+  set the column every row ends at wider than the rows need. A picker's
+  placeholder names the field in the closed control and is left out of the list
+  that opens from it.
   The names live in a card of their own, reached only from a row whose kind is
   `Secret`: the last line of that picker opens the card, and says
   `Save a first secret…` while the store is empty, since an empty store is the one

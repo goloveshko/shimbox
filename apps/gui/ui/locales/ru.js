@@ -75,7 +75,7 @@ export default {
   'single.result': '{name} готов и лежит в {destination}.',
   'single.result.variant': 'Тип runner: {variant}.',
 
-  'env.title': 'Среда дочернего процесса',
+  'env.title': 'Переменные среды',
   'env.name': 'Переменная',
   'env.name.placeholder': 'GITHUB_TOKEN',
   'env.kind': 'Откуда берётся значение',
