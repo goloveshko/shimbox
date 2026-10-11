@@ -24,11 +24,13 @@ export default {
   'settings.theme.system': 'Follow Windows',
   'settings.theme.light': 'Light',
   'settings.theme.dark': 'Dark',
-  'settings.theme.note': 'Applies as you pick it. The window, its cards and the backdrop behind them all change with it.',
+  'settings.theme.note':
+    'Applies as you pick it. The window, its cards and the backdrop behind them all change with it.',
 
   'settings.language': 'Language',
   'settings.language.system': 'Follow Windows',
-  'settings.language.note': 'Applies as you pick it. Every word in the window changes with it, and what the form already holds stays in it.',
+  'settings.language.note':
+    'Applies as you pick it. Every word in the window changes with it, and what the form already holds stays in it.',
 
   'about.title': 'About shimbox',
   'about.tagline': 'A small runner beside a <alias>.shim, in a folder on PATH.',
@@ -70,12 +72,12 @@ export default {
   'single.variant': 'Runner type',
   'single.detected.gui': 'Detected: GUI application.',
   'single.detected.console': 'Detected: console application.',
-  'single.detected.unknown':
-    'Detected: not a readable PE, the console runner will be used.',
+  'single.detected.unknown': 'Detected: not a readable PE, the console runner will be used.',
   'single.workdir': 'Working directory',
   'single.workdir.placeholder': 'C:\\Tools\\ffmpeg',
   'single.workdir.help': 'Leave empty to run the target from its own folder.',
-  'single.workdir.default': 'Runs from {folder}: the target\'s own folder, so nothing extra goes into the config.',
+  'single.workdir.default':
+    "Runs from {folder}: the target's own folder, so nothing extra goes into the config.",
   'single.workdir.custom': 'The target starts here, and this path goes into the config.',
   'single.generate': 'Generate shim',
   'single.result': '{name} is ready in {destination}.',
@@ -94,7 +96,8 @@ export default {
   'env.file.placeholder': 'C:\\Tools\\tokens\\github.txt',
   'env.add': 'Add variable',
   'env.remove': 'Remove',
-  'env.help': 'Each variable is set for the target alone. A stored secret or a file keeps the value out of the config, which lives in a folder on PATH.',
+  'env.help':
+    'Each variable is set for the target alone. A stored secret or a file keeps the value out of the config, which lives in a folder on PATH.',
   'env.secret.title': 'Stored secrets ({count})',
   'env.secret.pick': 'Choose a secret',
   // Read only in the closed control: a placeholder is hidden from the list that
@@ -109,7 +112,8 @@ export default {
   'env.secret.value.placeholder': 'Paste the value',
   'env.secret.store': 'Store',
   'env.secret.forget': 'Forget',
-  'env.secret.help': 'Windows keeps these under your own account as shimbox/<name>, where the system\'s Credential Manager also shows them. Store a token once and point any number of shims at it.',
+  'env.secret.help':
+    "Windows keeps these under your own account as shimbox/<name>, where the system's Credential Manager also shows them. Store a token once and point any number of shims at it.",
 
   'batch.source': 'Source folder',
   'batch.source.placeholder': 'C:\\Tools',
@@ -117,8 +121,10 @@ export default {
   'batch.destination': 'Destination folder',
   'batch.destination.placeholder': 'C:\\Shims',
   'batch.destination.help': 'Every selected executable gets a shim of the same name here.',
-  'batch.scan.help': 'Files that are already a shim, and everything inside the destination folder, are left out.',
-  'batch.group.help': 'Executables that would claim the same shim name are alternatives: the newest is selected, and choosing one clears the rest.',
+  'batch.scan.help':
+    'Files that are already a shim, and everything inside the destination folder, are left out.',
+  'batch.group.help':
+    'Executables that would claim the same shim name are alternatives: the newest is selected, and choosing one clears the rest.',
   'batch.selectAll': 'Select all',
   'batch.deselectAll': 'Select none',
   'batch.filter': 'Filter',

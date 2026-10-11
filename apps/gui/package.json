@@ -1,0 +1,14 @@
+{
+  "name": "shimbox-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The manager's UI: plain ESM read from disk by the webview, with Prettier as the authority on how it is wrapped.",
+  "scripts": {
+    "check": "prettier --check \"ui/**/*.js\"",
+    "format": "prettier --write \"ui/**/*.js\""
+  },
+  "devDependencies": {
+    "prettier": "^3"
+  }
+}

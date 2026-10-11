@@ -85,12 +85,15 @@ export function aboutDialog() {
     badge.addEventListener('click', () => {
       // A write the webview refuses says nothing at all here: the badge claims
       // only what actually landed, and a click is what the clipboard asks for.
-      navigator.clipboard.writeText(version).then(() => {
-        badge.textContent = t('about.version.copied');
-        setTimeout(() => {
-          badge.textContent = version;
-        }, 1200);
-      }, () => {});
+      navigator.clipboard.writeText(version).then(
+        () => {
+          badge.textContent = t('about.version.copied');
+          setTimeout(() => {
+            badge.textContent = version;
+          }, 1200);
+        },
+        () => {}
+      );
     });
     head.append(name, badge);
 

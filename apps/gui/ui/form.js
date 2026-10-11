@@ -241,8 +241,7 @@ export function resultDialog() {
     // The answer is the variable this window was started with, so an entry added
     // while it stayed open is not seen: the reminder is then repeated rather than
     // withheld, which is the safe direction to be wrong in.
-    const onPath =
-      folder && (await invoke('folder_on_path', { path: folder }).catch(() => false));
+    const onPath = folder && (await invoke('folder_on_path', { path: folder }).catch(() => false));
     const content = document.createElement('div');
     build(content, onPath);
     show('result.title', content, folder, onPath);

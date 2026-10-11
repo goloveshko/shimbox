@@ -310,9 +310,7 @@ export function renderBatch(root) {
       for (const group of new Set(shown.map((row) => row.group))) {
         const members = shown.filter((row) => row.group === group);
         const winner =
-          members.find((row) => row.selected) ??
-          members.find((row) => row.preferred) ??
-          members[0];
+          members.find((row) => row.selected) ?? members.find((row) => row.preferred) ?? members[0];
         picked.add(winner.path);
       }
     }

@@ -25,11 +25,13 @@ export default {
   'settings.theme.system': 'Следовать за Windows',
   'settings.theme.light': 'Светлая',
   'settings.theme.dark': 'Тёмная',
-  'settings.theme.note': 'Применяется сразу при выборе: меняются и окно, и карточки, и фон за ними.',
+  'settings.theme.note':
+    'Применяется сразу при выборе: меняются и окно, и карточки, и фон за ними.',
 
   'settings.language': 'Язык',
   'settings.language.system': 'Следовать за Windows',
-  'settings.language.note': 'Применяется сразу при выборе: меняются все слова в окне, а всё, что уже введено в форме, остаётся на месте.',
+  'settings.language.note':
+    'Применяется сразу при выборе: меняются все слова в окне, а всё, что уже введено в форме, остаётся на месте.',
 
   'about.title': 'О shimbox',
   'about.tagline': 'Небольшой runner рядом с <alias>.shim, в папке на PATH.',
@@ -69,12 +71,12 @@ export default {
   'single.variant': 'Тип runner',
   'single.detected.gui': 'Программа с интерфейсом.',
   'single.detected.console': 'Консольная программа.',
-  'single.detected.unknown':
-    'Это не читаемый PE-файл, будет взят консольный runner.',
+  'single.detected.unknown': 'Это не читаемый PE-файл, будет взят консольный runner.',
   'single.workdir': 'Рабочая папка',
   'single.workdir.placeholder': 'C:\\Tools\\ffmpeg',
   'single.workdir.help': 'Оставьте пустой, чтобы запускать программу из её собственной папки.',
-  'single.workdir.default': 'Запуск из {folder} — это своя папка программы, поэтому в конфиг не идёт ничего лишнего.',
+  'single.workdir.default':
+    'Запуск из {folder} — это своя папка программы, поэтому в конфиг не идёт ничего лишнего.',
   'single.workdir.custom': 'Программа запускается отсюда, и этот путь попадает в конфиг.',
   'single.generate': 'Создать шим',
   'single.result': '{name} готов и лежит в {destination}.',
@@ -91,7 +93,8 @@ export default {
   'env.file.placeholder': 'C:\\Tools\\tokens\\github.txt',
   'env.add': 'Добавить переменную',
   'env.remove': 'Убрать',
-  'env.help': 'Каждая переменная задаётся только для целевой программы. Сохранённый секрет или файл держат значение вне конфига, который лежит в папке на PATH.',
+  'env.help':
+    'Каждая переменная задаётся только для целевой программы. Сохранённый секрет или файл держат значение вне конфига, который лежит в папке на PATH.',
   'env.secret.title': 'Сохранённые секреты ({count})',
   'env.secret.pick': 'Выбрать секрет',
   'env.secret.none': 'Секретов ещё нет',
@@ -104,7 +107,8 @@ export default {
   'env.secret.value.placeholder': 'Вставьте значение',
   'env.secret.store': 'Сохранить',
   'env.secret.forget': 'Забыть',
-  'env.secret.help': 'Windows хранит их под вашим именем как shimbox/<name>, и они видны ещё и в системном диспетчере учётных данных. Сохраните токен один раз и укажите его в любом числе шимов.',
+  'env.secret.help':
+    'Windows хранит их под вашим именем как shimbox/<name>, и они видны ещё и в системном диспетчере учётных данных. Сохраните токен один раз и укажите его в любом числе шимов.',
 
   'batch.source': 'Исходная папка',
   'batch.source.placeholder': 'C:\\Tools',
@@ -112,8 +116,10 @@ export default {
   'batch.destination': 'Папка назначения',
   'batch.destination.placeholder': 'C:\\Shims',
   'batch.destination.help': 'Для каждой выбранной программы здесь окажется шим с тем же именем.',
-  'batch.scan.help': 'Уже созданные шимы и всё, что лежит в папке назначения, в список не попадает.',
-  'batch.group.help': 'Программы, которым нужно одно и то же имя шима, — варианты одного: выбрана самая свежая, а выбор другой снимает остальные.',
+  'batch.scan.help':
+    'Уже созданные шимы и всё, что лежит в папке назначения, в список не попадает.',
+  'batch.group.help':
+    'Программы, которым нужно одно и то же имя шима, — варианты одного: выбрана самая свежая, а выбор другой снимает остальные.',
   'batch.selectAll': 'Выбрать все',
   'batch.deselectAll': 'Снять выбор',
   'batch.filter': 'Фильтр',

@@ -40,9 +40,7 @@ export function renderSingle(root) {
   fields.append(field('single.alias', alias, alias));
 
   const args = textInput('single.arguments.placeholder');
-  fields.append(
-    field('single.arguments', args, args, note('single.arguments.help'))
-  );
+  fields.append(field('single.arguments', args, args, note('single.arguments.help')));
 
   const variant = document.createElement('select');
   variant.id = nextFieldId();
@@ -85,8 +83,7 @@ export function renderSingle(root) {
   /// it is found by, so the button waits for those three instead of answering an
   /// incomplete form with an error (5.1).
   function checkComplete() {
-    generate.disabled =
-      !target.value.trim() || !destination.value.trim() || !alias.value.trim();
+    generate.disabled = !target.value.trim() || !destination.value.trim() || !alias.value.trim();
   }
 
   for (const input of [target, destination, alias]) {
