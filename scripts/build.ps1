@@ -75,6 +75,19 @@ $exitCode = 0
 try {
     Push-Location $Root
 
+    # Checked before anything is compiled, because a build that spends a minute on
+    # the runners only to say that a line is wrapped differently is a minute nobody
+    # needed. Unlike the size target this is a gate for everyone, not one for CI: the
+    # tree is either formatted or it is not, and the answer to 'not' is a command
+    # rather than a judgement, so there is nothing to decide and no reason to let a
+    # month of small drift accumulate before someone reads a report.
+    Write-Section 'format'
+    Write-Host 'cargo fmt --all -- --check' -ForegroundColor DarkGray
+    & cargo fmt --all -- --check
+    if ($LASTEXITCODE -ne 0) {
+        throw 'the Rust tree is not formatted; run `cargo fmt --all`, read what it changed, and build again'
+    }
+
     if (-not (Test-Path $BinDir)) {
         New-Item -ItemType Directory -Path $BinDir | Out-Null
     }
