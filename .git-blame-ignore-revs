@@ -1,0 +1,11 @@
+# Commits that changed nothing but layout, so `git blame` keeps naming whoever
+# wrote the line rather than whoever had rustfmt run over the whole tree.
+#
+# This file is read by nothing until it is named once per clone:
+#
+#     git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub reads it without being told. It stays at the root next to `.gitignore`
+# because that is the path the command above gives, and because git looks for no
+# other place for a file of its own.
+3f9e6ffee58f93de2095169a5075cf5f2fe73b9b
