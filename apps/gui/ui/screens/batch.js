@@ -417,7 +417,7 @@ function smallButton(key) {
 
 function showSummary(result, summary) {
   const folder = summary.created.length ? folderOf(summary.created[0]) : '';
-  result.success(folder, (box) => {
+  result.success(folder, (box, onPath) => {
     box.append(
       t(summary.created.length ? 'batch.created' : 'batch.created.none', {
         count: summary.created.length,
@@ -428,7 +428,7 @@ function showSummary(result, summary) {
       box.append(
         document.createElement('br'),
         list(summary.created.map((path) => path.slice(folder.length + 1))),
-        t('result.path')
+        t(onPath ? 'result.path.on' : 'result.path')
       );
     }
     if (summary.skipped.length) {

@@ -151,7 +151,7 @@ export function renderSingle(root) {
         },
       });
       const folder = folderOf(created.exe);
-      result.success(folder, (box) => {
+      result.success(folder, (box, onPath) => {
         box.append(
           t('single.result', {
             name: created.exe.slice(folder.length + 1),
@@ -160,7 +160,7 @@ export function renderSingle(root) {
           ' ',
           t('single.result.variant', { variant: t(`variant.${created.variant}`) }),
           document.createElement('br'),
-          t('result.path')
+          t(onPath ? 'result.path.on' : 'result.path')
         );
       });
     } catch (failure) {

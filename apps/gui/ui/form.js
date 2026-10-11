@@ -218,23 +218,34 @@ export function closeButton(dialog, key = 'dialog.close') {
 
 /// `success` and `fail` rather than `show`, which a dialog already owns. A
 /// destination that is not on `PATH` is nothing, so a result that wrote something
-/// also comes with the ways to act on the folder it wrote into (6).
+/// also comes with the ways to act on the folder it wrote into (6) - unless the
+/// folder is already there, which the result asks the system about rather than
+/// assume, because a reminder to do a thing that is done reads as a failure.
 export function resultDialog() {
   const dialog = modalDialog();
   const card = dialog.querySelector('.dialog-card');
 
-  function show(title, content, folder) {
-    const buttons = folder
-      ? [openFolderButton(folder), editPathButton(), closeButton(dialog)]
-      : [closeButton(dialog)];
-    dialog.openModal(title, content, buttons);
+  function show(title, content, folder, onPath) {
+    const actions = [];
+    if (folder) {
+      actions.push(openFolderButton(folder));
+      if (!onPath) {
+        actions.push(editPathButton());
+      }
+    }
+    dialog.openModal(title, content, [...actions, closeButton(dialog)]);
   }
 
-  dialog.success = (folder, build) => {
+  dialog.success = async (folder, build) => {
     card.classList.remove('error');
+    // The answer is the variable this window was started with, so an entry added
+    // while it stayed open is not seen: the reminder is then repeated rather than
+    // withheld, which is the safe direction to be wrong in.
+    const onPath =
+      folder && (await invoke('folder_on_path', { path: folder }).catch(() => false));
     const content = document.createElement('div');
-    build(content);
-    show('result.title', content, folder);
+    build(content, onPath);
+    show('result.title', content, folder, onPath);
   };
   /// `key` is the error's own, so the card's title is the sentence the next
   /// language pass can rewrite; the detail beside it is what the backend said.

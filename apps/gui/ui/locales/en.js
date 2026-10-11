@@ -49,6 +49,7 @@ export default {
 
   'result.title': 'Result',
   'result.path': 'Add the destination folder to PATH to start a shim by name.',
+  'result.path.on': 'The destination folder is already on PATH, so a shim here starts by name.',
   'result.open': 'Open destination folder',
   'result.edit': 'Edit PATH…',
 

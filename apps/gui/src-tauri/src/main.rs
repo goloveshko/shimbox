@@ -82,6 +82,7 @@ fn main() {
             open_folder,
             open_link,
             app_folder,
+            folder_on_path,
             edit_path,
             secret::store_secret,
             secret::forget_secret,
@@ -237,6 +238,26 @@ fn open_link(url: String) -> Result<(), String> {
         .map(|_| ())
 }
 
+/// Whether a folder is one of the entries of a `PATH`-shaped list. Windows looks
+/// a command name up in those entries in order, and an empty one means the current
+/// directory rather than a folder, so it answers no question about a destination.
+fn contains_folder(path_list: &std::ffi::OsStr, folder: &Path) -> bool {
+    std::env::split_paths(path_list)
+        .any(|entry| !entry.as_os_str().is_empty() && shim::same_path(&entry, folder))
+}
+
+/// The question behind the success dialog's reminder: can this folder already be
+/// reached by name? The answer is read from the variable this process was started
+/// with rather than from the registry, so the app asks nothing of Windows about an
+/// entry it only reports. The cost of that is a folder added while the window
+/// stayed open: it is not seen here, and the reminder is shown once more than the
+/// work needed it.
+#[tauri::command]
+fn folder_on_path(path: String) -> bool {
+    let variable = std::env::var_os("Path").unwrap_or_default();
+    contains_folder(&variable, Path::new(&path))
+}
+
 /// The success dialog's "Edit PATH…" action. A folder becomes a command name
 /// through the system's own variable editor, so the user types the entry and
 /// shimbox never writes to the registry (6).
@@ -249,4 +270,36 @@ fn edit_path() -> Result<(), String> {
         .spawn()
         .map_err(|error| format!("cannot open the environment editor: {error}"))
         .map(|_| ())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::contains_folder;
+    use std::path::Path;
+
+    #[test]
+    fn a_folder_is_found_whatever_the_way_it_is_written() {
+        let variable = "C:\\Windows;C:\\shimbox\\bin;D:\\Other";
+        let folder = Path::new("C:\\shimbox\\bin");
+        assert!(contains_folder(variable.as_ref(), folder));
+        // Windows ignores the case of a name and a separator that says nothing.
+        assert!(contains_folder(
+            "c:\\SHIMBOX\\BIN\\".as_ref(),
+            Path::new("C:\\shimbox\\bin")
+        ));
+        assert!(!contains_folder(
+            variable.as_ref(),
+            Path::new("C:\\shimbox")
+        ));
+    }
+
+    #[test]
+    fn an_empty_entry_names_no_folder() {
+        // A doubled separator leaves an empty entry, which to Windows is the
+        // current directory; it is no answer about a destination.
+        let variable = ";;C:\\Windows";
+        assert!(contains_folder(variable.as_ref(), Path::new("C:\\Windows")));
+        assert!(!contains_folder(variable.as_ref(), Path::new("")));
+        assert!(!contains_folder("".as_ref(), Path::new("C:\\shimbox\\bin")));
+    }
 }
