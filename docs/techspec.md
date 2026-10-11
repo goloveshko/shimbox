@@ -120,7 +120,8 @@ shimbox/
     images/             the screenshots the README shows
   scripts/
     common.ps1          shared helpers, dot-sourced only
-    build.ps1           master: tests + both variants + size report
+    build.ps1           master: tests + both variants + size report, and restages
+                        the manager while its own window is open
     smoke.ps1           end-to-end runner checks against real binaries
     package.ps1         the release archive, from what bin/ already holds
     build.cmd           thin wrappers, no logic
