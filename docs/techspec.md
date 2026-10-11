@@ -82,8 +82,10 @@ Consequences worth keeping in mind:
     against the noise.
 
 * **`shimbox` (crate / Tauri app `gui`)**
-  * Backend: Rust (Tauri v2). Frontend: Vanilla JS with no build step and no npm
-    dependencies (section 8); the UI is two tabs and one table, so no
+  * Backend: Rust (Tauri v2). Frontend: Vanilla JS with no build step and nothing
+    it needs in order to run (section 8) — its one npm file is Prettier, a
+    dev-time formatter that checks how the code is wrapped and is never read by the
+    webview; the UI is two tabs and one table, so no
     build-chain-heavy stack is needed for its sake.
   * Embeds **both** runner variants via `include_bytes!` and writes the selected
     one.
@@ -130,8 +132,10 @@ shimbox/
   apps/
     gui/
       assets/           icon source
+      package.json      the formatter's manifest; a devDependency and no runtime one
+      prettier.config.mjs  how the UI is wrapped, measured off the UI itself
       src-tauri/        Rust backend, embeds ui/ and both runners
-      ui/               frontend: no build step, no npm dependencies
+      ui/               frontend: no build step, nothing it needs in order to run
         index.html
         main.js         the two tabs, the status line, what is built when
         i18n.js         language resolution and the keys left on the nodes
@@ -699,8 +703,13 @@ Resolved since draft 3:
   is real — `scoop-shim` uses the same extension for the same idea — and it
   turned out to cost nothing, because the two formats cannot be misread as each
   other in either direction and both failures name themselves (3.6). Kept.
-* **Frontend**: Vanilla JS, no build step and no npm dependencies, reached
-  through `withGlobalTauri`. Every string goes through a `data-i18n` key and a
+* **Frontend**: Vanilla JS, no build step and no dependency the running app reads,
+  reached through `withGlobalTauri`. Its one npm file is Prettier, which says how
+  the UI is wrapped and is installed only to check that: `build.ps1` opens with the
+  two formatting gates, Rust and then the UI, and a missing install is a named setup
+  step rather than a check skipped - the drift this repository had already collected
+  once in ten files is what that refuses to let happen again. Every string goes
+  through a `data-i18n` key and a
   per-language dictionary file, so a language is one file in `ui/locales/` plus
   three lines in `ui/i18n.js` — the import, the entry in `languages`, the entry
   in `dictionaries`; English and Russian are both registered, and the reader

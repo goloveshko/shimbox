@@ -29,6 +29,21 @@ jobs:
 
       # Windows PowerShell rather than the default pwsh: the masters declare
       # `#Requires -Version 5.1`, which is also what a double-clicked .cmd starts.
+
+      # The master checks the UI with Prettier and says so when it is missing, so
+      # the install belongs here rather than in a fourth build path: `npm ci` reads
+      # the lock file the repository carries, which is what makes the runner format
+      # the code with the same binary the pass here was made with.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/gui/package-lock.json
+
+      - name: Install the UI formatter
+        run: npm ci
+        working-directory: apps/gui
+
       - name: Build both runners and the manager
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1 -Profile release -NoPause -StrictSize
 

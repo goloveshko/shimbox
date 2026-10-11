@@ -88,6 +88,27 @@ try {
         throw 'the Rust tree is not formatted; run `cargo fmt --all`, read what it changed, and build again'
     }
 
+    # The same argument for the UI, which no compiler ever reads: a file that left
+    # Prettier's style is invisible until someone opens the window. Prettier is not
+    # something cargo brings, so a missing install is named as the setup step it is
+    # instead of being skipped - a check that passes silently when its tool is absent
+    # is the drift arriving back.
+    Write-Section 'ui format'
+    $prettier = Join-Path $Root 'apps\gui\node_modules\.bin\prettier.cmd'
+    if (-not (Test-Path $prettier)) {
+        throw 'Prettier is not installed; run `npm install` in apps\gui, then build again'
+    }
+    Push-Location (Join-Path $Root 'apps\gui')
+    try {
+        & $prettier --check 'ui/**/*.js'
+    }
+    finally {
+        Pop-Location
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw 'the UI is not formatted; run `npm run format` in apps\gui, read what it changed, and build again'
+    }
+
     if (-not (Test-Path $BinDir)) {
         New-Item -ItemType Directory -Path $BinDir | Out-Null
     }

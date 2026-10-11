@@ -50,9 +50,11 @@ unless you override it.
 ## Build
 
 Windows only, and it needs the MSVC toolchain, `cargo` and the WebView2 runtime
-(already present on Windows 11). The order matters: the manager embeds the
-runner's bytes, so the runner is built and staged first. `scripts\build.cmd`
-does the whole thing.
+(already present on Windows 11). A first clone also needs Node and one
+`npm install` in `apps\gui`, because the build checks the UI with Prettier and
+says so when the formatter is not installed. The order matters: the manager
+embeds the runner's bytes, so the runner is built and staged first.
+`scripts\build.cmd` does the whole thing.
 
 ```powershell
 scripts\build.cmd                     # both runner variants, tests, the manager
@@ -89,6 +91,9 @@ disagrees with it stops the package rather than shipping a mismatched pair.
 The same three scripts run on every push to `main` and on every pull request
 (`.github\workflows\ci.yml`), on a Windows runner and under Windows PowerShell —
 and there the runner size target is a failed build rather than a line in the log.
+The two formatting checks the build opens with are a failed build everywhere, on
+the runner and on a double-click, because the answer to them is a command rather
+than a judgement.
 A `v*` tag additionally gets a **draft** release holding the archive: publishing
 one, and writing the text the app's own update card shows, stays a human step.
 
