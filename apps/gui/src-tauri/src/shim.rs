@@ -226,15 +226,20 @@ fn checked_alias(text: &str) -> Result<String, Failure> {
     if alias.is_empty() {
         return Err(fail("alias", String::new()));
     }
-    if alias.chars().any(|c| {
-        c < ' ' || matches!(c, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*')
-    }) || alias.ends_with('.')
+    if alias
+        .chars()
+        .any(|c| c < ' ' || matches!(c, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*'))
+        || alias.ends_with('.')
         || alias.ends_with(' ')
     {
         return Err(fail("alias", alias.to_string()));
     }
     // Reserved device names look legal but cannot be created.
-    let stem = alias.split('.').next().unwrap_or(alias).to_ascii_uppercase();
+    let stem = alias
+        .split('.')
+        .next()
+        .unwrap_or(alias)
+        .to_ascii_uppercase();
     if is_reserved(&stem) {
         return Err(fail("alias", alias.to_string()));
     }
@@ -246,8 +251,9 @@ fn is_reserved(stem: &str) -> bool {
         return true;
     }
     ["COM", "LPT"].iter().any(|prefix| {
-        stem.strip_prefix(prefix)
-            .is_some_and(|digits| !digits.is_empty() && digits.chars().all(|digit| digit.is_ascii_digit()))
+        stem.strip_prefix(prefix).is_some_and(|digits| {
+            !digits.is_empty() && digits.chars().all(|digit| digit.is_ascii_digit())
+        })
     })
 }
 
@@ -401,12 +407,16 @@ mod tests {
 
         // Another program's credential is not ours to hand to a child.
         assert_eq!(
-            env_lines(&[row("cred", "GitHub/personal")]).unwrap_err().code,
+            env_lines(&[row("cred", "GitHub/personal")])
+                .unwrap_err()
+                .code,
             "env"
         );
         // A file that is not there would only fail when the shim runs.
         assert_eq!(
-            env_lines(&[row("file", r"C:\nowhere\token.txt")]).unwrap_err().code,
+            env_lines(&[row("file", r"C:\nowhere\token.txt")])
+                .unwrap_err()
+                .code,
             "env"
         );
         assert_eq!(
@@ -451,7 +461,9 @@ mod tests {
 
     #[test]
     fn rejects_illegal_and_reserved_aliases() {
-        for alias in ["", ".exe", "a/b", "a\\b", "a:b", "a*b", "a.", "con", "COM1.exe"] {
+        for alias in [
+            "", ".exe", "a/b", "a\\b", "a:b", "a*b", "a.", "con", "COM1.exe",
+        ] {
             assert!(checked_alias(alias).is_err(), "accepted {alias:?}");
         }
     }
@@ -475,7 +487,11 @@ mod tests {
         let created = generate(request("tool")).unwrap();
         assert_eq!(created.variant, "cli");
         assert!(Path::new(&created.exe).is_file());
-        assert!(fs::read_to_string(&created.config).unwrap().contains("arg=-v"));
+        assert!(
+            fs::read_to_string(&created.config)
+                .unwrap()
+                .contains("arg=-v")
+        );
 
         let error = generate(request("tool")).unwrap_err();
         assert_eq!(error.code, "collision");
@@ -538,7 +554,10 @@ mod tests {
         };
 
         fs::write(dir.join("target.exe"), b"MZ").unwrap();
-        assert_eq!(generate(request("nope.exe", "")).unwrap_err().code, "target");
+        assert_eq!(
+            generate(request("nope.exe", "")).unwrap_err().code,
+            "target"
+        );
         assert_eq!(
             generate(request("target.exe", "nowhere")).unwrap_err().code,
             "destination"
@@ -551,10 +570,7 @@ mod tests {
 
     /// A per-test folder under `TEMP`, removed again when the test ends.
     fn scratch(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!(
-            "shimbox-test-{}-{name}",
-            std::process::id()
-        ));
+        let dir = std::env::temp_dir().join(format!("shimbox-test-{}-{name}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         dir
     }

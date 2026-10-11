@@ -100,7 +100,9 @@ mod tests {
 
     #[test]
     fn reads_envref_pairs_the_same_way() {
-        let config = parse("path=C:\\a.exe\nenvref=GH_TOKEN=cred:shimbox/github\nenvref=KEY=file:C:\\t.txt\n");
+        let config = parse(
+            "path=C:\\a.exe\nenvref=GH_TOKEN=cred:shimbox/github\nenvref=KEY=file:C:\\t.txt\n",
+        );
         assert_eq!(
             config.envref,
             [

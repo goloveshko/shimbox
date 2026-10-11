@@ -51,7 +51,9 @@ pub struct Available {
 fn numbers(version: &str) -> Vec<u64> {
     let core = version.trim_start_matches('v');
     let core = core.split(['-', '+']).next().unwrap_or_default();
-    core.split('.').map(|part| part.parse().unwrap_or(0)).collect()
+    core.split('.')
+        .map(|part| part.parse().unwrap_or(0))
+        .collect()
 }
 
 /// Only a bigger number is a newer release. Equal, smaller and unreadable all
@@ -130,10 +132,8 @@ mod tests {
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!(
-            "shimbox-update-{}-{name}",
-            std::process::id()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("shimbox-update-{}-{name}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         dir
     }
@@ -147,7 +147,10 @@ mod tests {
 
         write(&file, Asked { at: 10 * DAY });
         assert!(!due_at(&read(&file), 10 * DAY + 60), "asked a minute ago");
-        assert!(!due_at(&read(&file), 11 * DAY - 1), "asked just under a day ago");
+        assert!(
+            !due_at(&read(&file), 11 * DAY - 1),
+            "asked just under a day ago"
+        );
         assert!(due_at(&read(&file), 11 * DAY), "a day is a day");
 
         fs::remove_dir_all(&root).ok();

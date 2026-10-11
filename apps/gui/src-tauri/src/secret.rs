@@ -8,7 +8,7 @@
 use std::ffi::{OsStr, OsString};
 use std::os::windows::ffi::{OsStrExt, OsStringExt};
 
-use crate::shim::{fail, Failure, CRED_PREFIX};
+use crate::shim::{CRED_PREFIX, Failure, fail};
 
 /// `CREDENTIALW` from `wincred.h`, field for field. The order is the system's
 /// rather than ours, and a mirror that swaps two pointer fields hands
@@ -79,7 +79,10 @@ pub fn store_secret(name: String, value: String) -> Result<String, Failure> {
         return Err(fail("secret", name.to_string()));
     }
     if value.len() > MAX_BLOB {
-        return Err(fail("length", format!("{name}: {} > {MAX_BLOB}", value.len())));
+        return Err(fail(
+            "length",
+            format!("{name}: {} > {MAX_BLOB}", value.len()),
+        ));
     }
 
     let target = format!("{CRED_PREFIX}{name}");
@@ -105,7 +108,10 @@ pub fn store_secret(name: String, value: String) -> Result<String, Failure> {
     };
 
     if unsafe { CredWriteW(&record, 0) } == 0 {
-        return Err(fail("write", format!("{target}: {}", std::io::Error::last_os_error())));
+        return Err(fail(
+            "write",
+            format!("{target}: {}", std::io::Error::last_os_error()),
+        ));
     }
     Ok(target)
 }
@@ -119,7 +125,10 @@ pub fn forget_secret(target: String) -> Result<(), Failure> {
     }
     let target_wide = wide(&target);
     if unsafe { CredDeleteW(target_wide.as_ptr(), CRED_TYPE_GENERIC, 0) } == 0 {
-        return Err(fail("write", format!("{target}: {}", std::io::Error::last_os_error())));
+        return Err(fail(
+            "write",
+            format!("{target}: {}", std::io::Error::last_os_error()),
+        ));
     }
     Ok(())
 }
@@ -132,8 +141,7 @@ pub fn list_secrets() -> Vec<String> {
     let mut count = 0u32;
     let mut block: *mut *mut CredentialW = std::ptr::null_mut();
 
-    if unsafe { CredEnumerateW(filter.as_ptr(), 0, &mut count, &mut block) } == 0
-        || block.is_null()
+    if unsafe { CredEnumerateW(filter.as_ptr(), 0, &mut count, &mut block) } == 0 || block.is_null()
     {
         // Holding nothing is not an error worth reporting to the form.
         return Vec::new();
@@ -190,11 +198,15 @@ mod tests {
     #[test]
     fn refuses_names_and_targets_that_are_not_ours() {
         assert_eq!(
-            store_secret("a/b".to_string(), "x".to_string()).unwrap_err().code,
+            store_secret("a/b".to_string(), "x".to_string())
+                .unwrap_err()
+                .code,
             "secret"
         );
         assert_eq!(
-            store_secret("good".to_string(), String::new()).unwrap_err().code,
+            store_secret("good".to_string(), String::new())
+                .unwrap_err()
+                .code,
             "secret"
         );
         assert_eq!(
@@ -203,6 +215,11 @@ mod tests {
                 .code,
             "secret"
         );
-        assert_eq!(forget_secret("GitHub/personal".to_string()).unwrap_err().code, "secret");
+        assert_eq!(
+            forget_secret("GitHub/personal".to_string())
+                .unwrap_err()
+                .code,
+            "secret"
+        );
     }
 }

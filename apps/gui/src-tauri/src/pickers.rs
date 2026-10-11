@@ -83,10 +83,8 @@ mod tests {
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!(
-            "shimbox-pickers-{}-{name}",
-            std::process::id()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("shimbox-pickers-{}-{name}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         dir
     }
@@ -138,11 +136,19 @@ mod tests {
             "a file starts in the folder holding it"
         );
         assert_eq!(
-            start_of(&empty, "target", &tools.join("half-typed.e").display().to_string()),
+            start_of(
+                &empty,
+                "target",
+                &tools.join("half-typed.e").display().to_string()
+            ),
             Some(tools.clone()),
             "a path that does not exist yet starts in its parent"
         );
-        assert_eq!(start_of(&empty, "target", "   "), None, "an empty field is not a directory");
+        assert_eq!(
+            start_of(&empty, "target", "   "),
+            None,
+            "an empty field is not a directory"
+        );
 
         fs::remove_dir_all(&root).ok();
     }

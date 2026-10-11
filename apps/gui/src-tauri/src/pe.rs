@@ -42,8 +42,7 @@ pub fn subsystem_of(path: &Path) -> Subsystem {
         return Subsystem::Unknown;
     }
 
-    let nt_headers =
-        u32::from_le_bytes([dos[0x3C], dos[0x3D], dos[0x3E], dos[0x3F]]) as u64;
+    let nt_headers = u32::from_le_bytes([dos[0x3C], dos[0x3D], dos[0x3E], dos[0x3F]]) as u64;
     if nt_headers < DOS_HEADER_SIZE as u64 {
         return Subsystem::Unknown;
     }
@@ -236,7 +235,9 @@ impl Section {
 /// start of the resource section, which is `base`, and only the last level
 /// holds data: the language entries are the leaf of the directory tree.
 fn version_resource(file: &mut File, sections: &[Section], root_rva: u32) -> Option<Vec<u8>> {
-    let base = sections.iter().find_map(|section| section.to_offset(root_rva))?;
+    let base = sections
+        .iter()
+        .find_map(|section| section.to_offset(root_rva))?;
 
     let entries = directory(file, base)?;
     let version = follow(&entries, RT_VERSION)?;
@@ -251,8 +252,12 @@ fn version_resource(file: &mut File, sections: &[Section], root_rva: u32) -> Opt
     }
 
     let entry = read_at(file, base + u64::from(data), RESOURCE_DATA_ENTRY_SIZE)?;
-    let size = usize::try_from(u32_at(&entry, 4)?).ok()?.min(MAX_VERSION_BLOCK);
-    let offset = sections.iter().find_map(|section| section.to_offset(u32_at(&entry, 0)?))?;
+    let size = usize::try_from(u32_at(&entry, 4)?)
+        .ok()?
+        .min(MAX_VERSION_BLOCK);
+    let offset = sections
+        .iter()
+        .find_map(|section| section.to_offset(u32_at(&entry, 0)?))?;
     read_at(file, offset, size)
 }
 
@@ -264,7 +269,11 @@ fn directory(file: &mut File, at: u64) -> Option<Vec<(u32, u32)>> {
     let count = named.checked_add(ids)?.min(MAX_DIRECTORY_ENTRIES);
 
     let start = at + RESOURCE_DIRECTORY_HEADER_SIZE as u64;
-    let raw = read_at(file, start, count.checked_mul(RESOURCE_DIRECTORY_ENTRY_SIZE)?)?;
+    let raw = read_at(
+        file,
+        start,
+        count.checked_mul(RESOURCE_DIRECTORY_ENTRY_SIZE)?,
+    )?;
     Some(
         raw.chunks_exact(RESOURCE_DIRECTORY_ENTRY_SIZE)
             .filter_map(|entry| Some((u32_at(entry, 0)?, u32_at(entry, 4)?)))
@@ -376,12 +385,7 @@ fn parse_version_info(bytes: &[u8]) -> Version {
         if u32_at(fixed, 0) == Some(FIXED_FILE_INFO_SIGNATURE) {
             let file = u32_at(fixed, 8).unwrap_or(0);
             let other = u32_at(fixed, 12).unwrap_or(0);
-            version.numbers = Some([
-                file >> 16,
-                file & 0xFFFF,
-                other >> 16,
-                other & 0xFFFF,
-            ]);
+            version.numbers = Some([file >> 16, file & 0xFFFF, other >> 16, other & 0xFFFF]);
         }
     }
 
@@ -533,7 +537,12 @@ mod tests {
         let file_version = node("FileVersion", &utf16("96.0"), 5, &[]);
         let language = node("040904B0", &[], 0, &file_version);
         let strings = node("StringFileInfo", &[], 0, &language);
-        let other = node("VarFileInfo", &[], 0, &node("Translation", &[0x04, 0x00], 0, &[]));
+        let other = node(
+            "VarFileInfo",
+            &[],
+            0,
+            &node("Translation", &[0x04, 0x00], 0, &[]),
+        );
         let root = node(
             "VS_VERSIONINFO",
             &fixed_info(96, 0),
@@ -566,7 +575,12 @@ mod tests {
 
         // A node that claims bytes past the end: what is really there still
         // parses, and the padding does not become children.
-        let mut dangling = node("VS_VERSIONINFO", &fixed_info(1, 0), FIXED_FILE_INFO_SIZE, &[]);
+        let mut dangling = node(
+            "VS_VERSIONINFO",
+            &fixed_info(1, 0),
+            FIXED_FILE_INFO_SIZE,
+            &[],
+        );
         let length = u16::from_le_bytes([dangling[0], dangling[1]]) + 8;
         dangling.extend_from_slice(&[0u8; 8]);
         dangling[0..2].copy_from_slice(&length.to_le_bytes());
@@ -575,7 +589,12 @@ mod tests {
         assert_eq!(version.text(), None);
 
         // Right length, wrong signature: the numbers are not the numbers.
-        let mut unsigned = node("VS_VERSIONINFO", &fixed_info(1, 0), FIXED_FILE_INFO_SIZE, &[]);
+        let mut unsigned = node(
+            "VS_VERSIONINFO",
+            &fixed_info(1, 0),
+            FIXED_FILE_INFO_SIZE,
+            &[],
+        );
         unsigned[36..40].copy_from_slice(&[0u8; 4]);
         assert!(parse_version_info(&unsigned).is_empty());
     }
@@ -585,7 +604,13 @@ mod tests {
         // Exercises the whole resource walk, which only real files have.
         let version = version_of(Path::new(r"C:\Windows\System32\cmd.exe"));
         assert_eq!(version.numbers().is_some(), true);
-        assert_eq!(version.text().unwrap_or_default().starts_with(char::is_numeric), true);
+        assert_eq!(
+            version
+                .text()
+                .unwrap_or_default()
+                .starts_with(char::is_numeric),
+            true
+        );
 
         // A file with no version resource at all, which is what the batch
         // table shows most often.
@@ -593,4 +618,3 @@ mod tests {
         assert!(version_of(Path::new(r"C:\nope\missing.exe")).is_empty());
     }
 }
-

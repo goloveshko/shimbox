@@ -177,7 +177,11 @@ async fn pick_folder(
     let dialog_app = app.clone();
     let start = pickers::start_directory(&app, &key, &path);
     let picked = tauri::async_runtime::spawn_blocking(move || match start {
-        Some(start) => dialog_app.dialog().file().set_directory(start).blocking_pick_folder(),
+        Some(start) => dialog_app
+            .dialog()
+            .file()
+            .set_directory(start)
+            .blocking_pick_folder(),
         None => dialog_app.dialog().file().blocking_pick_folder(),
     })
     .await
@@ -206,7 +210,10 @@ fn open_folder(path: String) -> Result<(), String> {
 /// in, which is what a report of a strange build starts by asking for.
 #[tauri::command]
 fn app_folder(app: tauri::AppHandle) -> Option<String> {
-    app.path().app_config_dir().ok().map(|dir| dir.display().to_string())
+    app.path()
+        .app_config_dir()
+        .ok()
+        .map(|dir| dir.display().to_string())
 }
 
 /// The About card's links (5): an address is handed to the browser rather than

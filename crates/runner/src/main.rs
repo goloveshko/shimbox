@@ -63,10 +63,16 @@ fn run() -> Result<u32, ShimError> {
         message: format!("shimbox: cannot locate myself: {error}"),
     })?;
 
-    let stem = own_path.file_stem().and_then(OsStr::to_str).ok_or_else(|| ShimError {
-        code: EXIT_BAD_CONFIG,
-        message: format!("shimbox: cannot derive shim name from {}", own_path.display()),
-    })?;
+    let stem = own_path
+        .file_stem()
+        .and_then(OsStr::to_str)
+        .ok_or_else(|| ShimError {
+            code: EXIT_BAD_CONFIG,
+            message: format!(
+                "shimbox: cannot derive shim name from {}",
+                own_path.display()
+            ),
+        })?;
     let config_path = own_path.with_file_name(format!("{stem}.shim"));
 
     let text = std::fs::read_to_string(&config_path).map_err(|error| ShimError {

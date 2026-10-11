@@ -135,7 +135,11 @@ fn mark_newest(rows: &mut [Candidate]) {
 /// is a known quantity, so it goes first; date settles everything the version
 /// cannot, which covers the tools that ship with no version resource at all.
 fn freshness(row: &Candidate) -> (bool, [u32; 4], SystemTime) {
-    (row.numbers.is_some(), row.numbers.unwrap_or([0; 4]), row.modified)
+    (
+        row.numbers.is_some(),
+        row.numbers.unwrap_or([0; 4]),
+        row.modified,
+    )
 }
 
 impl From<Candidate> for Found {
@@ -156,13 +160,7 @@ pub async fn generate_batch(app: tauri::AppHandle, request: Request) -> Result<S
     let destination = shim::checked_path(&request.destination, false, "destination")?;
     let total = request.targets.len();
     Ok(run_batch(&request.targets, &destination, |done| {
-        let _ = app.emit(
-            "batch-progress",
-            Progress {
-                done,
-                total,
-            },
-        );
+        let _ = app.emit("batch-progress", Progress { done, total });
     }))
 }
 
@@ -191,7 +189,9 @@ fn walk(root: &Path, recursive: bool, exclude: Option<&Path>) -> Vec<PathBuf> {
     let mut found = Vec::new();
     let mut pending = vec![root.to_path_buf()];
     while let Some(dir) = pending.pop() {
-        let Ok(entries) = fs::read_dir(dir) else { continue };
+        let Ok(entries) = fs::read_dir(dir) else {
+            continue;
+        };
         for entry in entries.flatten() {
             let Ok(file_type) = entry.file_type() else {
                 continue;
@@ -219,11 +219,7 @@ fn walk(root: &Path, recursive: bool, exclude: Option<&Path>) -> Vec<PathBuf> {
 
 /// Writes one shim per target and reports the rest. `progress` runs after
 /// every target, including the ones that were skipped.
-fn run_batch(
-    targets: &[String],
-    destination: &Path,
-    mut progress: impl FnMut(usize),
-) -> Summary {
+fn run_batch(targets: &[String], destination: &Path, mut progress: impl FnMut(usize)) -> Summary {
     let mut summary = Summary {
         created: Vec::new(),
         skipped: Vec::new(),
@@ -240,7 +236,12 @@ fn run_batch(
     summary
 }
 
-fn generate_one(target: &str, destination: &Path, claimed: &mut HashSet<String>, summary: &mut Summary) {
+fn generate_one(
+    target: &str,
+    destination: &Path,
+    claimed: &mut HashSet<String>,
+    summary: &mut Summary,
+) {
     let path = Path::new(target);
     let alias = match path.file_stem().and_then(OsStr::to_str) {
         Some(alias) if !alias.is_empty() && path.is_file() => alias,
@@ -362,7 +363,14 @@ mod tests {
             .filter(|row| row.selected)
             .map(|row| (row.name.as_str(), row.numbers))
             .collect();
-        assert_eq!(chosen, [("ffmpeg", Some([6, 0, 0, 0])), ("ffprobe", None), ("zip", None)]);
+        assert_eq!(
+            chosen,
+            [
+                ("ffmpeg", Some([6, 0, 0, 0])),
+                ("ffprobe", None),
+                ("zip", None)
+            ]
+        );
     }
 
     #[test]
