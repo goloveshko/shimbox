@@ -410,6 +410,15 @@ input[type='checkbox'] {
   accent-color: Highlight;
 }
 
+/* While a path is over the window, the thing a release would change says so: the
+   field it would fill, or the tab it would move to. Nothing is drawn before a
+   drag arrives, so the form keeps its own quiet when nothing is being dropped. */
+.field.drop-on,
+#tabs button.drop-on {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+
 .check {
   display: flex;
   align-items: center;

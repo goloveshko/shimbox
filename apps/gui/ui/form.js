@@ -93,6 +93,14 @@ export function iconButton(glyph, key, className) {
   return setTitle(element, key);
 }
 
+/// Writes a path into a field the way the Browse button does, so whatever a
+/// screen derives from a change - an alias, a working folder, a rescan - follows
+/// a drop as readily as it follows a dialog.
+export function setPath(input, path) {
+  input.value = path;
+  input.dispatchEvent(new Event('change'));
+}
+
 /// `key` names what the button picks rather than which screen holds it, so the
 /// destination of either mode shares one remembered directory, and the backend
 /// opens the dialog there instead of where another field's dialog last ended.
@@ -106,8 +114,7 @@ export function withBrowseButton(input, command, key) {
   browse.addEventListener('click', async () => {
     const picked = await invoke(command, { key, path: input.value });
     if (picked) {
-      input.value = picked;
-      input.dispatchEvent(new Event('change'));
+      setPath(input, picked);
     }
   });
 

@@ -83,6 +83,7 @@ fn main() {
             open_link,
             app_folder,
             folder_on_path,
+            paths_are_folders,
             edit_path,
             secret::store_secret,
             secret::forget_secret,
@@ -263,6 +264,15 @@ fn contains_folder(path_list: &std::ffi::OsStr, folder: &Path) -> bool {
 fn folder_on_path(path: String) -> bool {
     let variable = std::env::var_os("Path").unwrap_or_default();
     contains_folder(&variable, Path::new(&path))
+}
+
+/// What the window does with a dropped path depends on whether it names a folder,
+/// and the shape of a name proves nothing: a folder can end in `.exe` and a
+/// program needs no extension at all. The page cannot ask the file system, so the
+/// answers come back in the order the paths were sent.
+#[tauri::command]
+fn paths_are_folders(paths: Vec<String>) -> Vec<bool> {
+    paths.iter().map(|path| Path::new(path).is_dir()).collect()
 }
 
 /// The success dialog's "Edit PATH…" action. A folder becomes a command name

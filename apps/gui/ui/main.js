@@ -1,4 +1,5 @@
 import { aboutDialog } from './about.js';
+import { dropHandler } from './drop.js';
 import { formatSize } from './form.js';
 import { localize, loadLanguage, setText } from './i18n.js';
 import { renderBatch } from './screens/batch.js';
@@ -19,6 +20,8 @@ const settings = settingsDialog();
 let current = 'single';
 const tabs = new Map();
 const panels = new Map();
+// The path fields each screen hands out, which is what a drop is aimed at.
+const fields = {};
 
 // Both screens are built once and then shown or hidden, so a half-written form
 // and a scan someone is still ticking survive a look at the other mode;
@@ -40,7 +43,7 @@ function build() {
     panel.hidden = name !== current;
     panel.setAttribute('role', 'tabpanel');
     panel.setAttribute('aria-labelledby', `tab-${name}`);
-    renderScreen(panel);
+    fields[name] = renderScreen(panel);
     screenRoot.append(panel);
     panels.set(name, panel);
   }
@@ -65,6 +68,13 @@ build();
 titlebar({ onSettings: () => settings.show(), onAbout: () => about.show() });
 show(current);
 localize();
+
+// Tauri answers a drag over the window with an event of its own instead of the
+// page's `drop`, so this listener is the only way a path can reach the form.
+const handleDrop = dropHandler({ screens: fields, show });
+await window.__TAURI__.webview
+  .getCurrentWebview()
+  .onDragDropEvent((event) => handleDrop(event.payload));
 
 async function reportEmbeddedRunners() {
   const runners = await window.__TAURI__.core.invoke('embedded_runners');

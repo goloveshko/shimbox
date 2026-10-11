@@ -166,4 +166,8 @@ export function renderSingle(root) {
       checkComplete();
     }
   });
+
+  // The fields a drop can aim at, named by what they take rather than by the
+  // screen that holds them, which is what ui/drop.js routes a path by.
+  return { target, destination, workdir };
 }

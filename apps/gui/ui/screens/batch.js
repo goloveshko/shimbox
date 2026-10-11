@@ -368,6 +368,31 @@ export function renderBatch(root) {
   for (const field of [source, destination]) {
     field.addEventListener('change', rescan);
   }
+
+  /// Dropped files name what to shim, not only where to look, so they take the
+  /// choice over the scan's own preselection - one row per shim name, which is
+  /// the rule checking a row already applies (5.2). The scan is run here rather
+  /// than left to the field's `change`, because the ticks have to follow it
+  /// instead of racing it.
+  async function dropSource(folder, paths) {
+    source.value = folder;
+    await rescan();
+    if (!paths.length) {
+      return;
+    }
+    const key = (path) => path.replace(/\//g, '\\').toLowerCase();
+    const wanted = new Set(paths.map(key));
+    const winners = new Map();
+    for (const row of rows) {
+      if (wanted.has(key(row.path)) && !winners.has(row.group)) {
+        winners.set(row.group, row);
+      }
+    }
+    for (const row of rows) {
+      row.selected = winners.get(row.group)?.path === row.path;
+    }
+    show();
+  }
   destination.addEventListener('input', () => {
     setText(progress, null);
     tally();
@@ -404,6 +429,8 @@ export function renderBatch(root) {
       tally();
     }
   });
+
+  return { source, destination, dropSource };
 }
 
 function smallButton(key) {
