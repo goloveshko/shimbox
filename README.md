@@ -96,8 +96,9 @@ one, and writing the text the app's own update card shows, stays a human step.
 
 1. Make a folder for the shims, for example `C:\Shims`.
 2. Put it on `PATH`: *Settings → System → About → Advanced system settings →
-   Environment Variables*, edit `Path`, add the folder. Every successful result
-   in the manager has an **Edit PATH…** button that opens that same window.
+   Environment Variables*, edit `Path`, add the folder. A successful result whose
+   folder is not there yet has an **Edit PATH…** button that opens that same
+   window; when the folder is already on `PATH`, the card says so instead.
 3. Open `bin\shimbox.exe`, generate shims into the folder.
 4. Start a **new** terminal — `PATH` is read when a process starts — and run the
    name you gave the shim.
@@ -138,8 +139,10 @@ in the summary; the single-shim screen refuses to overwrite it and says so in
 the dialog instead.
 
 The result of either mode is a card you can dismiss by clicking anywhere around
-it, with **Open destination folder** and **Edit PATH…** when something was
-written.
+it, with **Open destination folder** when something was written, and **Edit
+PATH…** unless the folder is already on `PATH`. That last answer is the variable
+the manager was started with, so an entry you added while its window stayed open
+is a reminder you see one more time.
 
 Every Browse button reopens in the folder you last chose for that field — kept in
 `$APPCONFIG/.pickers.json` and restored across restarts — so the destination

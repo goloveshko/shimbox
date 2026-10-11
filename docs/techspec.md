@@ -485,7 +485,9 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   in that order (5.3); on success, a dialog over the form naming the pair, its
   resolved runner type and the destination, with "Open destination folder" and
   "Edit PATH…" beside Close, and a reminder that the destination must be on
-  `PATH` (6).
+  `PATH` (6). Asked first, that reminder is only shown when the folder is not
+  already an entry of the variable this window was started with; when it is, the
+  dialog says so and offers no editor to open.
 * Validates before writing: source exists, destination directory exists, alias
   is a legal file name. The button waits for those three fields
   to be filled rather than answering an incomplete form with an error; what the
@@ -630,8 +632,11 @@ says so in a card. This is the only network request the app makes.
 * **Portability**: GUI distributed as a single portable `.exe` or a light
   installer.
 * **`PATH` is maintained by the user, by hand.** A shim directory is only
-  usable once it is on `PATH`, and v1 neither adds, removes, validates nor
-  inspects `PATH`. The user adds the destination directory in the system's own
+  usable once it is on `PATH`, and v1 neither adds, removes nor validates it.
+  It is read, and only to decide what a result says: the destination is compared
+  with the entries of the variable the manager process was started with, so an
+  entry added while that window stayed open is not seen and the reminder is
+  repeated rather than withheld. The user adds the destination directory in the system's own
   variable editor — reached from *Settings → System → About → Advanced system
   settings → Environment Variables*, from `setx` in a terminal, or from the
   "Edit PATH…" action of a successful
