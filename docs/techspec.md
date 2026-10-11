@@ -120,8 +120,8 @@ shimbox/
     images/             the screenshots the README shows
   scripts/
     common.ps1          shared helpers, dot-sourced only
-    build.ps1           master: tests + both variants + size report, and restages
-                        the manager while its own window is open
+    build.ps1           master: tests + both variants + size report, and links the
+                        manager into bin unless its window is open
     smoke.ps1           end-to-end runner checks against real binaries
     package.ps1         the release archive, from what bin/ already holds
     build.cmd           thin wrappers, no logic
@@ -291,9 +291,10 @@ already has one beside it (5.3), and mode 1 refuses to write over one.
 ## 4. Functional Requirements: `shim-runner`
 
 * **FR-1.1 Self-identification**: the runner derives its own stem and directory
-  from `std::env::current_exe()`. Hard links are not used in v1 (section 8);
-  with hard links this must switch to `argv[0]`, because `current_exe()` may
-  return any of the link names and therefore the wrong config file.
+  from `std::env::current_exe()`. Hard links are not used for the generated
+  shims in v1 (section 8); with hard links this must switch to `argv[0]`,
+  because `current_exe()` may return any of the link names and therefore the
+  wrong config file.
 * **FR-1.2 Config resolution**: reads `<stem>.shim` from that same directory.
 * **FR-1.3 Transparent argument forwarding**: does **not** re-serialize
   `std::env::args()`. Rust parses the Windows command line with MSVC rules and
@@ -679,6 +680,8 @@ Decisions still open:
 
 1. **Hard links instead of copies** for Mode 2: saves space and makes runner
    updates land on all shims at once, but requires FR-1.1 to key off `argv[0]`.
+   Only about the generated shims: the staged manager in `bin\` is a link, and
+   the runners stay copies because the manager embeds their bytes.
 2. **A backslash-quote case in the raw command-line round trip**: the reason
    FR-1.3 exists, and so far covered only by the parser's own unit test. What a
    child is handed is asserted through an argument with a double space, which is

@@ -54,11 +54,11 @@ Windows only, and it needs the MSVC toolchain, `cargo` and the WebView2 runtime
 `npm install` in `apps\gui`, because the build checks the UI with Prettier and
 says so when the formatter is not installed. The order matters: the manager
 embeds the runner's bytes, so the runner is built and staged first.
-`scripts\build.cmd` does the whole thing. A build started while
-`bin\shimbox.exe` is still open is a normal case, not a failed one: Windows
-refuses to overwrite or delete the name a running program was started from, but
-it does let that name be renamed, so the old file moves aside and the fresh one
-takes its place. The open window keeps running the bytes it started with.
+`scripts\build.cmd` does the whole thing. The manager is staged into `bin\`
+as a hard link rather than a copy, and one thing follows from that: while a
+shimbox window is open, Windows will not hand over the name the program was
+started from, so that build says it staged nothing and finishes anyway. Close
+the window and the next build links the new bytes.
 
 ```powershell
 scripts\build.cmd                     # both runner variants, tests, the manager
@@ -77,7 +77,7 @@ land in `bin\`:
 ```text
 bin\runner-cli.exe   console-subsystem runner   (target: under 400 KB)
 bin\runner-gui.exe   windows-subsystem runner   (target: under 400 KB)
-bin\shimbox.exe      the manager
+bin\shimbox.exe      the manager, one more name for target\release\gui.exe
 ```
 
 Building just the manager with `cargo build -p gui` fails on purpose until

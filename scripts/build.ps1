@@ -17,8 +17,6 @@ $ErrorActionPreference = 'Stop'
 
 $Root = Split-Path -Parent $PSScriptRoot
 $BinDir = Join-Path $Root 'bin'
-# Where the previously staged manager is moved so the fresh one can take its name.
-$StaleDir = Join-Path $env:TEMP 'shimbox-build'
 $SizeTargetKb = 400
 
 function Invoke-Cargo {
@@ -137,27 +135,22 @@ try {
         Write-Section 'gui: Tauri manager'
         Invoke-Cargo ((@('build', '-p', 'gui') + $guiArgs))
 
-        # A running image cannot be overwritten, and once a rebuild has taken the
-        # `target` names away from the bytes it runs, its staged name cannot be deleted
-        # either - not even by a hard link that would replace it. Windows does let that
-        # name be renamed, so the previous file is moved out to the build folder in
-        # TEMP, the fresh bytes are copied in, and the moved name is dropped when no
-        # window is running from it. A build with the manager open therefore keeps the
-        # window on the bytes it started with and puts this build in bin.
-        $stale = $null
-        if (Test-Path $manager) {
-            if (-not (Test-Path $StaleDir)) {
-                New-Item -ItemType Directory -Path $StaleDir | Out-Null
-            }
-            # A moved name a previous build could not delete is deletable now that no
-            # window runs on it, and one still running is not ours to remove.
-            Remove-Item (Join-Path $StaleDir '*.exe') -Force -ErrorAction SilentlyContinue
-            $stale = Join-Path $StaleDir ('shimbox-{0}.exe' -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
-            Move-Item $manager $stale
+        # The manager is staged as a hard link rather than a copy, and only after a
+        # build that compiled, so a failed one leaves bin holding what it held before.
+        # A link needs the staged name gone first, which Windows allows while nothing
+        # runs from it and refuses once this rebuild took the two `target` names away
+        # from the bytes an open window runs. A running manager is therefore reported
+        # rather than fought over: it keeps its bytes, bin keeps its name, and the next
+        # build with the window closed links the new ones.
+        $running = Get-Process -Name 'shimbox' -ErrorAction SilentlyContinue
+        if ($running) {
+            Write-Host '  a shimbox window is open: this build is not staged' -ForegroundColor Yellow
         }
-        Copy-Item $managerArtifact $manager -Force
-        if ($stale) {
-            Remove-Item $stale -Force -ErrorAction SilentlyContinue
+        else {
+            if (Test-Path $manager) {
+                Remove-Item $manager -Force
+            }
+            New-Item -ItemType HardLink -Path $manager -Target $managerArtifact | Out-Null
         }
 
         Write-Section 'artifacts'
