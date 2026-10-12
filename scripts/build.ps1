@@ -89,10 +89,12 @@ try {
     }
 
     # The same argument for the UI, which no compiler ever reads: a file that left
-    # Prettier's style is invisible until someone opens the window. Prettier is not
-    # something cargo brings, so a missing install is named as the setup step it is
-    # instead of being skipped - a check that passes silently when its tool is absent
-    # is the drift arriving back.
+    # Prettier's style is invisible until someone opens the window. What is checked
+    # is apps\gui's own `check` script rather than a glob repeated here, so the
+    # question 'which files are the UI' has one answer in one file; Prettier is not
+    # something cargo brings, so a missing install is still named as the setup step
+    # it is instead of being skipped - a check that passes silently when its tool is
+    # absent is the drift arriving back.
     Write-Section 'ui format'
     $prettier = Join-Path $Root 'apps\gui\node_modules\.bin\prettier.cmd'
     if (-not (Test-Path $prettier)) {
@@ -100,7 +102,8 @@ try {
     }
     Push-Location (Join-Path $Root 'apps\gui')
     try {
-        & $prettier --check 'ui/**/*.js'
+        Write-Host 'npm run check' -ForegroundColor DarkGray
+        npm run --silent check
     }
     finally {
         Pop-Location
