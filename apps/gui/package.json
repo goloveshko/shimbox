@@ -5,8 +5,8 @@
   "type": "module",
   "description": "The manager's UI: plain ESM read from disk by the webview, with Prettier as the authority on how it is wrapped.",
   "scripts": {
-    "check": "prettier --check \"ui/**/*.js\"",
-    "format": "prettier --write \"ui/**/*.js\""
+    "check": "prettier --check \"ui/**/*.{js,css}\"",
+    "format": "prettier --write \"ui/**/*.{js,css}\""
   },
   "devDependencies": {
     "prettier": "^3"
