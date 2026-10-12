@@ -44,6 +44,25 @@ try {
         }
     }
 
+    # The archive is only as good as what build.ps1 left in bin. A staged manager
+    # is a link to the bytes that same build compiled, so it cannot be older than
+    # the runner copies placed beside it; when it is, the build that produced those
+    # runners never reached the manager - an open window held the previous bytes,
+    # or the last run was `-TestOnly` - and the zip would carry yesterday's release
+    # under today's version number.
+    $manager = Get-Item (Join-Path $Bin 'shimbox.exe')
+    foreach ($runner in 'runner-cli.exe', 'runner-gui.exe') {
+        $staged = Get-Item (Join-Path $Bin $runner)
+        if ($manager.LastWriteTime -lt $staged.LastWriteTime) {
+            # Grouped before it is filled: `-f` binds tighter than `+`, so a format
+            # operator written after a two-line message only ever reaches the end of
+            # the second line, which is how this first answered `{0} is older than {1}`.
+            $why = '{0} is older than {1}: bin holds two builds. ' +
+                'Close the shimbox window, build again, then package.'
+            throw ($why -f $manager.Name, $staged.Name)
+        }
+    }
+
     $zip = Join-Path $Bin "shimbox-$version-windows-x64.zip"
     Write-Section 'package'
     Remove-Item $zip -Force -ErrorAction SilentlyContinue
