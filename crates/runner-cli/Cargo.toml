@@ -1,0 +1,14 @@
+[package]
+name = "runner-cli"
+description = "shimbox shim runner (console subsystem): forwards invocation to the real binary"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+runner = { path = "../runner" }
+
+[build-dependencies]
+# Only to write the VERSIONINFO resource every shim carries; nothing of it ends
+# up in the binary beyond the ~1 KB of metadata itself.
+tauri-winres = "0.3"

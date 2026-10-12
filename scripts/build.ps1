@@ -68,7 +68,6 @@ else {
     $runnerDir = Join-Path $Root 'target/debug'
     $guiDir = Join-Path $Root 'target/debug'
 }
-$runner = Join-Path $runnerDir 'shim-runner.exe'
 
 $exitCode = 0
 
@@ -116,17 +115,17 @@ try {
         New-Item -ItemType Directory -Path $BinDir | Out-Null
     }
 
-    # The runner is staged before anything is tested or built: the GUI embeds
-    # those bytes, so both later steps need them to exist.
-    Write-Section 'runner: CLI variant (console subsystem)'
-    Invoke-Cargo ((@('build', '-p', 'runner') + $runnerArgs))
+    # The runners are staged before anything is tested or built: the GUI embeds
+    # those bytes, so both later steps need them to exist. One cargo call builds
+    # both, since they are two crates over one library and the second used to
+    # rebuild the first's bytes under one name that staging had already copied.
+    Write-Section 'runner: CLI and GUI variants'
+    Invoke-Cargo ((@('build', '-p', 'runner-cli', '-p', 'runner-gui') + $runnerArgs))
     $cli = Join-Path $BinDir 'runner-cli.exe'
-    Copy-Item $runner $cli -Force
-
-    Write-Section 'runner: GUI variant (windows subsystem)'
-    Invoke-Cargo ((@('build', '-p', 'runner', '--features', 'gui') + $runnerArgs))
     $gui = Join-Path $BinDir 'runner-gui.exe'
-    Copy-Item $runner $gui -Force
+    foreach ($staged in @($cli, $gui)) {
+        Copy-Item (Join-Path $runnerDir (Split-Path -Leaf $staged)) $staged -Force
+    }
 
     Write-Section 'tests'
     Invoke-Cargo @('test', '--workspace')

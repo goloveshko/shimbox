@@ -2525,7 +2525,20 @@ dependencies = [
 [[package]]
 name = "runner"
 version = "1.0.0"
+
+[[package]]
+name = "runner-cli"
+version = "1.0.0"
 dependencies = [
+ "runner",
+ "tauri-winres",
+]
+
+[[package]]
+name = "runner-gui"
+version = "1.0.0"
+dependencies = [
+ "runner",
  "tauri-winres",
 ]
 

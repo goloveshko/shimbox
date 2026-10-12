@@ -10,9 +10,10 @@ A lightweight executable-shimming tool for Windows: it generates tiny proxy
 executables that live in a directory on `PATH` and forward invocations to the
 real binaries. Two modules:
 
-1. **`shim-runner`** (crate `runner`): a minimal Rust executable, shipped in two
-   variants (console / windows subsystem). Reads its companion config file and
-   launches the target with the caller's arguments.
+1. **`shim-runner`** (crates `runner`, `runner-cli`, `runner-gui`): a minimal
+   Rust executable, shipped in two variants (console / windows subsystem) built
+   from one library. Reads its companion config file and launches the target with
+   the caller's arguments.
 2. **`shimbox`** (crate `gui`): a Tauri desktop app that generates individual
    shims and batch-generates them for a whole directory.
 
@@ -43,9 +44,10 @@ inspect, edit or delete existing ones.
 | **CLI** | `IMAGE_SUBSYSTEM_WINDOWS_CUI` | Inherits the caller's console: stdin/stdout/stderr and the wait behaviour come from the OS for free. Child is spawned with inherited handles. |
 | **GUI** | `IMAGE_SUBSYSTEM_WINDOWS_GUI` | No console window, shell does not block. Child is spawned with `CREATE_NO_WINDOW`. |
 
-The variant is encoded in the bytes written to `<alias>.exe`. **It is not a
-config field** — the runner contains no branch on it, and the GUI has no reader
-for it. The runner type dropdown in the UI (5.4) selects which embedded binary
+The variant is encoded in the bytes written to `<alias>.exe`, and those bytes are
+two crates over one library rather than one crate built twice. **It is not a
+config field** — nothing reads it while running, and the GUI has no reader for
+it. The runner type dropdown in the UI (5.4) selects which embedded binary
 to write.
 
 Consequences worth keeping in mind:
@@ -61,18 +63,20 @@ Consequences worth keeping in mind:
 
 ### 2.2 Components
 
-* **`shim-runner` (crate `runner`)**
+* **`shim-runner` (`runner` is the shared library; `runner-cli` and `runner-gui`
+  are the two variants, each a `main` of a few lines over it)**
   * Windows-only in v1.
   * No third-party crates in the runtime path: the config parser is hand-written
     (section 3), and the Win32 calls it needs (`GetCommandLineW`, `MessageBoxW`,
     and `CredReadW`/`CredFree` for a `cred:` reference) are declared as
     `extern "system"` rather than pulled in via the `windows` crate.
-  * `build.rs` writes the `VERSIONINFO` resource a shim carries — a generated
-    `<alias>.exe` is a byte copy of the runner, so that resource is the only
-    place the tool can explain one of its own files to somebody who opens
-    Properties without having read the README. `tauri-winres` is a
-    build-dependency for it: the crate contributes the ~1 KB of metadata and
-    nothing to the code.
+  * Each variant's `build.rs` writes the `VERSIONINFO` resource its shims carry —
+    a generated `<alias>.exe` is a byte copy of the runner, so that resource is
+    the only place the tool can explain one of its own files to somebody who
+    opens Properties without having read the README. The two scripts include one
+    file, `crates\runner\winres.rs`, and name the variant in the two lines the
+    resource differs by. `tauri-winres` is a build-dependency for it: the crate
+    contributes the ~1 KB of metadata and nothing to the code.
   * Size target: **<= 400 KB** per variant with `opt-level = "z"`, `lto = "fat"`,
     `codegen-units = 1`, `panic = "abort"`, `strip`. Draft 1 targeted 150 KB,
     which is not reachable while linking `std`; going below it requires
@@ -129,7 +133,10 @@ shimbox/
     smoke.cmd
     package.cmd
   crates/
-    runner/             shim-runner, both variants
+    runner/             shim-runner: the machinery both variants share, and the
+                        version resource they both describe
+    runner-cli/         the console-subsystem executable
+    runner-gui/         the windows-subsystem executable
   apps/
     gui/
       assets/           icon source

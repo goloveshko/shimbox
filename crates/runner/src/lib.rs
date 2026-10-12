@@ -1,8 +1,12 @@
-//! Shim runner: reads `<own stem>.shim` next to itself and launches the target
-//! with the caller's arguments. Windows only. See docs/techspec.md 4.
-
-// The subsystem is baked in at build time; the runner never branches on it.
-#![cfg_attr(feature = "gui", windows_subsystem = "windows")]
+//! What both shim variants share: read `<own stem>.shim` next to us and launch
+//! the target it names with the caller's arguments. Windows only. See
+//! docs/techspec.md 4.
+//!
+//! The two crates that build on this one are the variants themselves, and what
+//! they decide apart from each other is the PE subsystem, where a failure of the
+//! shim is reported, and whether the child may open a console. The last of the
+//! three is the argument `run` takes; the second is why it returns its failures
+//! instead of printing them, since a shim with no console has no stderr.
 
 mod config;
 mod env;
@@ -11,7 +15,7 @@ use std::ffi::{OsStr, OsString};
 use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
-use std::process::{Command, exit};
+use std::process::Command;
 
 use config::Config;
 
@@ -25,7 +29,6 @@ const EXIT_SPAWN_FAILED: u32 = 103;
 /// its target expects (4).
 const EXIT_BAD_ENV: u32 = 104;
 
-#[cfg(feature = "gui")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 #[link(name = "kernel32")]
@@ -33,31 +36,25 @@ unsafe extern "system" {
     fn GetCommandLineW() -> *const u16;
 }
 
-#[cfg(feature = "gui")]
-#[link(name = "user32")]
-unsafe extern "system" {
-    fn MessageBoxW(
-        hwnd: *mut core::ffi::c_void,
-        text: *const u16,
-        caption: *const u16,
-        kind: u32,
-    ) -> i32;
+/// Failure that belongs to the shim itself, carrying the exit code to use. The
+/// variant that catches this is the one that knows where the message can go.
+pub struct ShimError {
+    pub code: u32,
+    pub message: String,
 }
 
-/// Failure that belongs to the shim itself, carrying the exit code to use.
-struct ShimError {
-    code: u32,
-    message: String,
+/// How the child is started, which is the one difference between the variants
+/// that reaches inside the launch itself.
+pub enum Launch {
+    /// The shim has a console and the child inherits it, as a tool run from a
+    /// terminal expects.
+    Inherited,
+    /// The shim has no console of its own, so a console target must not be left
+    /// to allocate one behind its window.
+    NoConsole,
 }
 
-fn main() {
-    match run() {
-        Ok(code) => exit(code as i32),
-        Err(error) => fail(error.code, &error.message),
-    }
-}
-
-fn run() -> Result<u32, ShimError> {
+pub fn run(launch: Launch) -> Result<u32, ShimError> {
     let own_path = std::env::current_exe().map_err(|error| ShimError {
         code: EXIT_BAD_CONFIG,
         message: format!("shimbox: cannot locate myself: {error}"),
@@ -127,8 +124,11 @@ fn run() -> Result<u32, ShimError> {
             .chain(references.iter().map(|(name, value)| (name, value))),
     );
 
-    #[cfg(feature = "gui")]
-    command.creation_flags(CREATE_NO_WINDOW);
+    // Only the detached variant asks for this: a shim run from a terminal has a
+    // console to inherit, and suppressing it would take the child's output away.
+    if matches!(launch, Launch::NoConsole) {
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
 
     let status = command.status().map_err(|error| ShimError {
         code: EXIT_SPAWN_FAILED,
@@ -204,34 +204,4 @@ fn is_separator(unit: u16) -> bool {
 
 fn absolute(path: &Path) -> PathBuf {
     std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf())
-}
-
-#[cfg(not(feature = "gui"))]
-fn fail(code: u32, message: &str) -> ! {
-    eprintln!("{message}");
-    exit(code as i32)
-}
-
-#[cfg(feature = "gui")]
-fn fail(code: u32, message: &str) -> ! {
-    // This variant has no console, so stderr would reach nobody.
-    let text = wide_with_nul(message);
-    let caption = wide_with_nul("shimbox");
-    const MB_ICONERROR: u32 = 0x10;
-    unsafe {
-        MessageBoxW(
-            std::ptr::null_mut(),
-            text.as_ptr(),
-            caption.as_ptr(),
-            MB_ICONERROR,
-        )
-    };
-    exit(code as i32)
-}
-
-#[cfg(feature = "gui")]
-fn wide_with_nul(text: &str) -> Vec<u16> {
-    let mut wide: Vec<u16> = OsStr::new(text).encode_wide().collect();
-    wide.push(0);
-    wide
 }

@@ -5,20 +5,7 @@ version.workspace = true
 license.workspace = true
 edition.workspace = true
 
-[features]
-# Selects the PE subsystem of the produced binary, see docs/techspec.md 2.1.
-# Default build = console subsystem (CLI shim), `--features gui` = windows
-# subsystem (GUI shim).
-default = []
-gui = []
-
-[build-dependencies]
-# Only to write the VERSIONINFO resource every shim carries; nothing of it ends
-# up in the binary beyond the ~1 KB of metadata itself.
-tauri-winres = "0.3"
-
-[dependencies]
-
-[[bin]]
-name = "shim-runner"
-path = "src/main.rs"
+# The machinery both shim crates share, and the reason neither of them repeats
+# it. Nothing executable is produced here: the version resource `winres.rs`
+# describes belongs to a binary, and a build script of a dependency reaches no
+# further than the package it sits in.
