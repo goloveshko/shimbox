@@ -79,6 +79,47 @@ body {
   color: var(--text);
   /* The window backdrop is Mica; a painted background here would hide it. */
   background: transparent;
+  /* A window is not a document. Most of the words in this one name the control
+     they sit on rather than say anything, so the shell is off for selection: a
+     drag that starts on a caption should not lift a piece of the interface out
+     of the window, which is what a selectable label does in a webview. What a
+     person may want to read again somewhere else is content, and is listed as
+     content below rather than allowed for by leaving the whole page open.
+     `text` and not `auto` on that list because `auto` resolves to what the
+     ancestors allow, and the ancestor here allows nothing. Both spellings are
+     written everywhere, as the titlebar rule this one replaces did: an engine
+     that does not know a property drops the declaration without saying so, and
+     a selection rule that quietly did nothing is a rule nobody notices. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The content, named in one place so the list of what the app lets you take out
+   of it is readable as a decision. A text field is first because it is the item
+   on this list used without thinking about it: `user-select` inherits into a
+   field and takes its selection away with it, so a field left off this list
+   loses the ability to select, double-click and drag a word inside it. */
+input,
+textarea,
+td,
+.dialog-body,
+.dialog-card ul,
+.secret-store li span,
+.about-row > span:last-child,
+.about-row a,
+.update-notes {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* A control is not content even where it sits inside content that is: the batch
+   table holds both a path worth copying and the buttons that act on it. */
+button,
+select,
+input[type='checkbox'],
+input[type='radio'] {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Everything under the strip shares the inset the body used to carry, so the
@@ -101,8 +142,6 @@ body {
   display: flex;
   align-items: stretch;
   height: 2.1rem;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 .titlebar .brand {
