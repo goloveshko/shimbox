@@ -44,5 +44,10 @@ fn main() {
     resource.set("ProductVersion", &version);
     resource.set_version_info(tauri_winres::VersionInfo::FILEVERSION, packed(&version));
     resource.set_version_info(tauri_winres::VersionInfo::PRODUCTVERSION, packed(&version));
-    resource.compile();
+    // What is left for `compile` to report is a resource file it could not write,
+    // and a runner built without the version resource this script describes is a
+    // wrong artifact, so the build stops rather than ships one quietly.
+    resource
+        .compile()
+        .expect("failed to write and compile the version resource");
 }
