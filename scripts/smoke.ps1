@@ -19,6 +19,11 @@ trap {
 $Root = Split-Path -Parent $PSScriptRoot
 $Bin = Join-Path $Root 'bin'
 $Work = Join-Path $env:TEMP 'shimbox-smoke'
+# Named by path rather than by `start cmd` or `$env:ComSpec` on purpose: these
+# checks assert what `cmd` answers to a shim - `echo`'s spacing, `more`'s stdin,
+# `cd`'s output - and a machine whose command processor is pointed somewhere else
+# would then fail for a reason that has nothing to do with the shim. The same path
+# is also what the shim configs below are told to run.
 $Cmd = 'C:\Windows\System32\cmd.exe'
 
 $script:passed = 0
@@ -95,7 +100,7 @@ Write-Host '== error reporting' -ForegroundColor Cyan
 
 $orphan = Join-Path $Work 'noconfig.exe'
 Copy-Item $cliRunner $orphan -Force
-$output = & cmd /c "`"$orphan`" 2>&1" | Out-String
+$output = & $Cmd /c "`"$orphan`" 2>&1" | Out-String
 Check 'missing config exits 101' ($LASTEXITCODE -eq 101) "got: $LASTEXITCODE"
 Check 'missing config names the file' ($output -match 'noconfig\.shim') "got: $($output.Trim())"
 
@@ -103,14 +108,14 @@ Write-Config -Name 'echocli' -Lines @(
     'path=C:\nope\missing-target.exe',
     'arg=/c'
 )
-$output = & cmd /c "`"$cli`" 2>&1" | Out-String
+$output = & $Cmd /c "`"$cli`" 2>&1" | Out-String
 Check 'spawn failure exits 103' ($LASTEXITCODE -eq 103) "got: $LASTEXITCODE, output: $($output.Trim())"
 Check 'spawn failure names the target' ($output -match 'missing-target\.exe') "got: $($output.Trim())"
 
 Write-Config -Name 'echocli' -Lines @(
     'arg=/c'
 )
-$output = & cmd /c "`"$cli`" 2>&1" | Out-String
+$output = & $Cmd /c "`"$cli`" 2>&1" | Out-String
 Check 'config without path exits 102' ($LASTEXITCODE -eq 102) "got: $LASTEXITCODE"
 Check 'path-less config explains itself' ($output -match 'no .path.') "got: $($output.Trim())"
 
