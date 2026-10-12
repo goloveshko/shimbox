@@ -846,7 +846,9 @@ dialog::backdrop {
   background: var(--card-raised);
   color: var(--text);
   font: inherit;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 14px 34px rgba(0, 0, 0, 0.22);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.18),
+    0 14px 34px rgba(0, 0, 0, 0.22);
 }
 
 /* A batch summary is a list of names, and the window can be shorter than it, so
