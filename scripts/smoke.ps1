@@ -142,3 +142,8 @@ Set-PauseIfDoubleClicked -Enabled (-not $NoPause)
 if ($script:failed) {
     exit 1
 }
+
+# Stated rather than left to fall out: the last command this script runs is a shim
+# asked to exit with 7, and a caller that chains these - scripts\release.ps1 - reads
+# that leftover as this script's own answer.
+exit 0
