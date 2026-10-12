@@ -413,10 +413,20 @@ input[type='checkbox'] {
 /* While a path is over the window, the thing a release would change says so: the
    field it would fill, or the tab it would move to. Nothing is drawn before a
    drag arrives, so the form keeps its own quiet when nothing is being dropped. */
-.field.drop-on,
 #tabs button.drop-on {
   outline: 2px solid Highlight;
   outline-offset: 2px;
+}
+
+/* A field's ring is drawn inside its own box: the block of fields it belongs to
+   is a scroll container, and a field's box ends at that scrollport's edge on the
+   sides it touches - the left and the top of the list, and the right too, where a
+   stable scrollbar gutter keeps the room an outward ring would have needed. An
+   outline outside the box came out of that with three of its four sides never
+   painted, which is the cut-off the first drag showed. */
+.field.drop-on {
+  outline: 2px solid Highlight;
+  outline-offset: -2px;
 }
 
 .check {

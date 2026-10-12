@@ -136,12 +136,13 @@ export function dropHandler({ screens, show }) {
     const box = filled
       ? zone.element.closest('.field')
       : document.getElementById(`tab-${action.screen}`);
-    if (box === marked) {
-      return;
+    if (box !== marked) {
+      clear();
+      marked = box;
     }
-    clear();
+    // Repainted on every move rather than only when the box changes, so the class
+    // cannot fall behind what the handler believes is marked.
     box?.classList.add('drop-on');
-    marked = box;
   }
 
   return async function handle(event) {
