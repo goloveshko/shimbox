@@ -82,9 +82,6 @@ export function button(key, className) {
 /// an escape because a private-use character does not survive an editor.
 export const folder = '\uE8B7';
 
-/// Segoe's chrome close mark, the one a panel wears in its own corner.
-export const close = '\uE8BB';
-
 /// A button that says what it does by shape rather than by word, so the name it
 /// carries is its accessible one and its tooltip, not its caption.
 export function iconButton(glyph, key, className) {
@@ -222,10 +219,12 @@ export function modalDialog(kind) {
 /// A panel along the right edge of the window, for the choices that apply as
 /// they are picked. A centred card dims the very thing the choice changes, so
 /// the person judging a theme or a language has to close the card first to see
-/// it; a sheet leaves that thing on screen the whole time. `showModal()` still
-/// owns Esc and the focus, and the backdrop stays clear so a click anywhere off
-/// the panel is the way out - which is also why there is nothing to confirm and
-/// no footer to put a button in.
+/// it; a sheet leaves that thing on screen the whole time.
+///
+/// It carries no close button of its own. `showModal()` answers Esc, the backdrop
+/// stays clear so a click anywhere off the panel is the second way out, and those
+/// are the two the system's own flyouts offer - which is also why there is
+/// nothing to confirm here and no footer to put a button in.
 export function sideSheet() {
   const dialog = document.createElement('dialog');
   dialog.className = 'sheet';
@@ -236,9 +235,7 @@ export function sideSheet() {
   head.className = 'sheet-head';
   const title = document.createElement('p');
   title.className = 'group';
-  const dismiss = iconButton(close, 'sheet.dismiss', 'glyph');
-  dismiss.addEventListener('click', () => dialog.close());
-  head.append(title, dismiss);
+  head.append(title);
 
   const body = document.createElement('div');
   body.className = 'dialog-body';
@@ -258,8 +255,10 @@ export function sideSheet() {
     body.replaceChildren(content);
     setLabel(dialog, titleKey);
     localize(dialog);
+    // Left to the modal's own focusing rule, which lands on the first control of
+    // the body: the panel is here to be changed, and its heading has nothing to
+    // hold the focus.
     dialog.showModal();
-    dismiss.focus();
   };
   document.body.append(dialog);
   return dialog;

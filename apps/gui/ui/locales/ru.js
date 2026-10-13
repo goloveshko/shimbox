@@ -19,7 +19,6 @@ export default {
   'form.browse': 'Обзор',
 
   'dialog.close': 'Закрыть',
-  'sheet.dismiss': 'Закрыть панель',
 
   'settings.title': 'Параметры',
   'settings.applies': 'Применяется сразу при выборе: меняется всё окно.',

@@ -949,22 +949,20 @@ dialog.sheet::backdrop {
   }
 }
 
+/* The panel's name stands in its head on its own. The way out is Esc and a click
+   off the panel's edge - the two the system's own flyouts offer - and a mark of
+   our own would be a second close in the same corner as the window's. */
 .sheet-head {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
+  /* The shared `header` rule is written for the tab strip, whose list needs the
+     air; a panel's name keeps its own distance from its first line instead. */
+  padding-bottom: 0;
   margin-bottom: 0.55rem;
 }
 
 /* The name of the panel is the heading of the thing, not a line of its body, so
    it is written at the size the card's own captions use. */
 .sheet-head > .group {
-  flex: 1;
   font: 600 1.05rem/1.4 var(--head);
-}
-
-.sheet-head button {
-  color: var(--muted);
 }
 
 .dialog-card ul {

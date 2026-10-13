@@ -18,7 +18,6 @@ export default {
   'form.browse': 'Browse',
 
   'dialog.close': 'Close',
-  'sheet.dismiss': 'Close the panel',
 
   'settings.title': 'Settings',
   'settings.applies': 'Applies as you pick it. The whole window changes with it.',
