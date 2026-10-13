@@ -1,7 +1,7 @@
 // What this build is: the version, the runners carried inside it, and where to
 // read more. Shown in the same card the result of a run uses (docs/techspec.md 5).
 import { closeButton, folder, formatSize, iconButton, invoke, modalDialog } from './form.js';
-import { t } from './i18n.js';
+import { setText, t } from './i18n.js';
 
 const repository = 'https://github.com/goloveshko/shimbox';
 const license = `${repository}/blob/main/LICENSE`;
@@ -58,8 +58,21 @@ function folderRow(path) {
   return line('about.folder', cell);
 }
 
+/// The answers a bug report asks for rather than a person looking at the window:
+/// what this build carries inside it, and where it keeps its own files. They
+/// belong to the card but not to its headline, so they wait behind a line that
+/// says so instead of ending the list above on the same footing as a name.
+function details(rows) {
+  const more = document.createElement('details');
+  more.className = 'about-more';
+  const summary = document.createElement('summary');
+  setText(summary, 'about.more');
+  more.append(summary, ...rows);
+  return more;
+}
+
 export function aboutDialog() {
-  const dialog = modalDialog();
+  const dialog = modalDialog('about');
 
   async function show() {
     // Read on every look: the sizes are the built ones, and a stale card is worse
@@ -104,15 +117,17 @@ export function aboutDialog() {
     body.append(
       head,
       tagline,
-      textRow(
-        'about.runners',
-        runners.map((runner) => `${runner.variant} ${formatSize(runner.size)}`).join(' / ')
-      ),
       linkRow('about.license', 'MIT', license),
       linkRow('about.author', 'Sergey Goloveshko', homepage),
       linkRow('about.repository', repository, repository),
-      // A folder the app cannot name is a row with nothing to open in it.
-      ...(configDir ? [folderRow(configDir)] : [])
+      details([
+        textRow(
+          'about.runners',
+          runners.map((runner) => `${runner.variant} ${formatSize(runner.size)}`).join(' / ')
+        ),
+        // A folder the app cannot name is a row with nothing to open in it.
+        ...(configDir ? [folderRow(configDir)] : []),
+      ])
     );
 
     dialog.openModal('about.title', body, [closeButton(dialog)]);

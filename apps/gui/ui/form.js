@@ -178,12 +178,15 @@ export function autofill(input, compute) {
 /// click anywhere around the card ends it — a larger, closer target than the
 /// dismiss button. The body is the part that gives when content is taller than
 /// the window, and the last action is focused so Enter always ends the message.
+/// `kind` names the card beyond the generic one, so a card that is a name plate
+/// can be drawn narrower than one that holds a form.
+///
 /// `title` is the key the card is named by rather than its sentence, so a card
 /// that stays open across a language change is still named in the new one.
-export function modalDialog() {
+export function modalDialog(kind) {
   const dialog = document.createElement('dialog');
   const card = document.createElement('div');
-  card.className = 'dialog-card';
+  card.className = kind ? `dialog-card ${kind}` : 'dialog-card';
   const body = document.createElement('div');
   body.className = 'dialog-body';
   const actions = document.createElement('div');

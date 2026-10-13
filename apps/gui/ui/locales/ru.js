@@ -37,6 +37,7 @@ export default {
   'about.license': 'Лицензия',
   'about.author': 'Автор',
   'about.repository': 'Репозиторий',
+  'about.more': 'Подробнее',
   'about.folder': 'Папка настроек',
   'about.folder.open': 'Открыть папку',
   'about.version.copy': 'Скопировать версию',

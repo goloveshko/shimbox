@@ -36,6 +36,7 @@ export default {
   'about.license': 'License',
   'about.author': 'Author',
   'about.repository': 'Repository',
+  'about.more': 'More details',
   'about.folder': 'Settings folder',
   'about.folder.open': 'Open folder',
   'about.version.copy': 'Copy the version',

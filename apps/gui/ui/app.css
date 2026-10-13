@@ -1201,6 +1201,35 @@ dialog.sheet::backdrop {
   outline-offset: 2px;
 }
 
+/* A name plate is not a form: the card gives up the width it never used, which
+   is also what stops a short answer from sitting at the end of a long line. */
+.dialog-card.about {
+  width: min(26rem, 100%);
+}
+
+/* The line that opens the diagnostics is a question the card asks rather than
+   another answer, so it is written at the size of the row labels and keeps the
+   marker the browser draws. */
+.about-more {
+  margin-top: 1.1rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--stroke);
+  font-size: 0.85rem;
+}
+
+.about-more > summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.about-more > summary:hover {
+  color: var(--text);
+}
+
+.about-more[open] > summary {
+  margin-bottom: 0.2rem;
+}
+
 /* The update card is one line of its own and the notes under it, so both are
    spaced against the card's padding rather than with the paragraph default. */
 .update-head {
