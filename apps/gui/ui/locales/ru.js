@@ -19,19 +19,17 @@ export default {
   'form.browse': 'Обзор',
 
   'dialog.close': 'Закрыть',
+  'sheet.dismiss': 'Закрыть панель',
 
   'settings.title': 'Параметры',
+  'settings.applies': 'Применяется сразу при выборе: меняется всё окно.',
   'settings.theme': 'Тема',
   'settings.theme.system': 'Следовать за Windows',
   'settings.theme.light': 'Светлая',
   'settings.theme.dark': 'Тёмная',
-  'settings.theme.note':
-    'Применяется сразу при выборе: меняются и окно, и карточки, и фон за ними.',
 
   'settings.language': 'Язык',
   'settings.language.system': 'Следовать за Windows',
-  'settings.language.note':
-    'Применяется сразу при выборе: меняются все слова в окне, а всё, что уже введено в форме, остаётся на месте.',
 
   'about.title': 'О shimbox',
   'about.tagline': 'Небольшой runner рядом с <alias>.shim, в папке на PATH.',

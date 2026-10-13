@@ -35,6 +35,10 @@
   --radius: 8px;
   --radius-sm: 4px;
   --gap: 0.9rem;
+  /* The height of the strip that stands in for the window's caption. A panel
+     that slides down from the edge stops under it, so the two need the number
+     once rather than in each other's copy. */
+  --caption: 2.1rem;
 }
 
 :root[data-theme='dark'] {
@@ -141,7 +145,7 @@ input[type='radio'] {
   flex: 0 0 auto;
   display: flex;
   align-items: stretch;
-  height: 2.1rem;
+  height: var(--caption);
 }
 
 .titlebar .brand {
@@ -474,13 +478,6 @@ input[type='checkbox'] {
   gap: 0.55rem;
   font-weight: 400;
   cursor: pointer;
-}
-
-/* The answers of one radio group stack under its caption, so each line reads as
-   a choice rather than as a field of its own. */
-.radios {
-  display: grid;
-  gap: 0.3rem;
 }
 
 /* The environment block is a list rather than a set of fields, so its rows
@@ -898,6 +895,78 @@ dialog::backdrop {
   overflow: auto;
 }
 
+/* The sheet is an edge of the window rather than a thing floating over it, so it
+   keeps the strip of caption above it and covers nothing but the content. It is
+   the frame that stops at that line, not only the card: a transparent frame over
+   the caption would take the window's own buttons with it. The backdrop is left
+   clear on purpose - the panel exists so that the window behind it can be
+   watched changing, and a dim over that would put the card back. */
+dialog.sheet {
+  inset: var(--caption) 0 0;
+  /* A modal dialog comes with a margin the browser keeps off the viewport edges,
+     which on a panel meant to sit flush against two of them shows as a gap. */
+  max-width: none;
+  max-height: none;
+  /* The panel arrives from past the edge, and a frame that can scroll would
+     answer that with a horizontal scrollbar for as long as the slide lasts. */
+  overflow: hidden;
+  padding: 0;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+dialog.sheet::backdrop {
+  background: none;
+}
+
+.sheet-card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(22rem, 100%);
+  padding: 0.2rem 1.15rem 1.15rem;
+  border-left: 1px solid var(--stroke-strong);
+  background: var(--card-raised);
+  color: var(--text);
+  font: inherit;
+  box-shadow: -10px 0 26px rgba(0, 0, 0, 0.18);
+  /* A panel arriving at the edge of a window that stays in place reads as the
+     window growing a part, which is what it is; a panel appearing all at once
+     reads as a card that happens to be wide. */
+  animation: sheet-in 0.13s ease-out;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateX(1.2rem);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-card {
+    animation: none;
+  }
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+}
+
+/* The name of the panel is the heading of the thing, not a line of its body, so
+   it is written at the size the card's own captions use. */
+.sheet-head > .group {
+  flex: 1;
+  font: 600 1.05rem/1.4 var(--head);
+}
+
+.sheet-head button {
+  color: var(--muted);
+}
+
 .dialog-card ul {
   margin: 0.4rem 0;
   padding-left: 1.1rem;
@@ -953,49 +1022,98 @@ dialog::backdrop {
 
 /* A card's own caption names the card and the captions inside it name one
    question each, so the two are not written the same size. */
-.settings > .group:first-child,
 .secret-store > .group {
   font-size: 1rem;
 }
 
-.settings > .group {
-  margin-bottom: 0.7rem;
+.settings .note {
+  margin: 0 0 1.1rem;
 }
 
 .settings .field + .field {
-  margin-top: 0.9rem;
+  margin-top: 0.85rem;
 }
 
-.settings .radios {
-  gap: 0.15rem;
+/* The rows take the shape the system's own settings page uses: the question at
+   the left edge and the answer against the other one, so two of them read as a
+   short list rather than as a form waiting to be filled in. */
+.settings .field {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.9rem;
 }
 
-/* An answer here is a line one taps rather than a dot one aims at, so a row
-   takes the hover chip every control has, and the chosen one says so with the
-   accent around the whole line rather than with a small circle alone. */
-.settings .check {
-  padding: 0.34rem 0.55rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+/* A dropdown is only as wide as the longest name it holds, which is not the full
+   width a text field takes. */
+.settings select {
+  width: auto;
+  min-width: 11.5rem;
+}
+
+/* The answer to a question all of whose answers deserve to be seen. This is the
+   tab strip's idiom rather than a second one: the chip that gets a surface under
+   it is the chip you are on. The dot survives underneath, unseen, because it is
+   what carries the arrow keys and the tab stop - hiding it with `display: none`
+   would take the group's keyboard away with it. */
+.segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  padding: 2px;
+  background: var(--chip);
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+}
+
+.segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
   transition:
-    background 0.12s,
-    border-color 0.12s;
+    color 0.12s,
+    background 0.12s;
 }
 
-.settings .check:hover {
+.segment:hover {
+  color: var(--text);
   background: var(--btn-hover);
 }
 
-.settings .check:has(input:checked) {
-  border-color: Highlight;
-  background: color-mix(in srgb, Highlight 7%, transparent);
+/* A cell that is one glyph is a square of it, so the three of them read as one
+   control rather than as three buttons of three different widths. */
+.segment.mark {
+  width: 2.1rem;
+  padding: 0.3rem 0;
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', sans-serif;
+  font-size: 1rem;
 }
 
-.settings input[type='radio'] {
-  width: 1.05rem;
-  height: 1.05rem;
-  margin: 0;
-  accent-color: Highlight;
+.segment > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segment:has(input:checked) {
+  font-weight: 600;
+  color: var(--text);
+  background: var(--card-raised);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+}
+
+.segment:has(input:focus-visible) {
+  outline: 2px solid Highlight;
+  outline-offset: 1px;
 }
 
 /* The About card is a short list of answers rather than prose, so every row

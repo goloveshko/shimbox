@@ -1,6 +1,6 @@
 // The form widgets both screens build the same way. Nothing here knows about
 // a particular mode.
-import { localize, setLabel, setTitle, t } from './i18n.js';
+import { localize, setLabel, setText, setTitle, t } from './i18n.js';
 
 export const invoke = (command, args) => window.__TAURI__.core.invoke(command, args);
 
@@ -81,6 +81,9 @@ export function button(key, className) {
 /// Segoe's folder glyph, the shape the system's own file dialogs draw. Written as
 /// an escape because a private-use character does not survive an editor.
 export const folder = '\uE8B7';
+
+/// Segoe's chrome close mark, the one a panel wears in its own corner.
+export const close = '\uE8BB';
 
 /// A button that says what it does by shape rather than by word, so the name it
 /// carries is its accessible one and its tooltip, not its caption.
@@ -211,6 +214,116 @@ export function modalDialog() {
   // result would take the message away with it.
   document.body.append(dialog);
   return dialog;
+}
+
+/// A panel along the right edge of the window, for the choices that apply as
+/// they are picked. A centred card dims the very thing the choice changes, so
+/// the person judging a theme or a language has to close the card first to see
+/// it; a sheet leaves that thing on screen the whole time. `showModal()` still
+/// owns Esc and the focus, and the backdrop stays clear so a click anywhere off
+/// the panel is the way out - which is also why there is nothing to confirm and
+/// no footer to put a button in.
+export function sideSheet() {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'sheet';
+  const card = document.createElement('div');
+  card.className = 'sheet-card';
+
+  const head = document.createElement('header');
+  head.className = 'sheet-head';
+  const title = document.createElement('p');
+  title.className = 'group';
+  const dismiss = iconButton(close, 'sheet.dismiss', 'glyph');
+  dismiss.addEventListener('click', () => dialog.close());
+  head.append(title, dismiss);
+
+  const body = document.createElement('div');
+  body.className = 'dialog-body';
+
+  card.append(head, body);
+  dialog.append(card);
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) {
+      dialog.close();
+    }
+  });
+
+  dialog.openSheet = (titleKey, content) => {
+    // Bound to the key rather than filled in, so a language change reaches a
+    // sheet that is already open.
+    setText(title, titleKey);
+    body.replaceChildren(content);
+    setLabel(dialog, titleKey);
+    localize(dialog);
+    dialog.showModal();
+    dismiss.focus();
+  };
+  document.body.append(dialog);
+  return dialog;
+}
+
+/// A choice between a few values that all deserve to be seen at once. A cell
+/// carries either a glyph or a word - `key` names it either way, as the radio's
+/// accessible name and as the tooltip - because the words for a theme are not
+/// the same length in two languages, and a row of cells that has to fit the
+/// longer of the two is a row of mostly empty cells.
+///
+/// The dots stay in the markup and only lose their paint: a radio group is the
+/// one control with arrow keys, and replacing it with buttons would take those
+/// with it.
+export function segmented(name, captionKey, options, picked, onPick) {
+  const group = document.createElement('div');
+  group.className = 'segmented';
+  group.setAttribute('role', 'radiogroup');
+  setLabel(group, captionKey);
+  for (const option of options) {
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = name;
+    input.value = option.value;
+    input.checked = option.value === picked();
+    setLabel(input, option.key);
+    input.addEventListener('change', () => onPick(option.value));
+
+    const cell = document.createElement('label');
+    cell.className = 'segment';
+    setTitle(cell, option.key);
+    if (option.glyph) {
+      cell.textContent = option.glyph;
+      cell.classList.add('mark');
+    } else {
+      // The key is left on the cell rather than resolved here, so a language
+      // change reaches a panel that is already open.
+      setText(cell, option.key);
+    }
+    // The dot goes inside its own cell, which is what makes the whole of the
+    // cell clickable without a second handler.
+    cell.prepend(input);
+    group.append(cell);
+  }
+  return group;
+}
+
+/// A dropdown over values that are names rather than decisions. `options` carry
+/// a key to translate or a name to show as it is, which is how a language can be
+/// recognized in an app that does not speak it yet. The caller names the control
+/// with a `field`, since a `select` is the one control a `<label>` can point at.
+export function dropdown(options, picked, onPick) {
+  const select = document.createElement('select');
+  select.id = nextFieldId();
+  for (const option of options) {
+    const element = document.createElement('option');
+    element.value = option.value;
+    if (option.key) {
+      setText(element, option.key);
+    } else {
+      element.textContent = option.name;
+    }
+    select.append(element);
+  }
+  select.value = picked();
+  select.addEventListener('change', () => onPick(select.value));
+  return select;
 }
 
 /// The dismiss action every message offers, so a card and its Close button are

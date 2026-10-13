@@ -4,7 +4,7 @@ import { formatSize } from './form.js';
 import { localize, loadLanguage, setText } from './i18n.js';
 import { renderBatch } from './screens/batch.js';
 import { renderSingle } from './screens/single.js';
-import { settingsDialog } from './settings.js';
+import { settingsSheet } from './settings.js';
 import { loadTheme } from './theme.js';
 import { titlebar } from './titlebar.js';
 import { checkForUpdate } from './update.js';
@@ -15,7 +15,7 @@ const tabsRoot = document.getElementById('tabs');
 const statusRoot = document.getElementById('status');
 
 const about = aboutDialog();
-const settings = settingsDialog();
+const settings = settingsSheet();
 
 let current = 'single';
 const tabs = new Map();

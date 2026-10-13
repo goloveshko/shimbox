@@ -1,95 +1,65 @@
-// The one card where the app asks what it should look like. A choice applies as
-// it is picked, so the card has nothing to confirm and nothing to cancel
-// (docs/techspec.md 5).
-import { checkField, closeButton, modalDialog, note } from './form.js';
+// The one panel where the app asks what it should look like. It opens along the
+// edge of the window rather than over it because a choice here applies as it is
+// picked, and the thing it applies to is the window - which a centred card dims
+// at the very moment it is being judged (docs/techspec.md 5).
+import { dropdown, field, note, segmented, sideSheet } from './form.js';
 import { chooseLanguage, currentLanguage, languages } from './i18n.js';
 import { chooseTheme, currentTheme } from './theme.js';
 
+// Segoe's own marks for the three answers, written as escapes because a
+// private-use codepoint is not a character an editor shows.
+const mark = {
+  system: '\uE7F4',
+  light: '\uE706',
+  dark: '\uE708',
+};
+
 const themes = [
-  { value: 'system', key: 'settings.theme.system' },
-  { value: 'light', key: 'settings.theme.light' },
-  { value: 'dark', key: 'settings.theme.dark' },
+  { value: 'system', key: 'settings.theme.system', glyph: mark.system },
+  { value: 'light', key: 'settings.theme.light', glyph: mark.light },
+  { value: 'dark', key: 'settings.theme.dark', glyph: mark.dark },
 ];
 
-/// A caption, a row of radios and the hint under them. `options` carry either a
-/// key to translate or a name to show as it is, which is how a language can be
-/// recognized in an app that does not speak it yet.
-function choiceField(name, captionKey, options, picked, onPick, noteKey) {
+const languagesToPick = [
+  { value: 'system', key: 'settings.language.system' },
+  ...languages.map(({ code, name }) => ({ value: code, name })),
+];
+
+/// A caption over the control that answers it, for the group - a radio set -
+/// that has no single control a `<label>` could point at.
+function group(captionKey, control) {
   const block = document.createElement('div');
   block.className = 'field';
-
-  // A radio group has no single control for a `<label>` to point at, so the
-  // caption is the group's own name instead.
-  const caption = document.createElement('div');
+  const caption = document.createElement('p');
   caption.className = 'group';
   caption.dataset.i18n = captionKey;
-
-  const group = document.createElement('div');
-  group.className = 'radios';
-  group.setAttribute('role', 'radiogroup');
-  group.dataset.i18nLabel = captionKey;
-  for (const option of options) {
-    const input = document.createElement('input');
-    input.type = 'radio';
-    input.name = name;
-    input.value = option.value;
-    input.checked = option.value === picked();
-    input.addEventListener('change', () => onPick(option.value));
-    group.append(checkField(option.key, input, option.name));
-  }
-
-  block.append(caption, group, note(noteKey));
+  block.append(caption, control);
   return block;
 }
 
-function themeField() {
-  return choiceField(
-    'theme',
-    'settings.theme',
-    themes,
-    currentTheme,
-    chooseTheme,
-    'settings.theme.note'
-  );
-}
-
-function languageField() {
-  return choiceField(
-    'language',
-    'settings.language',
-    [
-      { value: 'system', key: 'settings.language.system' },
-      ...languages.map(({ code, name }) => ({ value: code, name })),
-    ],
-    currentLanguage,
-    (value) => chooseLanguage(value),
-    'settings.language.note'
-  );
-}
-
-export function settingsDialog() {
-  const dialog = modalDialog();
+export function settingsSheet() {
+  const sheet = sideSheet();
 
   function show() {
-    // Built on every look, so the card opens on the choice that is in effect now
+    // Built on every look, so the panel opens on the choice that is in effect now
     // rather than on the one that was current when the window was.
     const body = document.createElement('div');
     body.className = 'settings';
-    // The card's own caption says which card this is, the way the store's does:
-    // the dialog's title is only read by a screen reader, and two questions
-    // without a heading over them read as a piece of the form behind.
-    const title = document.createElement('p');
-    title.className = 'group';
-    title.dataset.i18n = 'settings.title';
+    const language = dropdown(languagesToPick, currentLanguage, chooseLanguage);
     body.append(
-      title,
-      themeField(),
+      // Both fields apply on the click, so the sentence they each used to carry
+      // is said once for the panel instead of twice against it.
+      note('settings.applies'),
+      group(
+        'settings.theme',
+        segmented('theme', 'settings.theme', themes, currentTheme, chooseTheme)
+      ),
       // One language is not a choice, so the row only appears once a second
       // dictionary is registered in i18n.js.
-      ...(languages.length > 1 ? [languageField()] : [])
+      ...(languages.length > 1 ? [field('settings.language', language, language)] : [])
     );
-    dialog.openModal('settings.title', body, [closeButton(dialog)]);
+    sheet.openSheet('settings.title', body);
   }
 
-  return { dialog, show };
+  return { sheet, show };
 }

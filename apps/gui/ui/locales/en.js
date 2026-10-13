@@ -18,19 +18,17 @@ export default {
   'form.browse': 'Browse',
 
   'dialog.close': 'Close',
+  'sheet.dismiss': 'Close the panel',
 
   'settings.title': 'Settings',
+  'settings.applies': 'Applies as you pick it. The whole window changes with it.',
   'settings.theme': 'Theme',
   'settings.theme.system': 'Follow Windows',
   'settings.theme.light': 'Light',
   'settings.theme.dark': 'Dark',
-  'settings.theme.note':
-    'Applies as you pick it. The window, its cards and the backdrop behind them all change with it.',
 
   'settings.language': 'Language',
   'settings.language.system': 'Follow Windows',
-  'settings.language.note':
-    'Applies as you pick it. Every word in the window changes with it, and what the form already holds stays in it.',
 
   'about.title': 'About shimbox',
   'about.tagline': 'A small runner beside a <alias>.shim, in a folder on PATH.',
