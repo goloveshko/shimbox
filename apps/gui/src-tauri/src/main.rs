@@ -131,6 +131,17 @@ fn embedded_runners() -> Vec<EmbeddedRunner> {
     ]
 }
 
+/// The dialog both pickers open, owned by the main window. The owner is what
+/// keeps the dialog off the taskbar: without one the shell gives it a button of
+/// its own, and a thumbnail wearing the generic icon rather than ours.
+fn file_dialog(app: &tauri::AppHandle) -> tauri_plugin_dialog::FileDialogBuilder<tauri::Wry> {
+    let dialog = app.dialog().file();
+    match app.get_webview_window("main") {
+        Some(window) => dialog.set_parent(&window),
+        None => dialog,
+    }
+}
+
 /// Both pickers start where their own field last looked rather than where the
 /// previous field's dialog ended, and remember it for the next time (5).
 #[tauri::command]
@@ -148,7 +159,7 @@ async fn pick_file(
     // The dialog runs on its own thread; blocking the async worker is not
     // enough to keep it off the event loop.
     let picked = tauri::async_runtime::spawn_blocking(move || {
-        let dialog = dialog_app.dialog().file();
+        let dialog = file_dialog(&dialog_app);
         let dialog = if only_executables {
             dialog.add_filter("executables", &["exe"])
         } else {
@@ -178,12 +189,10 @@ async fn pick_folder(
     let dialog_app = app.clone();
     let start = pickers::start_directory(&app, &key, &path);
     let picked = tauri::async_runtime::spawn_blocking(move || match start {
-        Some(start) => dialog_app
-            .dialog()
-            .file()
+        Some(start) => file_dialog(&dialog_app)
             .set_directory(start)
             .blocking_pick_folder(),
-        None => dialog_app.dialog().file().blocking_pick_folder(),
+        None => file_dialog(&dialog_app).blocking_pick_folder(),
     })
     .await
     .map_err(|error| error.to_string())?;
