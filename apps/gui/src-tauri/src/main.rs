@@ -10,6 +10,7 @@ mod runner;
 mod secret;
 mod settings;
 mod shim;
+mod state;
 mod update;
 
 use std::path::Path;

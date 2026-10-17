@@ -7,10 +7,10 @@
 //! the ask answered: a machine with no network is not served by asking again on
 //! every start.
 
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::Manager;
+
+use crate::state;
 
 const FILE: &str = ".update.json";
 
@@ -83,27 +83,19 @@ fn now() -> u64 {
         .unwrap_or_default()
 }
 
+// The rule in `state`, bound to this file's name and its shape: the one moment
+// the question was last asked, which is unreadable in exactly the way a never
+// asked is.
 fn read(file: &Path) -> Asked {
-    fs::read_to_string(file)
-        .ok()
-        .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default()
+    state::read(file)
 }
 
 fn write(file: &Path, asked: Asked) {
-    let Ok(text) = serde_json::to_string_pretty(&asked) else {
-        return;
-    };
-    let Some(directory) = file.parent() else {
-        return;
-    };
-    if fs::create_dir_all(directory).is_ok() {
-        let _ = fs::write(file, text);
-    }
+    state::write(file, &asked);
 }
 
 fn state_file(app: &tauri::AppHandle) -> Option<PathBuf> {
-    app.path().app_config_dir().ok().map(|dir| dir.join(FILE))
+    state::file(app, FILE)
 }
 
 /// Whether the frontend should ask GitHub now.
@@ -129,6 +121,8 @@ pub fn update_seen(app: tauri::AppHandle, release: Option<Release>) -> Option<Av
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {

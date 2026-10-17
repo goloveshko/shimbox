@@ -4,9 +4,9 @@
 //! `$APPCONFIG/.pickers.json`, the way the window keeps its own geometry.
 
 use std::collections::BTreeMap;
-use std::fs;
 use std::path::{Path, PathBuf};
-use tauri::Manager;
+
+use crate::state;
 
 const FILE: &str = ".pickers.json";
 
@@ -36,30 +36,19 @@ fn existing_directory(path: &Path) -> Option<PathBuf> {
     candidate.is_dir().then_some(candidate)
 }
 
-/// The remembered directories. A file that cannot be read or understood is an
-/// empty one: this is a convenience, and losing it cannot be allowed to stop a
-/// dialog from opening.
+// The rule in `state`, bound to this file's name and its shape: the directories
+// the fields last ended at, where a file that cannot be read or understood is an
+// empty one and losing it cannot be allowed to stop a dialog from opening.
 fn read(file: &Path) -> BTreeMap<String, String> {
-    fs::read_to_string(file)
-        .ok()
-        .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default()
+    state::read(file)
 }
 
 fn write(file: &Path, fields: &BTreeMap<String, String>) {
-    let Ok(text) = serde_json::to_string_pretty(fields) else {
-        return;
-    };
-    let Some(directory) = file.parent() else {
-        return;
-    };
-    if fs::create_dir_all(directory).is_ok() {
-        let _ = fs::write(file, text);
-    }
+    state::write(file, fields);
 }
 
 fn state_file(app: &tauri::AppHandle) -> Option<PathBuf> {
-    app.path().app_config_dir().ok().map(|dir| dir.join(FILE))
+    state::file(app, FILE)
 }
 
 pub fn start_directory(app: &tauri::AppHandle, key: &str, typed: &str) -> Option<PathBuf> {
@@ -80,6 +69,8 @@ pub fn remember(app: &tauri::AppHandle, key: &str, picked: &Path) {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {

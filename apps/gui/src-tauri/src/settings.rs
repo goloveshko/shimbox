@@ -3,9 +3,9 @@
 //! folders, so a theme or a language survives a restart and can be read without
 //! the app running.
 
-use std::fs;
 use std::path::{Path, PathBuf};
-use tauri::Manager;
+
+use crate::state;
 
 const FILE: &str = ".settings.json";
 
@@ -43,29 +43,19 @@ fn offered(names: &'static [&'static str], value: Option<&str>) -> Option<&'stat
     value.and_then(|value| names.iter().copied().find(|name| *name == value))
 }
 
-/// A file that cannot be read or understood is an empty one: this is a
-/// convenience, and losing it cannot be allowed to stop the window from drawing.
+// The rule in `state`, bound to this file's name and its shape: a file that
+// cannot be read or understood is an empty one, and losing it cannot be allowed
+// to stop the window from drawing.
 fn read(file: &Path) -> Settings {
-    fs::read_to_string(file)
-        .ok()
-        .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default()
+    state::read(file)
 }
 
 fn write(file: &Path, settings: &Settings) {
-    let Ok(text) = serde_json::to_string_pretty(settings) else {
-        return;
-    };
-    let Some(directory) = file.parent() else {
-        return;
-    };
-    if fs::create_dir_all(directory).is_ok() {
-        let _ = fs::write(file, text);
-    }
+    state::write(file, settings);
 }
 
 fn state_file(app: &tauri::AppHandle) -> Option<PathBuf> {
-    app.path().app_config_dir().ok().map(|dir| dir.join(FILE))
+    state::file(app, FILE)
 }
 
 #[tauri::command]
@@ -107,6 +97,8 @@ pub fn set_language(app: tauri::AppHandle, language: String) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {
