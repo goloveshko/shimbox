@@ -22,6 +22,9 @@ use crate::shim::{self, Failure};
 pub struct Stale {
     name: String,
     exe: String,
+    /// The row is chosen by its config and written through its runner, so both
+    /// halves travel with it: one to ask for, the other to show.
+    config: String,
     was: Option<String>,
     variant: &'static str,
     selected: bool,
@@ -156,6 +159,7 @@ fn row(config: &Path) -> Option<Stale> {
             .unwrap_or_default()
             .to_string_lossy()
             .into_owned(),
+        config: config.display().to_string(),
         exe: exe.display().to_string(),
         selected: true,
     })

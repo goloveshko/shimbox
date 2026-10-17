@@ -1,5 +1,5 @@
 // One file per language, registered in i18n.js. Keys are grouped by screen;
-// the `form.` / `result.` / `variant.` groups are shared by both modes.
+// the `form.` / `result.` / `variant.` groups are shared by all three modes.
 // The comments that explain a wording live on the English side, in locales/en.js.
 export default {
   'app.title': 'shimbox',
@@ -13,6 +13,7 @@ export default {
 
   'tab.single': 'Один шим',
   'tab.batch': 'Вся папка',
+  'tab.refresh': 'Обновить runner',
 
   'status.runners': 'встроенный runner: {size}',
 
@@ -142,9 +143,28 @@ export default {
   'batch.skip.missing': 'программа больше не на месте',
   'batch.skip.write': 'шим не удалось записать',
 
+  'refresh.folder': 'Папка для поиска',
+  'refresh.folder.placeholder': 'C:\\Shims',
+  'refresh.folder.help': 'Если папку не указать, поиск идёт по всем папкам из PATH.',
+  'refresh.keeps.help': 'Перезаписывается только .exe; .shim остаётся со всеми вашими настройками.',
+  'refresh.column.name': 'Имя шима',
+  'refresh.column.path': 'Файл',
+  'refresh.column.was': 'Версия runner',
+  'refresh.column.type': 'Тип runner',
+  'refresh.found': 'Устарело: {count}',
+  'refresh.selected': 'Выбрано: {count}',
+  'refresh.empty': 'Здесь ничего не нужно обновлять.',
+  'refresh.unstamped': 'старая сборка',
+  'refresh.update': 'Обновить runner',
+  'refresh.done': 'Обновлено runner: {count}.',
+  'refresh.done.none': 'Ни один runner не обновлён.',
+  'refresh.failed': 'Не удалось:',
+
   'error.target': 'Целевой программы не существует.',
   'error.source': 'Исходной папки не существует.',
   'error.destination': 'Папки назначения не существует.',
+  'error.folder': 'Папки не существует.',
+  'error.missing': 'Шима больше нет на месте.',
   'error.alias': 'Имя шима не годится на имя файла.',
   'error.collision': 'Файл с таким именем уже там.',
   'error.write': 'Шим не удалось записать.',

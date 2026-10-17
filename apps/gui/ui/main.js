@@ -3,13 +3,14 @@ import { dropHandler } from './drop.js';
 import { formatSize } from './form.js';
 import { localize, loadLanguage, setText } from './i18n.js';
 import { renderBatch } from './screens/batch.js';
+import { renderRefresh } from './screens/refresh.js';
 import { renderSingle } from './screens/single.js';
 import { settingsSheet } from './settings.js';
 import { loadTheme } from './theme.js';
 import { titlebar } from './titlebar.js';
 import { checkForUpdate } from './update.js';
 
-const screens = { single: renderSingle, batch: renderBatch };
+const screens = { single: renderSingle, batch: renderBatch, refresh: renderRefresh };
 const screenRoot = document.getElementById('screen');
 const tabsRoot = document.getElementById('tabs');
 const statusRoot = document.getElementById('status');
@@ -23,8 +24,8 @@ const panels = new Map();
 // The path fields each screen hands out, which is what a drop is aimed at.
 const fields = {};
 
-// Both screens are built once and then shown or hidden, so a half-written form
-// and a scan someone is still ticking survive a look at the other mode;
+// Every screen is built once and then shown or hidden, so a half-written form
+// and a scan someone is still ticking survive a look at another mode;
 // rebuilding the widgets would answer a tab click by throwing that away.
 function build() {
   for (const [name, renderScreen] of Object.entries(screens)) {

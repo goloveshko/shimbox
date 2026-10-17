@@ -344,9 +344,10 @@ main form > .table-wrap {
   scrollbar-gutter: stable;
 }
 
-/* Mode 2's two folders are a pair of fields, not a list, so its scan is the only
-   part of the card that grows. */
-#panel-batch form > .fields {
+/* Mode 2's two folders and mode 3's one are fields, not a list, so their scan is
+   the only part of the card that grows. */
+#panel-batch form > .fields,
+#panel-refresh form > .fields {
   flex: 0 0 auto;
 }
 
@@ -750,6 +751,37 @@ td:nth-child(6) {
 
   th:nth-child(6),
   td:nth-child(6) {
+    width: 7rem;
+  }
+}
+
+/* Mode 3's table is one column shorter than mode 2's, so the widths counted from
+   the left of that header hand the runner type the room planned for a file size.
+   These are named by the column each one is. */
+#panel-refresh th.was,
+#panel-refresh td.was {
+  width: 8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#panel-refresh th.type,
+#panel-refresh td.type {
+  width: 8rem;
+}
+
+/* The line that drops a column keeps the runner type of mode 3 standing: there it
+   is the answer about what a pair is about to become, which a list of names does
+   not carry. The stamp it came from is what gives way instead. */
+@media (max-width: 46rem) {
+  #panel-refresh th.was,
+  #panel-refresh td.was {
+    display: none;
+  }
+
+  #panel-refresh th.type,
+  #panel-refresh td.type {
+    display: table-cell;
     width: 7rem;
   }
 }

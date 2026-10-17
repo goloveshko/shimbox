@@ -12,14 +12,15 @@ import { folderOf, invoke, setPath } from './form.js';
 
 const executable = (path) => /\.exe$/i.test(path);
 
-/// The fields a drop can be aimed at, from both screens at once: only the visible
-/// screen's can end up under the pointer, so one list answers for either mode.
+/// The fields a drop can be aimed at, from every screen at once: only the visible
+/// screen's can end up under the pointer, so one list answers for any mode.
 export const zones = (screens) => [
   { screen: 'single', key: 'target', kind: 'file', element: screens.single.target },
   { screen: 'single', key: 'destination', kind: 'folder', element: screens.single.destination },
   { screen: 'single', key: 'workdir', kind: 'folder', element: screens.single.workdir },
   { screen: 'batch', key: 'source', kind: 'folder', element: screens.batch.source },
   { screen: 'batch', key: 'destination', kind: 'folder', element: screens.batch.destination },
+  { screen: 'refresh', key: 'folder', kind: 'folder', element: screens.refresh.folder },
 ];
 
 /// The deepest folder every dropped item lives in, which is the one a scan of the

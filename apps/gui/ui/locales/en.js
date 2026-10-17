@@ -1,5 +1,5 @@
 // One file per language, registered in i18n.js. Keys are grouped by screen;
-// the `form.` / `result.` / `variant.` groups are shared by both modes.
+// the `form.` / `result.` / `variant.` groups are shared by all three modes.
 export default {
   'app.title': 'shimbox',
 
@@ -12,6 +12,7 @@ export default {
 
   'tab.single': 'Single shim',
   'tab.batch': 'Folder batch',
+  'tab.refresh': 'Runner update',
 
   'status.runners': 'embedded runner: {size}',
 
@@ -147,9 +148,28 @@ export default {
   'batch.skip.missing': 'the executable is not there anymore',
   'batch.skip.write': 'the shim could not be written',
 
+  'refresh.folder': 'Folder to search',
+  'refresh.folder.placeholder': 'C:\\Shims',
+  'refresh.folder.help': 'Left empty, the search runs over every folder on PATH.',
+  'refresh.keeps.help': 'Only the .exe is rewritten; the .shim keeps everything you set in it.',
+  'refresh.column.name': 'Shim name',
+  'refresh.column.path': 'Executable',
+  'refresh.column.was': 'Made with',
+  'refresh.column.type': 'Runner type',
+  'refresh.found': 'Out of date: {count}',
+  'refresh.selected': '{count} selected',
+  'refresh.empty': 'Nothing here needs an update.',
+  'refresh.unstamped': 'an older build',
+  'refresh.update': 'Update runners',
+  'refresh.done': 'Updated {count} runners.',
+  'refresh.done.none': 'No runner was updated.',
+  'refresh.failed': 'Failed:',
+
   'error.target': 'The target executable does not exist.',
   'error.source': 'The source folder does not exist.',
   'error.destination': 'The destination folder does not exist.',
+  'error.folder': 'The folder does not exist.',
+  'error.missing': 'The shim is not there anymore.',
   'error.alias': 'The shim name is not a valid file name.',
   'error.collision': 'A file with that name is already there.',
   'error.write': 'The shim could not be written.',

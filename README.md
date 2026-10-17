@@ -23,8 +23,9 @@ already exist — see `docs/techspec.md` 8 for that and the other deferred items
 
 ## The manager
 
-One window, two screens: a single shim whose every field you set yourself, and a
-whole folder scanned into a table. Light and dark, and the same in Russian.
+One window, three screens: a single shim whose every field you set yourself, a
+whole folder scanned into a table, and the shims this machine already holds that a
+newer runner has not reached. Light and dark, and the same in Russian.
 
 | Light | Dark |
 | :--- | :--- |
@@ -147,8 +148,18 @@ scan, and a name that turns out to be taken is skipped with the reason printed
 in the summary; the single-shim screen refuses to overwrite it and says so in
 the dialog instead.
 
-The result of either mode is a card you can dismiss by clicking anywhere around
-it, with **Open destination folder** when something was written, and **Edit
+**Update runners** — a shim is a copy of a runner, so a fix released later reaches
+none of the shims made before it. The third tab lists the pairs whose `.exe` is not
+this build's bytes: the folder named in the field, or, while it names nothing,
+every folder on `PATH`. Ticking a row writes that runner and the one `runner` line
+that says which bytes are in it; every other line of the config goes back exactly
+as it came, so nothing you set is lost. A shim that is running now fails on its own
+row with the reason, and the rest of the list is still updated. Its result card
+names what was written and what did not take, and offers no folder to open: the
+folder was already on `PATH` to be found there.
+
+The result of the other two modes is a card you can dismiss by clicking anywhere
+around it, with **Open destination folder** when something was written, and **Edit
 PATH…** unless the folder is already on `PATH`. That last answer is the variable
 the manager was started with, so an entry you added while its window stayed open
 is a reminder you see one more time.
@@ -197,6 +208,7 @@ name is kept anyway, is in `docs/techspec.md` 3.6.
 
 | Key | Required | Meaning |
 | :--- | :--- | :--- |
+| `runner` | written, never read | `<variant>@<version>` of the bytes copied in as the `.exe` half, so a later build can tell whether they are still in it. The runner itself is those bytes already and ignores the line. |
 | `path` | yes | Absolute path to the target executable. |
 | `arg` | no, repeatable | Argument inserted before the caller's own, exactly as written. |
 | `workdir` | no | Working directory for the child. Without it the child starts in **the target's** directory, not the caller's. |
@@ -205,6 +217,7 @@ name is kept anyway, is in `docs/techspec.md` 3.6.
 
 ```ini
 # shimbox config
+runner=cli@1.0.0
 path=C:\Tools\ffmpeg\bin\ffmpeg.exe
 arg=-hide_banner
 workdir=C:\Tools\ffmpeg
