@@ -110,7 +110,8 @@ fn mark_newest(rows: &mut [Candidate]) {
     let mut start = 0;
     while start < rows.len() {
         let mut end = start + 1;
-        while end < rows.len() && rows[end].name.eq_ignore_ascii_case(&rows[start].name) {
+        let folded = rows[start].name.to_lowercase();
+        while end < rows.len() && rows[end].name.to_lowercase() == folded {
             end += 1;
         }
         for row in &mut rows[start..end] {

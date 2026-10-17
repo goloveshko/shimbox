@@ -1,6 +1,7 @@
 //! Writes a shim pair: `<alias>.shim` first, then `<alias>.exe`
 //! (docs/techspec.md 5.1, 5.3, 5.4). Windows only.
 
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -150,7 +151,15 @@ pub(crate) fn same_path(a: &Path, b: &Path) -> bool {
     left.clone().count() == right.clone().count()
         && left
             .zip(right)
-            .all(|(a, b)| a.as_os_str().eq_ignore_ascii_case(b.as_os_str()))
+            .all(|(a, b)| folded(a.as_os_str()) == folded(b.as_os_str()))
+}
+
+/// The folding Windows itself uses covers the whole alphabet, not only ASCII:
+/// `Инструменты` and `инструменты` name one folder. The UI folds the same way,
+/// so the rule that decides whether `workdir` was left at its default has one
+/// answer on both sides (3.4).
+fn folded(name: &OsStr) -> String {
+    name.to_string_lossy().to_lowercase()
 }
 
 /// The config half of a pair. Its presence is what marks an `.exe` as a shim
@@ -498,6 +507,21 @@ mod tests {
         assert!(error.detail.unwrap().ends_with("tool.shim"));
 
         fs::remove_dir_all(&dir).ok();
+    }
+
+    /// What the function above promises, on a name no ASCII fold can reach.
+    #[test]
+    fn compares_paths_ignoring_case_outside_ascii() {
+        let folder = r"C:\Инструменты\bin";
+        assert!(same_path(
+            Path::new(folder),
+            Path::new(&folder.to_lowercase())
+        ));
+        assert!(same_path(
+            Path::new(folder),
+            Path::new(r"C:\ИНСТРУМЕНТЫ\BIN\")
+        ));
+        assert!(!same_path(Path::new(folder), Path::new(r"C:\Инструменты")));
     }
 
     #[test]
