@@ -162,10 +162,17 @@ fn folded(name: &OsStr) -> String {
     name.to_string_lossy().to_lowercase()
 }
 
-/// The config half of a pair. Its presence is what marks an `.exe` as a shim
-/// rather than a binary, which is how the scan recognises one (5.2).
+/// The config half of a pair, given its runner half. Its presence is what marks
+/// an `.exe` as a shim rather than a binary, which is how the scan recognises
+/// one (5.2).
 pub(crate) fn config_of(exe: &Path) -> PathBuf {
     exe.with_extension("shim")
+}
+
+/// The runner half, given the config half: the pair is found by either file and
+/// the other one is named by the same stem (3).
+pub(crate) fn exe_of(config: &Path) -> PathBuf {
+    config.with_extension("exe")
 }
 
 /// Writes one shim pair, refusing to touch an existing one. Mode 1 and the

@@ -6,6 +6,7 @@
 mod batch;
 mod pe;
 mod pickers;
+mod refresh;
 mod runner;
 mod secret;
 mod settings;
@@ -98,6 +99,8 @@ fn main() {
             shim::generate,
             batch::scan,
             batch::generate_batch,
+            refresh::scan_shims,
+            refresh::refresh_runners,
             update::update_due,
             update::update_seen
         ])

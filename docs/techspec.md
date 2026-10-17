@@ -640,6 +640,38 @@ says so in a card. This is the only network request the app makes.
   makes for a release page, and GitHub counts it as such — which is also why the
   day between asks is the point rather than the 60-an-hour limit.
 
+### 5.7 Runner refresh
+
+A shim is a copy of a runner, so a fix to a runner reaches none of the shims made
+before it. This is the way to bring them up without deleting the configs that say
+what each shim is.
+
+* **Who asks**: a person, from the third tab. Nothing here runs on its own, because
+  the app is not a service and an unasked write to files on `PATH` is not what a
+  generator owes anybody. No list of made shims is kept either: a pair says where it
+  is, and the two ways to ask for one are the folder in the field and, while that
+  field is empty, every folder the variable `folder_on_path` (5) already reads.
+* **What counts as stale**: the `runner` line of the config (3.3) against the line
+  this build would write. A pair made before the line existed has no claim to be
+  current and is listed — which is also how an odd value like `cli` with no version
+  is answered, since the line is a stamp rather than something to interpret.
+* **Which runner**: the PE header of the copy on disk, for the same reason 5.4 reads
+  a target's header. The config's own line decides only when there is no header to
+  read, which is the half-pair 5.3 leaves on purpose. A refresh therefore never
+  turns a GUI shim into a console one, or the other way round.
+* **What is written**: the `.exe` half, and the one `runner` line of the config that
+  says which bytes are in it. Every other line goes back exactly as it came, values
+  and endings included — the config is what the person wrote, and re-writing it from
+  parsed fields would quietly drop whatever the parser does not know. Bytes first,
+  then the line: the other order would leave a pair claiming to be current while its
+  runner is still the old one, and a stale row is the worse answer by far.
+* **What is not**: no pair is deleted, no `.exe` without a config is touched (it is
+  somebody's program, not a shim), and the collision rule of 5.3 stands untouched,
+  because that rule is about making a pair rather than keeping one.
+* **Failure**: a shim that is running now cannot be written over, and Windows says
+  so. That answer belongs to its own row, so the rest of the list is refreshed and
+  one name is reported. The summary is the same shape mode 2 already has.
+
 ---
 
 ## 6. Non-Functional Requirements
@@ -692,6 +724,9 @@ Decisions still open:
    updates land on all shims at once, but requires FR-1.1 to key off `argv[0]`.
    Only about the generated shims: the staged manager in `bin\` is a link, and
    the runners stay copies because the manager embeds their bytes.
+   It is a question about space now rather than about updates: 5.7 answers the
+   second for a copy, and what a link would cost is a shim that cannot be put on a
+   desktop or carried to another machine by itself.
 2. **A backslash-quote case in the raw command-line round trip**: the reason
    FR-1.3 exists, and so far covered only by the parser's own unit test. What a
    child is handed is asserted through an argument with a double space, which is
