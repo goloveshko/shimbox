@@ -15,7 +15,7 @@ mod state;
 mod testutil;
 mod update;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
@@ -207,12 +207,36 @@ async fn pick_folder(
     }))
 }
 
+/// A binary the system owns, named from the directory the environment says Windows
+/// lives in. A bare name is answered by the search order, and that order tries the
+/// folder the manager was started from before it tries the system's own - which for
+/// a tool whose whole job is a folder on `PATH` is a folder of shims.
+fn system_binary(relative: &str) -> Command {
+    let root = std::env::var_os("SystemRoot").or_else(|| std::env::var_os("WINDIR"));
+    // A system that says nothing about where it lives still has the search order to
+    // answer with, so the bare name is the fallback rather than a refusal to run.
+    Command::new(match root {
+        Some(root) => PathBuf::from(root).join(relative),
+        None => PathBuf::from(relative),
+    })
+}
+
+/// The shell, which opens a folder and hands an address to the default browser.
+fn explorer() -> Command {
+    system_binary("explorer.exe")
+}
+
+/// The loader the system's own environment editor is reached through (6).
+fn rundll32() -> Command {
+    system_binary(r"System32\rundll32.exe")
+}
+
 /// The success dialog's "Open destination folder" action (5.1).
 #[tauri::command]
 fn open_folder(path: String) -> Result<(), String> {
     // `explorer` reports a non-zero exit code even when it opened the folder,
     // so its status says nothing and is ignored.
-    Command::new("explorer")
+    explorer()
         .arg(&path)
         .spawn()
         .map_err(|error| format!("cannot open {path}: {error}"))
@@ -251,7 +275,7 @@ fn open_link(url: String) -> Result<(), String> {
     }
     // `explorer` takes an address the way it takes a folder and hands it to the
     // default browser, and reports a non-zero exit code either way.
-    Command::new("explorer")
+    explorer()
         .arg(&url)
         .spawn()
         .map_err(|error| format!("cannot open {url}: {error}"))
@@ -294,7 +318,7 @@ fn paths_are_folders(paths: Vec<String>) -> Vec<bool> {
 fn edit_path() -> Result<(), String> {
     // One argument, not two: `dll,entry` is rundll32's own syntax. Both it and
     // the editor it loads are GUI binaries, so no console flashes up behind.
-    Command::new("rundll32.exe")
+    rundll32()
         .arg("sysdm.cpl,EditEnvironmentVariables")
         .spawn()
         .map_err(|error| format!("cannot open the environment editor: {error}"))
@@ -330,5 +354,20 @@ mod tests {
         assert!(contains_folder(variable.as_ref(), Path::new("C:\\Windows")));
         assert!(!contains_folder(variable.as_ref(), Path::new("")));
         assert!(!contains_folder("".as_ref(), Path::new("C:\\shimbox\\bin")));
+    }
+
+    #[test]
+    fn a_system_binary_is_named_by_the_folder_the_system_lives_in() {
+        // The point of the helper is that the search order never gets to answer, so
+        // what the command carries is a path rather than a name to look up.
+        let root = std::env::var_os("SystemRoot").expect("Windows says where it lives");
+        assert_eq!(
+            super::explorer().get_program(),
+            Path::new(&root).join("explorer.exe").as_os_str()
+        );
+        assert_eq!(
+            super::rundll32().get_program(),
+            Path::new(&root).join(r"System32\rundll32.exe").as_os_str()
+        );
     }
 }
