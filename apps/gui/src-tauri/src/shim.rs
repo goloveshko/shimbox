@@ -187,7 +187,7 @@ pub fn write_pair(
         }
     }
 
-    let text = config_text(target, arguments, workdir, environment)?;
+    let text = config_text(target, arguments, workdir, environment, variant)?;
     // The config lands first: a half-generated shim should be a working config
     // without a runner, never a runner reading a stale config (5.3).
     write(&config_path, text.as_bytes())?;
@@ -198,6 +198,14 @@ pub fn write_pair(
         config: config_path.display().to_string(),
         variant: variant.name(),
     })
+}
+
+/// What the copied runner is, written into the config it is paired with: the
+/// `.exe` half of a shim carries no version of its own, so this line is the only
+/// place a later build can be compared against the bytes already on disk (5.7).
+/// The manager embeds the runners it stages, so its own version is theirs.
+pub(crate) fn stamp(variant: Variant) -> String {
+    format!("{}@{}", variant.name(), env!("CARGO_PKG_VERSION"))
 }
 
 /// Resolves a form field into an absolute path that exists as the requested
@@ -303,8 +311,10 @@ fn config_text(
     arguments: &[String],
     workdir: &str,
     environment: &[(&str, String)],
+    variant: Variant,
 ) -> Result<String, Failure> {
     let mut text = String::from("# shimbox config\n");
+    line(&mut text, "runner", &stamp(variant))?;
     line(&mut text, "path", &target.display().to_string())?;
     for argument in arguments {
         line(&mut text, "arg", argument)?;
@@ -349,15 +359,26 @@ mod tests {
             &["-hide_banner".to_string()],
             "",
             &[("env", "NO_COLOR=1".to_string())],
+            Variant::Cli,
         )
         .unwrap();
         assert_eq!(
             text,
-            "# shimbox config\npath=C:\\Tools\\ffmpeg\\bin\\ffmpeg.exe\narg=-hide_banner\nenv=NO_COLOR=1\n"
+            format!(
+                "# shimbox config\nrunner={}\npath=C:\\Tools\\ffmpeg\\bin\\ffmpeg.exe\n\
+                 arg=-hide_banner\nenv=NO_COLOR=1\n",
+                stamp(Variant::Cli)
+            )
         );
 
-        let text = config_text(Path::new(r"C:\t.exe"), &[], r"C:\Work", &[]).unwrap();
-        assert_eq!(text, "# shimbox config\npath=C:\\t.exe\nworkdir=C:\\Work\n");
+        let text = config_text(Path::new(r"C:\t.exe"), &[], r"C:\Work", &[], Variant::Gui).unwrap();
+        assert_eq!(
+            text,
+            format!(
+                "# shimbox config\nrunner={}\npath=C:\\t.exe\nworkdir=C:\\Work\n",
+                stamp(Variant::Gui)
+            )
+        );
     }
 
     #[test]

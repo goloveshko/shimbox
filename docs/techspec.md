@@ -175,13 +175,15 @@ base name.
 Draft 1 left the format as "JSON or INI". JSON was incompatible with the
 zero-dependency rule and with the size target, and it would need a parser in two
 places. The format is therefore a flat `key=value` file, ~40 lines of
-hand-written parsing in the runner. The GUI **writes** this format and never
-parses it, so only one parser exists.
+hand-written parsing in the runner. The GUI **writes** this format, and reads back
+one key of it and nothing else — the `runner` stamp 5.7 compares — so no second
+parser exists.
 
 ### 3.2 Syntax
 
 ```ini
 # shimbox config
+runner=cli@1.0.0
 path=C:\Tools\ffmpeg\bin\ffmpeg.exe
 arg=-hide_banner
 workdir=C:\Tools\ffmpeg
@@ -203,6 +205,7 @@ envref=GITHUB_TOKEN=cred:shimbox/github
 
 | Key | Required | Meaning |
 | :--- | :--- | :--- |
+| `runner` | written by the GUI, ignored by the runner | `<variant>@<version>` of the bytes copied in as the `.exe` half, as 5.7 reads it back. The runner never looks at it: it already *is* those bytes. |
 | `path` | yes | Absolute path to the target executable. |
 | `arg` | no, repeatable | Argument inserted before the caller's arguments, **exactly as written** — the GUI does not add quoting, so `arg=-o "out file.txt"` reaches the child as `-o "out file.txt"`. |
 | `workdir` | no | Working directory for the child. |
