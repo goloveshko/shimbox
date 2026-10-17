@@ -114,7 +114,14 @@ fn credential(name: &str, target: &str, stored_as: &str) -> Result<String, Unres
 
     let bytes = unsafe {
         let record = &*record;
-        std::slice::from_raw_parts(record.blob, record.blob_size as usize).to_vec()
+        // A credential that holds no bytes holds no pointer with them, and a slice
+        // is only allowed to name bytes that exist, so the empty value is built
+        // rather than read out of a null that would stand for nothing.
+        if record.blob.is_null() || record.blob_size == 0 {
+            Vec::new()
+        } else {
+            std::slice::from_raw_parts(record.blob, record.blob_size as usize).to_vec()
+        }
     };
     unsafe { CredFree(record) };
 
