@@ -154,6 +154,50 @@ export function formatSize(bytes) {
   return gb < 1 ? `${mb.toFixed(1)} MB` : `${gb.toFixed(1)} GB`;
 }
 
+/// One cell of a table: text, or whatever element the row has to hold.
+export function cell(content, className) {
+  const element = document.createElement('td');
+  if (typeof content === 'string') {
+    element.textContent = content;
+  } else {
+    element.append(content);
+  }
+  if (className) {
+    element.className = className;
+  }
+  return element;
+}
+
+/// A path long enough to push the table out of the window loses its middle,
+/// not its end: the file name is the part that says which row is which.
+export function pathCell(path) {
+  const folder = folderOf(path);
+  const head = document.createElement('span');
+  head.textContent = folder;
+  const tail = document.createElement('span');
+  tail.textContent = path.slice(folder.length);
+
+  const row = document.createElement('div');
+  row.className = 'path';
+  row.append(head, tail);
+
+  const element = document.createElement('td');
+  element.title = path;
+  element.append(row);
+  return element;
+}
+
+/// The names a result card lists - what was written, what was not.
+export function list(items) {
+  const element = document.createElement('ul');
+  for (const item of items) {
+    const entry = document.createElement('li');
+    entry.textContent = item;
+    element.append(entry);
+  }
+  return element;
+}
+
 /// Fills a field from another one until the user edits it themselves. A folder
 /// picked through the Browse button counts as an edit: it arrives as a `change`
 /// the button dispatches, not as typing.

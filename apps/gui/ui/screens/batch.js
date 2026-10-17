@@ -2,49 +2,20 @@
 // per-entry parameters, so the table is a list of names and nothing else.
 import { setText, t } from '../i18n.js';
 import {
+  cell,
   checkField,
   field,
   folderOf,
   formatSize,
   invoke,
   labelFor,
+  list,
   note,
+  pathCell,
   resultDialog,
   textInput,
   withBrowseButton,
 } from '../form.js';
-
-function cell(content, className) {
-  const element = document.createElement('td');
-  if (typeof content === 'string') {
-    element.textContent = content;
-  } else {
-    element.append(content);
-  }
-  if (className) {
-    element.className = className;
-  }
-  return element;
-}
-
-/// A path long enough to push the table out of the window loses its middle,
-/// not its end: the file name is the part that says which row is which.
-function pathCell(path) {
-  const folder = folderOf(path);
-  const head = document.createElement('span');
-  head.textContent = folder;
-  const tail = document.createElement('span');
-  tail.textContent = path.slice(folder.length);
-
-  const row = document.createElement('div');
-  row.className = 'path';
-  row.append(head, tail);
-
-  const element = document.createElement('td');
-  element.title = path;
-  element.append(row);
-  return element;
-}
 
 function sizeCell(bytes) {
   const element = document.createElement('td');
@@ -64,16 +35,6 @@ function versionCell(version) {
   const element = document.createElement('td');
   element.title = version ?? '';
   element.append(text);
-  return element;
-}
-
-function list(items) {
-  const element = document.createElement('ul');
-  for (const item of items) {
-    const entry = document.createElement('li');
-    entry.textContent = item;
-    element.append(entry);
-  }
   return element;
 }
 
