@@ -365,8 +365,8 @@ export function renderBatch(root) {
   }
 
   // Both fields feed the scan: the destination is what gets left out of it.
-  for (const field of [source, destination]) {
-    field.addEventListener('change', rescan);
+  for (const input of [source, destination]) {
+    input.addEventListener('change', rescan);
   }
 
   /// Dropped files name what to shim, not only where to look, so they take the
