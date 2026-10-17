@@ -137,6 +137,10 @@ Write-Host '  - break the config of a GUI shim: a message box appears, no silent
 Write-Host ''
 Write-Host ("{0} passed, {1} failed" -f $script:passed, $script:failed) -ForegroundColor $(if ($script:failed) { 'Red' } else { 'Green' })
 
+# The work folder goes with the answer, so a run leaves nothing in TEMP to wonder
+# about; a run that died at the trap leaves it on purpose, for the next look.
+Remove-Item $Work -Recurse -Force -ErrorAction SilentlyContinue
+
 Set-PauseIfDoubleClicked -Enabled (-not $NoPause)
 
 if ($script:failed) {
