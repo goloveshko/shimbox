@@ -52,6 +52,7 @@ struct Candidate {
     size: u64,
     numbers: Option<[u32; 4]>,
     version: Option<String>,
+    subsystem: pe::Subsystem,
     modified: SystemTime,
     selected: bool,
 }
@@ -63,7 +64,8 @@ impl Candidate {
         let modified = metadata
             .and_then(|meta| meta.modified().ok())
             .unwrap_or(SystemTime::UNIX_EPOCH);
-        let version = pe::version_of(&path);
+        let image = pe::inspect(&path);
+        let version = image.version;
         let text = version.text().map(str::to_owned);
         Self {
             numbers: version.numbers(),
@@ -72,6 +74,7 @@ impl Candidate {
                     .numbers()
                     .map(|[a, b, c, d]| format!("{a}.{b}.{c}.{d}"))
             }),
+            subsystem: image.subsystem,
             name: path
                 .file_stem()
                 .unwrap_or_default()
@@ -150,7 +153,7 @@ impl From<Candidate> for Found {
             name: row.name,
             path: row.path.display().to_string(),
             size: row.size,
-            variant: Variant::from(pe::subsystem_of(&row.path)).name(),
+            variant: Variant::from(row.subsystem).name(),
             selected: row.selected,
         }
     }
@@ -336,6 +339,7 @@ mod tests {
             size: 0,
             numbers,
             version: None,
+            subsystem: pe::Subsystem::default(),
             modified: SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000 - age_secs),
             selected: false,
         }
@@ -353,6 +357,10 @@ mod tests {
             candidate("FFPROBE", None, 40),
             candidate("ffprobe", None, 10),
             candidate("zip", None, 0),
+            // The same pair again, in the alphabet an ASCII fold never reaches:
+            // `walk` sorts these two next to each other, so they are one group.
+            candidate("КАТАЛОГ", None, 40),
+            candidate("каталог", None, 10),
         ];
 
         mark_newest(&mut rows);
@@ -367,7 +375,8 @@ mod tests {
             [
                 ("ffmpeg", Some([6, 0, 0, 0])),
                 ("ffprobe", None),
-                ("zip", None)
+                ("zip", None),
+                ("каталог", None)
             ]
         );
     }

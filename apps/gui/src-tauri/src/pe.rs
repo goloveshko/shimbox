@@ -6,12 +6,13 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Subsystem {
     Gui,
     Console,
     /// Not a PE we could read. The caller falls back to the CLI variant, which
     /// is the only one that can report its own errors.
+    #[default]
     Unknown,
 }
 
@@ -27,15 +28,23 @@ const IMAGE_SUBSYSTEM_WINDOWS_GUI: u16 = 2;
 const IMAGE_SUBSYSTEM_WINDOWS_CUI: u16 = 3;
 
 pub fn subsystem_of(path: &Path) -> Subsystem {
+    let Ok(mut file) = File::open(path) else {
+        return Subsystem::Unknown;
+    };
+    subsystem_in(&mut file)
+}
+
+/// The same walk over a file that is already open, for a scan that came for the
+/// version too and should not have to open the binary twice.
+fn subsystem_in(file: &mut File) -> Subsystem {
     // Real binaries keep the NT headers past the DOS stub, often around 0x100,
     // so seek to the offset the DOS header names instead of reading a prefix.
-    let mut file = match File::open(path) {
-        Ok(file) => file,
-        Err(_) => return Subsystem::Unknown,
-    };
-
     let mut dos = [0u8; DOS_HEADER_SIZE];
-    if file.read_exact(&mut dos).is_err() {
+    if file
+        .seek(SeekFrom::Start(0))
+        .and_then(|_| file.read_exact(&mut dos))
+        .is_err()
+    {
         return Subsystem::Unknown;
     }
     if u16::from_le_bytes([dos[0], dos[1]]) != IMAGE_DOS_SIGNATURE {
@@ -140,17 +149,33 @@ const MAX_SECTIONS: usize = 96;
 const MAX_DIRECTORY_ENTRIES: usize = 512;
 const MAX_VERSION_BLOCK: usize = 64 * 1024;
 
-/// Reads the version resource of an executable. Returns an empty `Version` for
-/// anything that is not a PE, has no resources, or has a resource tree that
-/// does not parse — a scan must not fail over one odd binary.
-pub fn version_of(path: &Path) -> Version {
+/// The two answers a scan wants about one binary, out of the one open of it: a
+/// folder of tools is a hundred opens saved, and the open is the part of this walk
+/// that costs anything - the reads after it are a few hundred bytes each.
+#[derive(Debug, Default)]
+pub struct Image {
+    pub version: Version,
+    pub subsystem: Subsystem,
+}
+
+pub fn inspect(path: &Path) -> Image {
     let Ok(mut file) = File::open(path) else {
+        return Image::default();
+    };
+    Image {
+        version: version_in(&mut file),
+        subsystem: subsystem_in(&mut file),
+    }
+}
+
+/// The version resource of an executable already open. An empty `Version` for
+/// anything that is not a PE, has no resources, or has a resource tree that does
+/// not parse - a scan must not fail over one odd binary.
+fn version_in(file: &mut File) -> Version {
+    let Some((resource_rva, sections)) = layout_of(file) else {
         return Version::default();
     };
-    let Some((resource_rva, sections)) = layout_of(&mut file) else {
-        return Version::default();
-    };
-    let Some(data) = version_resource(&mut file, &sections, resource_rva) else {
+    let Some(data) = version_resource(file, &sections, resource_rva) else {
         return Version::default();
     };
     parse_version_info(&data)
@@ -160,6 +185,7 @@ pub fn version_of(path: &Path) -> Version {
 /// offset. Reads the headers once for both.
 fn layout_of(file: &mut File) -> Option<(u32, Vec<Section>)> {
     let mut dos = [0u8; DOS_HEADER_SIZE];
+    file.seek(SeekFrom::Start(0)).ok()?;
     file.read_exact(&mut dos).ok()?;
     if u16::from_le_bytes([dos[0], dos[1]]) != IMAGE_DOS_SIGNATURE {
         return None;
@@ -605,19 +631,30 @@ mod tests {
 
     #[test]
     fn real_binaries_report_a_version() {
-        // Exercises the whole resource walk, which only real files have.
-        let version = version_of(Path::new(r"C:\Windows\System32\cmd.exe"));
-        assert!(version.numbers().is_some());
+        // Exercises the whole resource walk, which only real files have, and the
+        // one open the scan goes through to reach it.
+        let image = inspect(Path::new(r"C:\Windows\System32\cmd.exe"));
+        assert!(image.version.numbers().is_some());
         assert!(
-            version
+            image
+                .version
                 .text()
                 .unwrap_or_default()
                 .starts_with(char::is_numeric)
         );
+        assert_eq!(image.subsystem, Subsystem::Console);
 
         // A file with no version resource at all, which is what the batch
         // table shows most often.
-        assert!(version_of(Path::new(r"C:\Windows\System32\drivers\etc\hosts")).is_empty());
-        assert!(version_of(Path::new(r"C:\nope\missing.exe")).is_empty());
+        assert!(
+            inspect(Path::new(r"C:\Windows\System32\drivers\etc\hosts"))
+                .version
+                .is_empty()
+        );
+        assert!(
+            inspect(Path::new(r"C:\nope\missing.exe"))
+                .version
+                .is_empty()
+        );
     }
 }
