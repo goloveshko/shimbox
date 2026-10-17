@@ -129,14 +129,25 @@ fn credential(name: &str, target: &str, stored_as: &str) -> Result<String, Unres
 mod tests {
     use super::*;
 
+    /// A file a test writes is gone when that test ends, including when it ends by
+    /// failing: one left in `%TEMP%` reads as an answer to whoever finds it, and one
+    /// fixed name is two runs of the suite answering to each other.
+    struct Probe(std::path::PathBuf);
+
+    impl Drop for Probe {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+        }
+    }
+
     #[test]
     fn reads_a_value_from_a_file_without_its_newlines() {
-        let path = std::env::temp_dir().join("shimbox-envref-test.txt");
-        std::fs::write(&path, "ghp_from_file\r\n").unwrap();
-        let target = format!("file:{}", path.display());
+        let probe =
+            Probe(std::env::temp_dir().join(format!("shimbox-envref-{}.txt", std::process::id())));
+        std::fs::write(&probe.0, "ghp_from_file\r\n").unwrap();
+        let target = format!("file:{}", probe.0.display());
         let resolved = resolve(&[("GH_TOKEN".to_string(), target)]).unwrap();
         assert_eq!(resolved[0].1, "ghp_from_file");
-        std::fs::remove_file(&path).ok();
     }
 
     #[test]

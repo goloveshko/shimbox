@@ -74,10 +74,7 @@ mod tests {
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {
-        let dir =
-            std::env::temp_dir().join(format!("shimbox-pickers-{}-{name}", std::process::id()));
-        fs::create_dir_all(&dir).unwrap();
-        dir
+        crate::testutil::scratch("pickers", name)
     }
 
     fn fields(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {

@@ -126,10 +126,7 @@ mod tests {
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {
-        let dir =
-            std::env::temp_dir().join(format!("shimbox-update-{}-{name}", std::process::id()));
-        fs::create_dir_all(&dir).unwrap();
-        dir
+        crate::testutil::scratch("update", name)
     }
 
     #[test]

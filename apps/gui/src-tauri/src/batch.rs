@@ -276,9 +276,7 @@ mod tests {
     use std::time::Duration;
 
     fn scratch(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("shimbox-batch-{}-{name}", std::process::id()));
-        fs::create_dir_all(&dir).unwrap();
-        dir
+        crate::testutil::scratch("batch", name)
     }
 
     fn names(paths: &[PathBuf]) -> Vec<String> {

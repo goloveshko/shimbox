@@ -11,6 +11,8 @@ mod secret;
 mod settings;
 mod shim;
 mod state;
+#[cfg(test)]
+mod testutil;
 mod update;
 
 use std::path::Path;
