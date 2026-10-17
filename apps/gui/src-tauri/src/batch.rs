@@ -410,8 +410,8 @@ mod tests {
         let summary = run_batch(&targets, &destination, |done| counts.push(done));
 
         assert_eq!(summary.created.len(), 2);
-        assert_eq!(destination.join("git.shim").is_file(), true);
-        assert_eq!(destination.join("zip.exe").is_file(), true);
+        assert!(destination.join("git.shim").is_file());
+        assert!(destination.join("zip.exe").is_file());
         let reasons: Vec<&str> = summary.skipped.iter().map(|row| row.reason).collect();
         assert_eq!(reasons, ["duplicate", "missing"]);
         // The count advances over the skipped rows too, or the bar stalls.

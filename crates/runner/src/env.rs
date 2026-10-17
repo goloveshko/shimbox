@@ -54,12 +54,14 @@ fn file(name: &str, path: &str) -> Result<String, Unresolved> {
 /// can hold no NUL, so a blob that does is read as UTF-16.
 fn blob_to_text(bytes: &[u8]) -> Option<String> {
     if bytes.contains(&0) {
-        if bytes.len() % 2 != 0 {
+        if !bytes.len().is_multiple_of(2) {
             return None;
         }
         let wide: Vec<u16> = bytes
-            .chunks_exact(2)
-            .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|pair| u16::from_le_bytes(*pair))
             .collect();
         return String::from_utf16(&wide).ok();
     }

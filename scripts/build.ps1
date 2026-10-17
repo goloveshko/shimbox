@@ -111,6 +111,15 @@ try {
         throw 'the UI is not formatted; run `npm run format` in apps\gui, read what it changed, and build again'
     }
 
+    # The third report a person can be handed without asking for one. Clippy is the
+    # only tool here that reads what the compiler already accepts, so its warnings
+    # arrive as a change nobody noticed rather than as a build that fails, and a tree
+    # that grows them grows the habit of scrolling past them. It runs before anything
+    # is built for the reason the two above do: an answer that costs a check should
+    # not be made to wait behind a release build of the thing it is complaining about.
+    Write-Section 'lint'
+    Invoke-Cargo @('clippy', '--workspace', '--all-targets', '--', '-D', 'warnings')
+
     if (-not (Test-Path $BinDir)) {
         New-Item -ItemType Directory -Path $BinDir | Out-Null
     }

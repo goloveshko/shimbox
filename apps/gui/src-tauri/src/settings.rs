@@ -40,7 +40,7 @@ impl Settings {
 }
 
 fn offered(names: &'static [&'static str], value: Option<&str>) -> Option<&'static str> {
-    value.and_then(|value| names.into_iter().copied().find(|name| *name == value))
+    value.and_then(|value| names.iter().copied().find(|name| *name == value))
 }
 
 /// A file that cannot be read or understood is an empty one: this is a

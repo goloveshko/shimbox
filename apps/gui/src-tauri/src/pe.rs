@@ -194,8 +194,10 @@ fn layout_of(file: &mut File) -> Option<(u32, Vec<Section>)> {
     let count = section_count.min(MAX_SECTIONS);
     let raw = read_at(file, sections_start, count * SECTION_HEADER_SIZE)?;
     let sections = raw
-        .chunks_exact(SECTION_HEADER_SIZE)
-        .filter_map(|header| Section::parse(header))
+        .as_chunks::<SECTION_HEADER_SIZE>()
+        .0
+        .iter()
+        .filter_map(Section::parse)
         .collect::<Vec<_>>();
     if sections.is_empty() {
         return None;
@@ -211,7 +213,7 @@ struct Section {
 }
 
 impl Section {
-    fn parse(header: &[u8]) -> Option<Self> {
+    fn parse(header: &[u8; SECTION_HEADER_SIZE]) -> Option<Self> {
         Some(Self {
             virtual_address: u32_at(header, 12)?,
             raw_size: u32_at(header, 16)?,
@@ -221,7 +223,7 @@ impl Section {
 
     /// Bounded by the raw size, so an RVA that names bytes past what the
     /// section actually holds is rejected rather than seeked to.
-    fn to_offset(&self, rva: u32) -> Option<u64> {
+    fn to_offset(self, rva: u32) -> Option<u64> {
         let inside = rva.checked_sub(self.virtual_address)?;
         if inside >= self.raw_size {
             return None;
@@ -275,7 +277,9 @@ fn directory(file: &mut File, at: u64) -> Option<Vec<(u32, u32)>> {
         count.checked_mul(RESOURCE_DIRECTORY_ENTRY_SIZE)?,
     )?;
     Some(
-        raw.chunks_exact(RESOURCE_DIRECTORY_ENTRY_SIZE)
+        raw.as_chunks::<RESOURCE_DIRECTORY_ENTRY_SIZE>()
+            .0
+            .iter()
             .filter_map(|entry| Some((u32_at(entry, 0)?, u32_at(entry, 4)?)))
             .collect(),
     )
@@ -381,12 +385,12 @@ fn parse_version_info(bytes: &[u8]) -> Version {
 
     // The fixed info is what Windows compares; the string block below is what
     // it prints, and the two do not always agree.
-    if let Some(fixed) = root.value().get(..FIXED_FILE_INFO_SIZE) {
-        if u32_at(fixed, 0) == Some(FIXED_FILE_INFO_SIGNATURE) {
-            let file = u32_at(fixed, 8).unwrap_or(0);
-            let other = u32_at(fixed, 12).unwrap_or(0);
-            version.numbers = Some([file >> 16, file & 0xFFFF, other >> 16, other & 0xFFFF]);
-        }
+    if let Some(fixed) = root.value().get(..FIXED_FILE_INFO_SIZE)
+        && u32_at(fixed, 0) == Some(FIXED_FILE_INFO_SIGNATURE)
+    {
+        let file = u32_at(fixed, 8).unwrap_or(0);
+        let other = u32_at(fixed, 12).unwrap_or(0);
+        version.numbers = Some([file >> 16, file & 0xFFFF, other >> 16, other & 0xFFFF]);
     }
 
     for file_info in root.children() {
@@ -603,13 +607,12 @@ mod tests {
     fn real_binaries_report_a_version() {
         // Exercises the whole resource walk, which only real files have.
         let version = version_of(Path::new(r"C:\Windows\System32\cmd.exe"));
-        assert_eq!(version.numbers().is_some(), true);
-        assert_eq!(
+        assert!(version.numbers().is_some());
+        assert!(
             version
                 .text()
                 .unwrap_or_default()
-                .starts_with(char::is_numeric),
-            true
+                .starts_with(char::is_numeric)
         );
 
         // A file with no version resource at all, which is what the batch

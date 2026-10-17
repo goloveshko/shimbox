@@ -120,7 +120,7 @@ pub fn update_seen(app: tauri::AppHandle, release: Option<Release>) -> Option<Av
     let file = state_file(&app)?;
     write(&file, Asked { at: now() });
     let release = release?;
-    is_newer(&release.version, env!("CARGO_PKG_VERSION")).then(|| Available {
+    is_newer(&release.version, env!("CARGO_PKG_VERSION")).then_some(Available {
         version: release.version,
         url: release.url,
         notes: release.notes,
