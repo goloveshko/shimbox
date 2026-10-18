@@ -176,8 +176,8 @@ Draft 1 left the format as "JSON or INI". JSON was incompatible with the
 zero-dependency rule and with the size target, and it would need a parser in two
 places. The format is therefore a flat `key=value` file, ~40 lines of
 hand-written parsing in the runner. The GUI **writes** this format, and reads back
-one key of it and nothing else — the `runner` stamp 5.7 compares — so no second
-parser exists.
+one key of it and nothing else — the `runner` line 5.7 rests on for the half of a
+pair whose `.exe` is gone — so no second parser exists.
 
 ### 3.2 Syntax
 
@@ -205,7 +205,7 @@ envref=GITHUB_TOKEN=cred:shimbox/github
 
 | Key | Required | Meaning |
 | :--- | :--- | :--- |
-| `runner` | written by the GUI, ignored by the runner | `<variant>@<version>` of the bytes copied in as the `.exe` half, as 5.7 reads it back. The runner never looks at it: it already *is* those bytes. |
+| `runner` | written by the GUI, ignored by the runner | `<variant>@<version>` of the bytes copied in as the `.exe` half. What 5.7 compares is those bytes themselves, so this line is the word the pair is left with once its runner is gone, and a note for whoever reads the file by hand. The runner never looks at it: it already *is* those bytes. |
 | `path` | yes | Absolute path to the target executable. |
 | `arg` | no, repeatable | Argument inserted before the caller's arguments, **exactly as written** — the GUI does not add quoting, so `arg=-o "out file.txt"` reaches the child as `-o "out file.txt"`. |
 | `workdir` | no | Working directory for the child. |
@@ -294,7 +294,9 @@ The extension is kept regardless. Since neither tool can run the other's file,
 nothing is won by renaming it: `ffmpeg.shim` beside `ffmpeg.exe` already says
 what it is to anyone who has met Scoop, and a folder holding both kinds is
 handled — mode 2 neither overwrites an existing `.shim` nor offers a file that
-already has one beside it (5.3), and mode 1 refuses to write over one.
+already has one beside it (5.3), mode 1 refuses to write over one, and mode 3
+refuses to write over a pair whose `.exe` does not name shimbox in its own
+resources (5.7).
 
 ---
 
@@ -651,10 +653,24 @@ what each shim is.
   generator owes anybody. No list of made shims is kept either: a pair says where it
   is, and the two ways to ask for one are the folder in the field and, while that
   field is empty, every folder the variable `folder_on_path` (5) already reads.
-* **What counts as stale**: the `runner` line of the config (3.3) against the line
-  this build would write. A pair made before the line existed has no claim to be
-  current and is listed — which is also how an odd value like `cli` with no version
-  is answered, since the line is a stamp rather than something to interpret.
+* **Which files are ours**: the `.exe` answers for the pair, from the `ProductName`
+  its own `VERSIONINFO` carries (2.2) — a name no other tool's binary has any reason
+  to write, and one the hand-written PE reader already walks the resource tree to
+  reach for *FileVersion*. A `.shim` in the same folder makes a pair only once that
+  answer says shimbox, because `%PATH%` reaches Scoop's own `shims` folders, which
+  hold `git.shim` beside `git.exe` in exactly the shape a scan of a folder asks for.
+  A config with no `.exe` beside it is taken at its own word instead — the header
+  line of 3.2, or a `runner` line of the shape only this manager writes — since a
+  half pair is the one case with nothing left to ask. The guard runs again over the
+  bytes as they are when *Update runners* is clicked, not only during the scan.
+* **What counts as stale**: the copy on disk against the bytes this build embeds,
+  byte for byte. A version number cannot answer this — the runners are rebuilt while
+  `CARGO_PKG_VERSION` stays where it was, which is how a fix to a runner reaches no
+  shim today — and the number the file carries in its own resource is the same
+  answer with the same hole. The `runner` line of the config is therefore shown as
+  *Made with* rather than trusted: a pair made before the line existed, or made by a
+  build that wrote a different number, is listed by what its bytes are, not by what
+  its line says.
 * **Which runner**: the PE header of the copy on disk, for the same reason 5.4 reads
   a target's header. The config's own line decides only when there is no header to
   read, which is the half-pair 5.3 leaves on purpose. A refresh therefore never
@@ -670,7 +686,9 @@ what each shim is.
   because that rule is about making a pair rather than keeping one.
 * **Failure**: a shim that is running now cannot be written over, and Windows says
   so. That answer belongs to its own row, so the rest of the list is refreshed and
-  one name is reported. The summary is the same shape mode 2 already has.
+  one name is reported. A pair that stopped being ours since the scan answers on its
+  own row too, and keeps every byte it has. The summary is the same shape mode 2
+  already has.
 
 ---
 
