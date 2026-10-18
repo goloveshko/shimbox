@@ -746,9 +746,16 @@ Decisions still open:
    second for a copy, and what a link would cost is a shim that cannot be put on a
    desktop or carried to another machine by itself.
 2. **A backslash-quote case in the raw command-line round trip**: the reason
-   FR-1.3 exists, and so far covered only by the parser's own unit test. What a
-   child is handed is asserted through an argument with a double space, which is
-   the half of it a `cmd.exe` can echo back honestly.
+   FR-1.3 exists. The smoke script asserts its two shapes end to end now - a tail
+   of `a\"b`, which the MSVC parsing rules read as one argument worth `a"b` and
+   their quoting rules hand back as `"a\"b"`, and a quoted path ending in a
+   backslash, which swallows its own closing quote on the way in - both arriving
+   at the child as the caller wrote them.
+   The second half is still not asserted: `echo` reports the command line a child
+   was given, not the `argv` its own parser read out of it, so these checks prove
+   that nothing was re-quoted rather than what a parser makes of the bytes. A
+   target that prints its `argv` would close it, and nothing in `System32` does
+   that honestly.
 
 Resolved since draft 3:
 

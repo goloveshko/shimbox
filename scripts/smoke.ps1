@@ -54,6 +54,16 @@ function Write-Config {
     Set-Content -Path (Join-Path $Work "$Name.shim") -Value $Lines -Encoding ASCII
 }
 
+# Runs the shim through `cmd` rather than through PowerShell, because PowerShell
+# builds its own child command line out of the arguments it is handed and the
+# bytes this is about would never reach the shim. The redirection is asked of
+# PowerShell rather than written into the line: `cmd` would otherwise leave `2>&1`
+# among the arguments the shim is handed, and `echo` would print it back.
+function Invoke-Tail {
+    param([string]$Shim, [string]$Tail)
+    (& $Cmd /c ('"{0}" {1}' -f $Shim, $Tail) 2>&1 | Out-String).Trim()
+}
+
 Remove-Item $Work -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $Work | Out-Null
 
@@ -75,6 +85,18 @@ $cli = New-Shim -Runner $cliRunner -Name 'echocli' -ConfigLines @(
 # so the child must receive it unsplit and unmodified.
 $output = & $cli echo 'first  second' | Out-String
 Check 'arguments forwarded verbatim' ($output -match 'first\s\ssecond') "got: $($output.Trim())"
+
+# The reason FR-1.3 exists, in the two shapes that break it. Read by the MSVC
+# parsing rules and written back by the quoting ones, a\"b is one argument whose
+# value is a"b and comes back as "a\"b" - the quoting the caller had already
+# settled, restored as literal text - and a quoted path ending in a backslash
+# swallows its own closing quote on the way in. Passed through as bytes, both
+# arrive exactly as the caller wrote them.
+$escaped = Invoke-Tail -Shim $cli -Tail 'echo a\"b'
+Check 'a backslash before a quote survives' ($escaped -eq 'a\"b') "got: $escaped"
+
+$trailing = Invoke-Tail -Shim $cli -Tail 'echo "C:\tools\"'
+Check 'a quoted path ending in a backslash survives' ($trailing -eq '"C:\tools\"') "got: $trailing"
 
 & $cli exit 7 | Out-Null
 Check 'exit code propagated' ($LASTEXITCODE -eq 7) "got: $LASTEXITCODE"
