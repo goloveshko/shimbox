@@ -38,6 +38,10 @@ pub struct EnvRow {
 /// form cannot point the runner at some other program's stored secret.
 pub const CRED_PREFIX: &str = "shimbox/";
 
+/// The first line every config this manager writes carries, and the one a scan
+/// reads back before trusting a `.shim` with no runner beside it (5.7).
+pub(crate) const HEADER: &str = "# shimbox config";
+
 #[derive(Debug, serde::Serialize)]
 pub struct Created {
     pub exe: String,
@@ -207,10 +211,12 @@ pub fn write_pair(
     })
 }
 
-/// What the copied runner is, written into the config it is paired with: the
-/// `.exe` half of a shim carries no version of its own, so this line is the only
-/// place a later build can be compared against the bytes already on disk (5.7).
-/// The manager embeds the runners it stages, so its own version is theirs.
+/// What the copied runner is, written into the config it is paired with. The
+/// `.exe` half answers for itself - it carries `ProductName` and `FileVersion` in
+/// its resources, and a refresh compares its bytes - so this line is the word the
+/// pair is left with when only the config survives, and a note for whoever reads
+/// the file by hand (5.7). The manager embeds the runners it stages, so its own
+/// version is theirs.
 pub(crate) fn stamp(variant: Variant) -> String {
     format!("{}@{}", variant.name(), env!("CARGO_PKG_VERSION"))
 }
@@ -320,7 +326,7 @@ fn config_text(
     environment: &[(&str, String)],
     variant: Variant,
 ) -> Result<String, Failure> {
-    let mut text = String::from("# shimbox config\n");
+    let mut text = format!("{HEADER}\n");
     line(&mut text, "runner", &stamp(variant))?;
     line(&mut text, "path", &target.display().to_string())?;
     for argument in arguments {

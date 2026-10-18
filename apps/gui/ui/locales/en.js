@@ -150,7 +150,8 @@ export default {
 
   'refresh.folder': 'Folder to search',
   'refresh.folder.placeholder': 'C:\\Shims',
-  'refresh.folder.help': 'Left empty, the search runs over every folder on PATH.',
+  'refresh.folder.help':
+    'Left empty, the search runs over every folder on PATH. Only shims made by shimbox are listed.',
   'refresh.keeps.help': 'Only the .exe is rewritten; the .shim keeps everything you set in it.',
   'refresh.column.name': 'Shim name',
   'refresh.column.path': 'Executable',
@@ -170,6 +171,7 @@ export default {
   'error.destination': 'The destination folder does not exist.',
   'error.folder': 'The folder does not exist.',
   'error.missing': 'The shim is not there anymore.',
+  'error.foreign': 'That runner is not a shimbox shim.',
   'error.alias': 'The shim name is not a valid file name.',
   'error.collision': 'A file with that name is already there.',
   'error.write': 'The shim could not be written.',

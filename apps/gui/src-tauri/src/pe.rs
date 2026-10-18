@@ -1,6 +1,7 @@
 //! Reads what a target executable says about itself without running it: the
-//! `Subsystem` behind `Auto detect` (docs/techspec.md 5.4) and the file version
-//! behind the batch table (5.2).
+//! `Subsystem` behind `Auto detect` (docs/techspec.md 5.4), the file version
+//! behind the batch table (5.2) and the `ProductName` behind the refusal to write
+//! over another tool's file (5.7).
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -149,34 +150,53 @@ const MAX_SECTIONS: usize = 96;
 const MAX_DIRECTORY_ENTRIES: usize = 512;
 const MAX_VERSION_BLOCK: usize = 64 * 1024;
 
+/// What `crates/runner/winres.rs` writes as `ProductName` of both runners, and so
+/// of every copy of one that sits in a shim's place.
+const PRODUCT: &str = "shimbox";
+
 /// The two answers a scan wants about one binary, out of the one open of it: a
 /// folder of tools is a hundred opens saved, and the open is the part of this walk
 /// that costs anything - the reads after it are a few hundred bytes each.
 #[derive(Debug, Default)]
 pub struct Image {
     pub version: Version,
+    /// The `ProductName` of the same resource block, which is the only thing a
+    /// file of our own shape says that another tool's file does not (5.7).
+    pub product: Option<String>,
     pub subsystem: Subsystem,
+}
+
+impl Image {
+    /// Whether the file names us as its maker. A `.shim` of the same extension is
+    /// not this: only the bytes of a runner we built carry this name.
+    pub fn is_shimbox(&self) -> bool {
+        self.product
+            .as_deref()
+            .is_some_and(|name| name.eq_ignore_ascii_case(PRODUCT))
+    }
 }
 
 pub fn inspect(path: &Path) -> Image {
     let Ok(mut file) = File::open(path) else {
         return Image::default();
     };
+    let (version, product) = resource_in(&mut file);
     Image {
-        version: version_in(&mut file),
+        version,
+        product,
         subsystem: subsystem_in(&mut file),
     }
 }
 
-/// The version resource of an executable already open. An empty `Version` for
-/// anything that is not a PE, has no resources, or has a resource tree that does
-/// not parse - a scan must not fail over one odd binary.
-fn version_in(file: &mut File) -> Version {
+/// The version resource of an executable already open. An empty `Version` and no
+/// name for anything that is not a PE, has no resources, or has a resource tree
+/// that does not parse - a scan must not fail over one odd binary.
+fn resource_in(file: &mut File) -> (Version, Option<String>) {
     let Some((resource_rva, sections)) = layout_of(file) else {
-        return Version::default();
+        return (Version::default(), None);
     };
     let Some(data) = version_resource(file, &sections, resource_rva) else {
-        return Version::default();
+        return (Version::default(), None);
     };
     parse_version_info(&data)
 }
@@ -403,11 +423,12 @@ impl<'a> Block<'a> {
     }
 }
 
-fn parse_version_info(bytes: &[u8]) -> Version {
+fn parse_version_info(bytes: &[u8]) -> (Version, Option<String>) {
     let Some(root) = Block::parse(bytes, 0) else {
-        return Version::default();
+        return (Version::default(), None);
     };
     let mut version = Version::default();
+    let mut product = None;
 
     // The fixed info is what Windows compares; the string block below is what
     // it prints, and the two do not always agree.
@@ -425,19 +446,24 @@ fn parse_version_info(bytes: &[u8]) -> Version {
         }
         for language in file_info.children() {
             for item in language.children() {
-                if item.key != "FileVersion" {
-                    continue;
-                }
-                if let Some((text, _)) = utf16_at(item.bytes, item.value_at) {
-                    let text = text.trim().to_string();
-                    if !text.is_empty() {
-                        version.text = Some(text);
-                    }
+                let value = string_value(&item);
+                match item.key.as_str() {
+                    "FileVersion" => version.text = value,
+                    "ProductName" => product = value,
+                    _ => {}
                 }
             }
         }
     }
-    version
+    (version, product)
+}
+
+/// One string of a `StringFileInfo` block, trimmed and dropped when it says
+/// nothing: an empty `FileVersion` is no more of an answer than no key at all.
+fn string_value(item: &Block) -> Option<String> {
+    let (text, _) = utf16_at(item.bytes, item.value_at)?;
+    let text = text.trim().to_string();
+    (!text.is_empty()).then_some(text)
 }
 
 /// Byte layout of a minimal PE image carrying the given subsystem; tests only.
@@ -565,7 +591,8 @@ mod tests {
         // The shape Windows writes: a fixed block to compare by and a
         // `StringFileInfo` whose `FileVersion` is what Explorer prints.
         let file_version = node("FileVersion", &utf16("96.0"), 5, &[]);
-        let language = node("040904B0", &[], 0, &file_version);
+        let product_name = node("ProductName", &utf16(PRODUCT), PRODUCT.len() + 1, &[]);
+        let language = node("040904B0", &[], 0, &[file_version, product_name].concat());
         let strings = node("StringFileInfo", &[], 0, &language);
         let other = node(
             "VarFileInfo",
@@ -580,9 +607,44 @@ mod tests {
             &[strings, other].concat(),
         );
 
-        let version = parse_version_info(&root);
+        let (version, product) = parse_version_info(&root);
         assert_eq!(version.numbers(), Some([96, 0, 0, 0]));
         assert_eq!(version.text(), Some("96.0"));
+        assert_eq!(product.as_deref(), Some(PRODUCT));
+        // The same answer through the file's own type, which is what 5.7 asks.
+        assert!(
+            Image {
+                version,
+                product,
+                subsystem: Subsystem::Unknown,
+            }
+            .is_shimbox()
+        );
+    }
+
+    #[test]
+    fn a_foreign_product_name_is_not_ours() {
+        // What a Scoop shim says about itself: a real version block that names
+        // another tool, so the extension alone cannot be the whole rule.
+        let product_name = node("ProductName", &utf16("git-for-windows"), 18, &[]);
+        let language = node("040904B0", &[], 0, &product_name);
+        let strings = node("StringFileInfo", &[], 0, &language);
+        let root = node(
+            "VS_VERSIONINFO",
+            &fixed_info(2, 47),
+            FIXED_FILE_INFO_SIZE,
+            &strings,
+        );
+
+        let (_, product) = parse_version_info(&root);
+        assert_eq!(product.as_deref(), Some("git-for-windows"));
+        assert!(
+            !Image {
+                product,
+                ..Image::default()
+            }
+            .is_shimbox()
+        );
     }
 
     #[test]
@@ -593,15 +655,20 @@ mod tests {
             FIXED_FILE_INFO_SIZE,
             &[],
         );
-        let version = parse_version_info(&root);
+        let (version, product) = parse_version_info(&root);
         assert_eq!(version.numbers(), Some([7, 1, 0, 0]));
         assert_eq!(version.text(), None);
+        assert_eq!(product, None);
     }
 
     #[test]
     fn rejects_garbage_without_reading_past_it() {
-        assert!(parse_version_info(&[]).is_empty());
-        assert!(parse_version_info(b"not a version block at all").is_empty());
+        assert!(parse_version_info(&[]).0.is_empty());
+        assert!(
+            parse_version_info(b"not a version block at all")
+                .0
+                .is_empty()
+        );
 
         // A node that claims bytes past the end: what is really there still
         // parses, and the padding does not become children.
@@ -614,9 +681,10 @@ mod tests {
         let length = u16::from_le_bytes([dangling[0], dangling[1]]) + 8;
         dangling.extend_from_slice(&[0u8; 8]);
         dangling[0..2].copy_from_slice(&length.to_le_bytes());
-        let version = parse_version_info(&dangling);
+        let (version, product) = parse_version_info(&dangling);
         assert_eq!(version.numbers(), Some([1, 0, 0, 0]));
         assert_eq!(version.text(), None);
+        assert_eq!(product, None);
 
         // Right length, wrong signature: the numbers are not the numbers.
         let mut unsigned = node(
@@ -626,7 +694,7 @@ mod tests {
             &[],
         );
         unsigned[36..40].copy_from_slice(&[0u8; 4]);
-        assert!(parse_version_info(&unsigned).is_empty());
+        assert!(parse_version_info(&unsigned).0.is_empty());
     }
 
     #[test]
@@ -643,6 +711,10 @@ mod tests {
                 .starts_with(char::is_numeric)
         );
         assert_eq!(image.subsystem, Subsystem::Console);
+        // A console binary of the exact shape a shim has, which is the point of
+        // the name: the header says the same for both, the resource does not.
+        assert!(!image.is_shimbox());
+        assert!(image.product.is_some());
 
         // A file with no version resource at all, which is what the batch
         // table shows most often.
@@ -651,10 +723,8 @@ mod tests {
                 .version
                 .is_empty()
         );
-        assert!(
-            inspect(Path::new(r"C:\nope\missing.exe"))
-                .version
-                .is_empty()
-        );
+        let missing = inspect(Path::new(r"C:\nope\missing.exe"));
+        assert!(missing.version.is_empty());
+        assert!(!missing.is_shimbox());
     }
 }

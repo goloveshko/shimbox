@@ -145,7 +145,8 @@ export default {
 
   'refresh.folder': 'Папка для поиска',
   'refresh.folder.placeholder': 'C:\\Shims',
-  'refresh.folder.help': 'Если папку не указать, поиск идёт по всем папкам из PATH.',
+  'refresh.folder.help':
+    'Если папку не указать, поиск идёт по всем папкам из PATH. В списке только шимы, созданные shimbox.',
   'refresh.keeps.help': 'Перезаписывается только .exe; .shim остаётся со всеми вашими настройками.',
   'refresh.column.name': 'Имя шима',
   'refresh.column.path': 'Файл',
@@ -165,6 +166,7 @@ export default {
   'error.destination': 'Папки назначения не существует.',
   'error.folder': 'Папки не существует.',
   'error.missing': 'Шима больше нет на месте.',
+  'error.foreign': 'Это не шим shimbox.',
   'error.alias': 'Имя шима не годится на имя файла.',
   'error.collision': 'Файл с таким именем уже там.',
   'error.write': 'Шим не удалось записать.',

@@ -6,6 +6,13 @@
 //! folder answers with every pair inside it, and `%PATH%` answers with every
 //! folder that was ever meant to be reached by name - the same variable
 //! [`crate::folder_on_path`] reads.
+//!
+//! Reaching a folder by name is also how the scan reaches another tool's files:
+//! Scoop keeps its own shims in a `%PATH%` folder under a `.shim` of its own, so
+//! the extension marks a candidate, never ours. Two things settle it, both read
+//! out of the runner itself rather than inferred from where it sits: the
+//! `ProductName` of its version resource, which only a binary this build made
+//! carries, and a byte-for-byte comparison with the runner it embeds (5.7).
 
 use std::ffi::OsStr;
 use std::fs;
@@ -73,9 +80,10 @@ fn folders_of(path_list: &OsStr) -> Vec<PathBuf> {
     found
 }
 
-/// The pairs directly inside `root`, one level deep: a batch writes into one
-/// folder rather than a tree, `%PATH%` names folders rather than trees, and
-/// walking into `C:\Windows` is a scan of a drive rather than of a person's shims.
+/// The `.shim` files directly inside `root`, one level deep, as candidates for a
+/// pair: a batch writes into one folder rather than a tree, `%PATH%` names folders
+/// rather than trees, and walking into `C:\Windows` is a scan of a drive rather
+/// than of a person's shims. Which of them are ours is [`ours`], never this.
 fn pairs_in(root: &Path) -> Vec<PathBuf> {
     let Ok(entries) = fs::read_dir(root) else {
         return Vec::new();
@@ -141,14 +149,60 @@ fn wanted(subsystem: pe::Subsystem, stamp: Option<&str>) -> Variant {
     }
 }
 
+/// The config's own word that it belongs to a shimbox shim, which is all a pair
+/// with no runner left can offer: the header line [`shim::HEADER`] over what it
+/// took as its first line, or a stamp of the one shape only this manager writes.
+/// A `.shim` that says neither is some other tool's file that happens to share the
+/// extension (3.6).
+fn declared(text: &str) -> bool {
+    let header = text
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .is_some_and(|line| line.trim_start_matches('\u{feff}') == shim::HEADER);
+    // `cli@` and `gui@` are what [`shim::stamp`] writes, so a line of any other
+    // shape was not written here.
+    let shaped = stamp_of(text).is_some_and(|stamp| {
+        stamp.split_once('@').is_some_and(|(variant, version)| {
+            !version.is_empty() && matches!(variant, "cli" | "gui")
+        })
+    });
+    header || shaped
+}
+
+/// Whether these are our files to write bytes over. A runner that is there
+/// answers for itself, because a copy of one of our binaries is the only shape
+/// that names `shimbox` in its resources (5.7) - and it answers instead of its
+/// config, so another tool's `.shim` beside another tool's `.exe` is never made
+/// into a pair by the two files agreeing with each other.
+fn ours(exe: &Path, image: &pe::Image, text: &str) -> bool {
+    if exe.is_file() {
+        image.is_shimbox()
+    } else {
+        declared(text)
+    }
+}
+
+/// Whether the bytes already on disk are exactly the ones this build embeds. A
+/// version number cannot answer that: the runners are rebuilt while the crate
+/// version stays put, and a shim stamped with a number this build still prints
+/// would be reported current while it ran older bytes (5.7).
+fn current(exe: &Path, variant: Variant) -> bool {
+    fs::read(exe).is_ok_and(|bytes| bytes == variant.bytes())
+}
+
 fn row(config: &Path) -> Option<Stale> {
     let Ok(text) = fs::read_to_string(config) else {
         return None;
     };
     let exe = shim::exe_of(config);
+    let image = pe::inspect(&exe);
+    if !ours(&exe, &image, &text) {
+        return None;
+    }
     let stamp = stamp_of(&text);
-    let variant = wanted(pe::subsystem_of(&exe), stamp.as_deref());
-    if stamp.as_deref() == Some(shim::stamp(variant).as_str()) {
+    let variant = wanted(image.subsystem, stamp.as_deref());
+    if current(&exe, variant) {
         return None;
     }
     Some(Stale {
@@ -165,7 +219,7 @@ fn row(config: &Path) -> Option<Stale> {
     })
 }
 
-/// Lists the pairs whose runner half is not this build's.
+/// Lists the pairs [`ours`] accepts whose runner half is not this build's bytes.
 #[tauri::command]
 pub async fn scan_shims(folder: String) -> Result<Vec<Stale>, Failure> {
     Ok(roots(&folder)?
@@ -180,6 +234,11 @@ pub async fn scan_shims(folder: String) -> Result<Vec<Stale>, Failure> {
 /// unchanged. Each pair answers for itself, which is what lets one shim that is
 /// running now fail on its own line rather than take the rest of the list down
 /// with it.
+///
+/// The names come from a scan of the same session, but a row the person chose is
+/// not taken on the scan's word alone: the guard runs again here, over the bytes
+/// as they are now, because a folder on `%PATH%` can be written by anything while
+/// the window stays open.
 #[tauri::command]
 pub async fn refresh_runners(request: Request) -> Summary {
     let mut summary = Summary {
@@ -203,7 +262,16 @@ fn refresh_one(config: &Path, summary: &mut Summary) {
         return;
     };
     let exe = shim::exe_of(config);
-    let variant = wanted(pe::subsystem_of(&exe), stamp_of(&text).as_deref());
+    let image = pe::inspect(&exe);
+    if !ours(&exe, &image, &text) {
+        // The half of a pair that is here now is not one of ours: another tool's
+        // file under a name this scan once read as a shim.
+        summary
+            .failed
+            .push(shim::fail("foreign", exe.display().to_string()));
+        return;
+    }
+    let variant = wanted(image.subsystem, stamp_of(&text).as_deref());
 
     // The bytes land first, which is the other way round from 5.3 and for the
     // other reason: a corrected line over an old runner would report a pair as
@@ -227,18 +295,46 @@ fn refresh_one(config: &Path, summary: &mut Summary) {
 mod tests {
     use super::*;
 
-    /// One pair of files inside the test's own folder. `not a PE` on purpose: a
-    /// copy whose header cannot be read is decided by its config's own line, and
-    /// that is the half of the rule a real binary would never exercise.
-    fn pair(dir: &Path, alias: &str, stamp: &str) -> PathBuf {
+    /// One pair of files inside the test's own folder: a config in the shape this
+    /// manager writes and a runner of the asked-for variant that is ours but not
+    /// current - the embedded bytes with one more behind them, so the resource
+    /// still says `shimbox` while the comparison says older.
+    fn pair_of(dir: &Path, alias: &str, stamp: &str, variant: Variant) -> PathBuf {
         let config = dir.join(format!("{alias}.shim"));
         fs::write(
             &config,
-            format!("# shimbox config\nrunner={stamp}\npath=C:\\t.exe\n"),
+            format!("{}\nrunner={stamp}\npath=C:\\t.exe\n", shim::HEADER),
         )
         .unwrap();
-        fs::write(shim::exe_of(&config), b"not a PE").unwrap();
+        let mut bytes = variant.bytes().to_vec();
+        bytes.push(0);
+        fs::write(shim::exe_of(&config), bytes).unwrap();
         config
+    }
+
+    fn pair(dir: &Path, alias: &str, stamp: &str) -> PathBuf {
+        pair_of(dir, alias, stamp, Variant::Cli)
+    }
+
+    /// Every test here writes real PE bytes, and Windows opens a new `.exe` to be
+    /// looked at before anyone is let remove it, so the folder goes once that look
+    /// ends rather than the instant the write did. Bounded, because a folder that
+    /// is really held should fail this helper rather than wait for it.
+    fn clear(dir: &Path) {
+        for _ in 0..20 {
+            if fs::remove_dir_all(dir).is_ok() {
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+        panic!("a runner was left in TEMP: {}", dir.display());
+    }
+
+    fn summary() -> Summary {
+        Summary {
+            refreshed: Vec::new(),
+            failed: Vec::new(),
+        }
     }
 
     #[test]
@@ -257,6 +353,25 @@ mod tests {
             Some("cli@1.0.0+build=7")
         );
         assert_eq!(stamp_of("# runner=cli@1.0.0\n"), None);
+    }
+
+    #[test]
+    fn a_config_without_its_runner_is_taken_at_its_own_word() {
+        assert!(declared("# shimbox config\npath=C:\\t.exe\n"));
+        // The mark Notepad puts in front of a file, and the blank lines a person
+        // leaves above the header, still say who wrote the config.
+        assert!(declared("\u{feff}# shimbox config\npath=C:\\t.exe\n"));
+        assert!(declared("\n\n# shimbox config\npath=C:\\t.exe\n"));
+        assert!(declared("runner=cli@0.9.0\npath=C:\\t.exe\n"));
+
+        // What another tool writes into its own folder that sits on `%PATH%`: the
+        // extension matches and nothing else does, so it never becomes a pair.
+        assert!(!declared(
+            "path=C:\\scoop\\apps\\git\\current\\bin\\git.cmd\n"
+        ));
+        assert!(!declared("runner=git\npath=C:\\t.exe\n"));
+        assert!(!declared("runner=cli@\npath=C:\\t.exe\n"));
+        assert!(!declared("path=C:\\t.exe\n# shimbox config\n"));
     }
 
     #[test]
@@ -282,46 +397,125 @@ mod tests {
     }
 
     #[test]
-    fn a_pair_is_a_row_until_its_stamp_is_this_builds() {
+    fn a_pair_is_a_row_until_its_runner_is_this_builds_bytes() {
         let dir = crate::testutil::scratch("refresh", "stale");
 
         let current = shim::stamp(Variant::Cli);
-        assert!(
-            row(&pair(&dir, "current", &current)).is_none(),
-            "{current} is this build"
-        );
+        let fresh = pair(&dir, "current", &current);
+        fs::write(shim::exe_of(&fresh), Variant::Cli.bytes()).unwrap();
+        assert!(row(&fresh).is_none(), "{current} is this build");
 
-        let older = pair(&dir, "older", "cli@0.9.0");
-        let found = row(&older).expect("an older runner is a row");
-        assert_eq!(found.was.as_deref(), Some("cli@0.9.0"));
-        assert_eq!(found.name, "older");
+        // The hole a stamp cannot close: the runners were rebuilt since the version
+        // number was written, so this copy carries a line this build still prints
+        // over bytes it no longer embeds. Only the comparison sees it.
+        let drifted = pair(&dir, "drifted", &current);
+        let found = row(&drifted).expect("older bytes behind a current stamp");
+        assert_eq!(found.was.as_deref(), Some(current.as_str()));
         assert_eq!(found.variant, "cli");
 
-        // A line this build cannot have written is not this build's stamp, and
-        // neither is a pair with no line on it.
-        assert!(row(&pair(&dir, "part", "cli")).is_some());
-        fs::write(dir.join("bare.shim"), "path=C:\\t.exe\n").unwrap();
-        fs::write(dir.join("bare.exe"), b"not a PE").unwrap();
-        assert!(row(&dir.join("bare.shim")).is_some());
+        // A half pair - the config 5.3 leaves behind - is as stale as a shim can be,
+        // and says so with nothing in `was`.
+        fs::write(dir.join("bare.shim"), "# shimbox config\npath=C:\\t.exe\n").unwrap();
+        assert_eq!(
+            row(&dir.join("bare.shim"))
+                .expect("no runner to compare")
+                .was,
+            None
+        );
 
-        fs::remove_dir_all(&dir).ok();
+        // A stray `.exe` with no config beside it is not a pair either way: the
+        // scan asks for the config, and a name of our own shape is not ownership.
+        fs::write(dir.join("stray.shim"), "path=C:\\t.exe\n").unwrap();
+        assert!(row(&dir.join("stray.shim")).is_none());
+
+        clear(&dir);
+    }
+
+    #[test]
+    fn a_runners_own_word_outranks_its_configs() {
+        let dir = crate::testutil::scratch("refresh", "foreign");
+
+        // A real binary of another tool, put beside a config written in our exact
+        // shape - the two files another tool's `shims` folder drops on `%PATH%`,
+        // and the pair this scan must never offer to overwrite.
+        let foreign = fs::read(r"C:\Windows\System32\cmd.exe").unwrap();
+        fs::write(dir.join("git.exe"), &foreign).unwrap();
+        let config = dir.join("git.shim");
+        fs::write(
+            &config,
+            "# shimbox config\nrunner=cli@0.9.0\npath=C:\\git\\bin\\git.cmd\n",
+        )
+        .unwrap();
+
+        assert!(row(&config).is_none(), "an extension is not an owner");
+
+        // Again over the names the person chose, because the folder they were
+        // scanned from is writable by anything while the window stays open.
+        let mut summary = summary();
+        refresh_one(&config, &mut summary);
+        assert!(summary.refreshed.is_empty());
+        assert_eq!(summary.failed[0].code, "foreign");
+        assert_eq!(
+            fs::read(dir.join("git.exe")).unwrap(),
+            foreign,
+            "nothing was written over it"
+        );
+        assert!(
+            fs::read_to_string(&config).unwrap().contains("git.cmd"),
+            "nor into its config"
+        );
+
+        clear(&dir);
+    }
+
+    #[test]
+    fn the_runners_this_build_embeds_answer_for_themselves() {
+        // The identity rule reads what `crates/runner/winres.rs` puts into a binary
+        // and `build.rs` embeds here, so this is the test that notices when either
+        // half stops agreeing with the other: a runner that lost its name would
+        // make the scan answer with an empty list forever.
+        let dir = crate::testutil::scratch("refresh", "embedded");
+        for variant in [Variant::Cli, Variant::Gui] {
+            let exe = dir.join(format!("{}.exe", variant.name()));
+            fs::write(&exe, variant.bytes()).unwrap();
+
+            let image = pe::inspect(&exe);
+            assert!(image.is_shimbox(), "{} lost its name", variant.name());
+            assert_eq!(image.version.text(), Some(env!("CARGO_PKG_VERSION")));
+            assert!(current(&exe, variant));
+
+            // The header is what picks the variant, so the two copies stay told
+            // apart by the one field a shim has to get right (5.4).
+            let wanted = match variant.name() {
+                "cli" => pe::Subsystem::Console,
+                _ => pe::Subsystem::Gui,
+            };
+            assert_eq!(image.subsystem, wanted);
+        }
+        clear(&dir);
     }
 
     #[test]
     fn a_pair_keeps_the_runner_it_was_made_with() {
         let dir = crate::testutil::scratch("refresh", "variant");
-        let gui = pair(&dir, "editor", "gui@0.9.0");
+
+        let gui = pair_of(&dir, "editor", "gui@0.9.0", Variant::Gui);
         assert_eq!(row(&gui).expect("an old gui runner").variant, "gui");
+
+        // A line that claims a detached runner over a console copy loses: the
+        // header on disk is what answers whether a console window appears.
+        let mixed = pair(&dir, "mixed", "gui@0.9.0");
+        assert_eq!(row(&mixed).expect("old console bytes").variant, "cli");
 
         // And when only the config is left, its line is all there is to go on: the
         // variant that reports its own errors would otherwise lose the window.
         fs::remove_file(shim::exe_of(&gui)).unwrap();
         assert_eq!(
-            wanted(pe::Subsystem::Unknown, Some("gui@0.9.0")).name(),
+            row(&gui).expect("a half pair keeps its line").variant,
             "gui"
         );
 
-        fs::remove_dir_all(&dir).ok();
+        clear(&dir);
     }
 
     #[test]
@@ -329,10 +523,7 @@ mod tests {
         let dir = crate::testutil::scratch("refresh", "write");
         let config = pair(&dir, "zip", "cli@0.9.0");
 
-        let mut summary = Summary {
-            refreshed: Vec::new(),
-            failed: Vec::new(),
-        };
+        let mut summary = summary();
         refresh_one(&config, &mut summary);
 
         let exe = shim::exe_of(&config);
@@ -352,19 +543,28 @@ mod tests {
         assert!(text.contains("# shimbox config"), "nor is the comment");
         assert!(row(&config).is_none(), "a refreshed pair is not a row");
 
-        // A new `.exe` is opened by Windows to be looked at before anyone is let
-        // remove it, so the folder goes once the look ends rather than the instant
-        // the write did. Bounded, because a folder that is really held should fail
-        // this test rather than wait for it.
-        let mut removed = false;
-        for _ in 0..20 {
-            removed = fs::remove_dir_all(&dir).is_ok();
-            if removed {
-                break;
-            }
-            std::thread::sleep(std::time::Duration::from_millis(50));
-        }
-        assert!(removed, "a refreshed runner was left in TEMP");
+        clear(&dir);
+    }
+
+    #[test]
+    fn refreshing_a_half_pair_finishes_it() {
+        // The other order of the same rule: a config that outlived its runner is
+        // given one, and the line that says which bytes went in.
+        let dir = crate::testutil::scratch("refresh", "half");
+        let config = dir.join("solo.shim");
+        fs::write(&config, "# shimbox config\nrunner=gui@0.9.0\n").unwrap();
+
+        let mut summary = summary();
+        refresh_one(&config, &mut summary);
+
+        assert!(summary.failed.is_empty());
+        assert_eq!(
+            fs::read(shim::exe_of(&config)).unwrap(),
+            Variant::Gui.bytes()
+        );
+        assert!(row(&config).is_none(), "a finished pair is not a row");
+
+        clear(&dir);
     }
 
     #[test]
@@ -373,16 +573,14 @@ mod tests {
         let gone = pair(&dir, "tool", "cli@0.9.0");
         fs::remove_file(&gone).unwrap();
 
-        let mut summary = Summary {
-            refreshed: Vec::new(),
-            failed: Vec::new(),
-        };
+        let mut summary = summary();
         refresh_one(&gone, &mut summary);
 
         assert!(summary.refreshed.is_empty(), "no runner is written");
         assert_eq!(summary.failed[0].code, "missing");
+        assert!(row(&gone).is_none(), "and the scan will not offer it again");
 
-        fs::remove_dir_all(&dir).ok();
+        clear(&dir);
     }
 
     #[test]
