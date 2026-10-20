@@ -13,6 +13,7 @@ import {
   note,
   pathCell,
   resultDialog,
+  stemOf,
   textInput,
   withBrowseButton,
 } from '../form.js';
@@ -381,6 +382,18 @@ export function renderBatch(root) {
       const summary = await invoke('generate_batch', {
         request: { targets, destination: destination.value },
       });
+      // A shim that is written is not going to be written again, and the table is
+      // what the person reads after the dialog closes: the rows that made it lose
+      // their tick, while a row that failed or was skipped keeps it and is already
+      // selected for the retry. A written path is named by the same stem its source
+      // row claims its group by, so the two sides have one key (5.2).
+      const written = new Set(summary.created.map((path) => stemOf(path).toLowerCase()));
+      for (const row of rows) {
+        if (written.has(row.group)) {
+          row.selected = false;
+        }
+      }
+      show();
       showSummary(result, summary);
     } catch (failure) {
       result.fail(`error.${failure.code}`, failure.detail);
