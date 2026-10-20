@@ -551,7 +551,10 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   the runner variant resolved by Auto.
 * **Generate shims**: progress indicator ("Writing 12 of 25…") then a summary
   listing what was created and what was skipped with the reason, plus the same
-  `PATH` reminder (6).
+  `PATH` reminder (6). The table is what the person reads after that dialog
+  closes, so the rows whose pairs were written lose their tick there and the
+  skipped ones keep it: what is still selected is exactly what a retry writes,
+  and a batch that wrote everything leaves Generate waiting for a new choice.
 
 ### 5.3 Collision policy (new, was undefined in draft 1)
 
