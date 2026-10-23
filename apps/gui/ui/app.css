@@ -687,6 +687,30 @@ main form > .caption {
   min-height: 6rem;
 }
 
+/* The shortest window is barely taller than mode 2's own fields, its counters and
+   its button, so the scan is left with no room at all and the command that ends
+   the card falls under the window's edge. The prose is what gives way here, for
+   the same reason the table drops two columns at the narrow end: two folders, a
+   list of what was found and the button are what the screen is for, and a note
+   can be read again once the window is dragged taller. */
+@media (max-height: 36.5rem) {
+  #panel-batch form > .fields .note {
+    display: none;
+  }
+
+  /* The air between the parts is the other half of what the button was standing
+     on, and the two columns of a field's own line are the least of it. */
+  #panel-batch form {
+    --gap: 0.55rem;
+  }
+
+  /* One row rather than two, because a row of the scan is scrollable and a
+     command under the window's edge is not. */
+  #panel-batch .table-wrap {
+    min-height: 4rem;
+  }
+}
+
 /* A fixed layout is what lets the path column be the one that gives: with the
    default auto layout every cell demands its full text and the nowrap columns
    push the table wider than the window. */
