@@ -161,10 +161,10 @@ pub fn write_shim(request: Request) -> Result<Created, Failure> {
 fn env_lines(rows: &[EnvRow]) -> Result<Vec<(&'static str, String)>, Failure> {
     let mut lines = Vec::new();
     for row in rows {
-        let name = row.name.trim();
-        if name.is_empty() {
+        if row.name.trim().is_empty() {
             continue;
         }
+        let name = checked_env_name(&row.name).map_err(|failure| failure.row(row.name.trim()))?;
         let (key, written) = match row.kind.as_str() {
             // Taken verbatim, as the runner reads it: a trailing space is the
             // user's, not noise to clean up.
@@ -186,6 +186,20 @@ fn env_lines(rows: &[EnvRow]) -> Result<Vec<(&'static str, String)>, Failure> {
         lines.push((key, written));
     }
     Ok(lines)
+}
+
+/// The name of one environment row. It reaches the child as the key of a
+/// variable, so a name carrying `=` would set another variable than the one the
+/// row shows, and one carrying a control character would write a line the runner
+/// reads as something else (docs/techspec.md 3.2).
+fn checked_env_name(name: &str) -> Result<&str, Failure> {
+    let name = name.trim();
+    let usable = !name.contains('=') && name.chars().all(|character| character >= ' ');
+    if usable {
+        Ok(name)
+    } else {
+        Err(fail("env", name.to_string()))
+    }
 }
 
 /// Windows path equality ignores case, and a folder typed with a trailing
@@ -432,6 +446,15 @@ mod tests {
         // A reason written under the field that caused it is only possible while
         // the rejection says which field that is; the prose beside it is for a
         // person reading a card, not for finding a row.
+        let row = EnvRow {
+            name: "A=B".to_string(),
+            kind: "value".to_string(),
+            value: "x".to_string(),
+        };
+        let failure = env_lines(&[row]).unwrap_err();
+        assert_eq!(failure.field, Some("env"));
+        assert_eq!(failure.name.as_deref(), Some("A=B"));
+
         assert_eq!(checked_alias("a<b").unwrap_err().field, Some("alias"));
         assert_eq!(
             checked_path("", true, "target").unwrap_err().field,
@@ -442,6 +465,26 @@ mod tests {
         // reads is the same answer it read before a field was ever named.
         let written = serde_json::to_string(&fail("write", "C:\\t.exe")).unwrap();
         assert_eq!(written, r#"{"code":"write","detail":"C:\\t.exe"}"#);
+    }
+
+    #[test]
+    fn rejects_an_environment_name_that_is_not_one_name() {
+        let row = |name: &str| EnvRow {
+            name: name.to_string(),
+            kind: "value".to_string(),
+            value: "x".to_string(),
+        };
+
+        // A second `=` in the key would set a different variable than the row
+        // shows, and a control character would end the line in the middle.
+        assert_eq!(env_lines(&[row("A=B")]).unwrap_err().code, "env");
+        assert_eq!(env_lines(&[row("A\u{0}B")]).unwrap_err().code, "env");
+
+        // Spaces around the name are the form's, not part of it.
+        assert_eq!(
+            env_lines(&[row(" A ")]).unwrap(),
+            [("env", "A=x".to_string())]
+        );
     }
 
     #[test]
