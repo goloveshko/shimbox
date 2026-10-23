@@ -181,12 +181,14 @@ mod tests {
     use super::*;
 
     /// A round trip through the real store, which is the only way to know the
-    /// struct layout and the flags are right. The name says what it is, and the
-    /// test removes it again.
+    /// struct layout and the flags are right. The name is this process's own and
+    /// nothing a person would type: a fixed one is a credential that already exists
+    /// by the time the test runs, and the test would write over it and then delete
+    /// the answer. The removal at the end is only of what the store just made.
     #[test]
     fn stores_lists_and_removes_one_credential() {
-        let name = "_round_trip";
-        let target = store_secret(name.to_string(), "ghp_test_value".to_string()).unwrap();
+        let name = format!("_probe_{}", std::process::id());
+        let target = store_secret(name.clone(), "ghp_test_value".to_string()).unwrap();
         assert_eq!(target, format!("{CRED_PREFIX}{name}"));
 
         assert!(list_secrets().contains(&target), "{target} not listed");
