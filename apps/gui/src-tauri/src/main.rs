@@ -256,24 +256,34 @@ fn app_folder(app: tauri::AppHandle) -> Option<String> {
         .map(|dir| dir.display().to_string())
 }
 
+/// Whether an address is one of the two pages the About card names, and nothing
+/// else. The URL is read by the same parser a browser uses rather than cut apart
+/// here: the host a hand-picked substring names and the host the browser resolves
+/// are two answers, and only the second one opens a page. `https://github.com:443@
+/// evil.example` is the shape that got away from a substring.
+fn link_is_ours(url: &str) -> bool {
+    const HOSTS: [&str; 2] = ["github.com", "sergey.is-a.dev"];
+    if url.chars().any(|c| c.is_whitespace() || c < '\u{20}') {
+        return false;
+    }
+    let Ok(address) = url::Url::parse(url) else {
+        return false;
+    };
+    // An https address of one of the two hosts, with no authority in front of it
+    // and no port other than the one the scheme already means.
+    address.username().is_empty()
+        && address.password().is_none()
+        && address.port_or_known_default() == Some(443)
+        && address
+            .host_str()
+            .is_some_and(|host| HOSTS.iter().any(|name| name.eq_ignore_ascii_case(host)))
+}
+
 /// The About card's links (5): an address is handed to the browser rather than
 /// navigated to, so the window keeps showing the app.
 #[tauri::command]
 fn open_link(url: String) -> Result<(), String> {
-    // The two pages the card names, and nothing else: a command that opens any
-    // string the page holds is a way to point the browser anywhere, which the
-    // card has no use for.
-    const HOSTS: [&str; 2] = ["github.com", "sergey.is-a.dev"];
-    let host = url
-        .strip_prefix("https://")
-        .unwrap_or_default()
-        .split(['/', '?', '#'])
-        .next()
-        .unwrap_or_default()
-        .split(':')
-        .next()
-        .unwrap_or_default();
-    if !HOSTS.contains(&host) {
+    if !link_is_ours(&url) {
         return Err(format!("refusing to open {url}"));
     }
     // `explorer` takes an address the way it takes a folder and hands it to the
@@ -357,6 +367,38 @@ mod tests {
         assert!(contains_folder(variable.as_ref(), Path::new("C:\\Windows")));
         assert!(!contains_folder(variable.as_ref(), Path::new("")));
         assert!(!contains_folder("".as_ref(), Path::new("C:\\shimbox\\bin")));
+    }
+
+    #[test]
+    fn only_the_two_pages_of_the_card_reach_a_browser() {
+        for url in [
+            "https://github.com",
+            "https://github.com/goloveshko/shimbox/releases/latest",
+            "https://sergey.is-a.dev/",
+            // One slash is a thing a person mis-types and a browser opens anyway,
+            // reading it as the page above: the answer here follows the browser,
+            // which is the one that decides where to go.
+            "https:/github.com",
+        ] {
+            assert!(super::link_is_ours(url), "refused {url}");
+        }
+
+        for url in [
+            // The host is the name in front of the path, so a port and a userinfo
+            // written where the host should be do not move it anywhere: a browser
+            // reads `evil.example` here, which is the one answer a substring check
+            // could not see.
+            "https://github.com:443@evil.example/release",
+            "https://evil.example/#https://github.com",
+            "https://github.com.evil.example/",
+            "https://github.com:8443/",
+            "http://github.com/",
+            "file:///C:/Windows/system32",
+            "https://github.com\u{0}@evil.example",
+            "javascript:alert(1)",
+        ] {
+            assert!(!super::link_is_ours(url), "accepted {url}");
+        }
     }
 
     #[test]
