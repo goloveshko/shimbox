@@ -129,7 +129,20 @@ export function stemOf(path) {
 
 export function folderOf(path) {
   const separator = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
+  if (separator === 2 && path[1] === ':' && /[a-z]/i.test(path[0])) {
+    // `C:\tool.exe` lives in `C:\`, and a drive letter left alone names whatever
+    // folder Windows holds current on that drive instead - not where the target
+    // is, and not what the runner falls back to (3.4).
+    return path.slice(0, 3);
+  }
   return separator > 0 ? path.slice(0, separator) : '';
+}
+
+/// The last part of a path, which is the one part a table row and a result card
+/// both show on its own. It is named from the separator rather than from
+/// [`folderOf`], since that one drops the separator and the drive root keeps it.
+export function nameOf(path) {
+  return path.slice(Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/')) + 1);
 }
 
 /// Whether two strings name the same folder, which is what decides if a

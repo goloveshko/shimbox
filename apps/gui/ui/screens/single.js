@@ -6,6 +6,7 @@ import {
   field,
   folderOf,
   invoke,
+  nameOf,
   nextFieldId,
   note,
   resultDialog,
@@ -151,7 +152,7 @@ export function renderSingle(root) {
       result.success(folder, (box, onPath) => {
         box.append(
           t('single.result', {
-            name: created.exe.slice(folder.length + 1),
+            name: nameOf(created.exe),
             destination: folder,
           }),
           ' ',

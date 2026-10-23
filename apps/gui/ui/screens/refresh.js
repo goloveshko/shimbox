@@ -5,9 +5,9 @@ import { setText, t } from '../i18n.js';
 import {
   cell,
   field,
-  folderOf,
   invoke,
   list,
+  nameOf,
   note,
   pathCell,
   resultDialog,
@@ -170,7 +170,7 @@ export function renderRefresh(root) {
 
 function showSummary(result, summary) {
   result.success('', (box) => {
-    const names = summary.refreshed.map((path) => path.slice(folderOf(path).length + 1));
+    const names = summary.refreshed.map(nameOf);
     box.append(t(names.length ? 'refresh.done' : 'refresh.done.none', { count: names.length }));
     if (names.length) {
       box.append(document.createElement('br'), list(names));

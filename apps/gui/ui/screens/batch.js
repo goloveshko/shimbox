@@ -10,6 +10,7 @@ import {
   invoke,
   labelFor,
   list,
+  nameOf,
   note,
   pathCell,
   resultDialog,
@@ -426,7 +427,7 @@ function showSummary(result, summary) {
     if (folder) {
       box.append(
         document.createElement('br'),
-        list(summary.created.map((path) => path.slice(folder.length + 1))),
+        list(summary.created.map(nameOf)),
         t(onPath ? 'result.path.on' : 'result.path')
       );
     }
