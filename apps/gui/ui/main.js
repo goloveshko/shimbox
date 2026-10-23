@@ -1,7 +1,6 @@
 import { aboutDialog } from './about.js';
 import { dropHandler } from './drop.js';
-import { formatSize } from './form.js';
-import { localize, loadLanguage, setText } from './i18n.js';
+import { localize, loadLanguage } from './i18n.js';
 import { renderBatch } from './screens/batch.js';
 import { renderRefresh } from './screens/refresh.js';
 import { renderSingle } from './screens/single.js';
@@ -13,7 +12,6 @@ import { checkForUpdate } from './update.js';
 const screens = { single: renderSingle, batch: renderBatch, refresh: renderRefresh };
 const screenRoot = document.getElementById('screen');
 const tabsRoot = document.getElementById('tabs');
-const statusRoot = document.getElementById('status');
 
 const about = aboutDialog();
 const settings = settingsSheet();
@@ -76,16 +74,6 @@ const handleDrop = dropHandler({ screens: fields, show });
 await window.__TAURI__.webview
   .getCurrentWebview()
   .onDragDropEvent((event) => handleDrop(event.payload));
-
-async function reportEmbeddedRunners() {
-  const runners = await window.__TAURI__.core.invoke('embedded_runners');
-  const sizes = runners.map((runner) => `${runner.variant} ${formatSize(runner.size)}`);
-  setText(statusRoot, 'status.runners', { size: sizes.join(' / ') });
-}
-
-reportEmbeddedRunners().catch((error) => {
-  statusRoot.textContent = String(error);
-});
 
 // Left to run after the window is up rather than waited for: the screen someone
 // opened the app for is not worth hiding behind a card about a version, and a

@@ -15,8 +15,6 @@ export default {
   'tab.batch': 'Вся папка',
   'tab.refresh': 'Обновить runner',
 
-  'status.runners': 'встроенный runner: {size}',
-
   'form.browse': 'Обзор',
 
   'dialog.close': 'Закрыть',

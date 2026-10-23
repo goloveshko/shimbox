@@ -145,7 +145,7 @@ shimbox/
       src-tauri/        Rust backend, embeds ui/ and both runners
       ui/               frontend: no build step, nothing it needs in order to run
         index.html
-        main.js         the two tabs, the status line, what is built when
+        main.js         the two tabs, what is built when
         i18n.js         language resolution and the keys left on the nodes
         theme.js        the theme, and what Windows is told about it
         titlebar.js     the strip that replaced the native caption
@@ -403,7 +403,7 @@ can hold forty programs — scrolling under a header that stays put, and droppin
 Version and Size below the width where six columns no longer fit rather than
 growing a horizontal bar. The command that ends the screen sits on the card's
 bottom edge either way, so adding the fourth variable cannot carry it out of view
-and neither screen scrolls as a whole; the status line stays where it is. At the shortest window mode 2's two folders,
+and neither screen scrolls as a whole. At the shortest window mode 2's two folders,
 its counters and its command fill the card on their own, so the three lines of help
 under its fields give way there: the same bargain the table strikes at the narrow
 end, and one prose can survive because it comes back with the height. The room

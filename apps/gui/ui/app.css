@@ -276,12 +276,14 @@ main {
   /* Neither screen should reach this now that each card scrolls its own content,
      but a window dragged shorter than a card's own minimum still needs somewhere
      to go: content that only overflows its box paints straight through the
-     footer. */
+     window's bottom edge. */
   overflow: auto;
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  padding-bottom: 0.6rem;
+  /* The card is the last thing in the window now, so the gap to its edge is
+     drawn here rather than by a row of status text under it. */
+  padding-bottom: 1rem;
 }
 
 /* Both modes are mounted and one is hidden, so a screen is a panel rather than
@@ -1336,12 +1338,4 @@ dialog.sheet::backdrop {
 
 .dialog-card.error .dialog-body {
   color: color-mix(in srgb, var(--danger) 70%, var(--text));
-}
-
-footer {
-  border-top: 1px solid var(--stroke);
-  padding: 0.55rem 0 0.7rem;
-  font-size: 0.75rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }

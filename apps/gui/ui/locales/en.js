@@ -14,8 +14,6 @@ export default {
   'tab.batch': 'Folder batch',
   'tab.refresh': 'Runner update',
 
-  'status.runners': 'embedded runner: {size}',
-
   'form.browse': 'Browse',
 
   'dialog.close': 'Close',
