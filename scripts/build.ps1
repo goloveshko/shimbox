@@ -111,23 +111,16 @@ try {
         throw 'the UI is not formatted; run `npm run format` in apps\gui, read what it changed, and build again'
     }
 
-    # The third report a person can be handed without asking for one. Clippy is the
-    # only tool here that reads what the compiler already accepts, so its warnings
-    # arrive as a change nobody noticed rather than as a build that fails, and a tree
-    # that grows them grows the habit of scrolling past them. It runs before anything
-    # is built for the reason the two above do: an answer that costs a check should
-    # not be made to wait behind a release build of the thing it is complaining about.
-    Write-Section 'lint'
-    Invoke-Cargo @('clippy', '--workspace', '--all-targets', '--', '-D', 'warnings')
-
     if (-not (Test-Path $BinDir)) {
         New-Item -ItemType Directory -Path $BinDir | Out-Null
     }
 
-    # The runners are staged before anything is tested or built: the GUI embeds
-    # those bytes, so both later steps need them to exist. One cargo call builds
-    # both, since they are two crates over one library and the second used to
-    # rebuild the first's bytes under one name that staging had already copied.
+    # The runners are staged first, before anything is linted, tested or built: the
+    # GUI embeds those bytes, so every later step needs them to exist - including
+    # clippy, which compiles the whole workspace and therefore the GUI build script
+    # that refuses to run without them. One cargo call builds both, since they are
+    # two crates over one library and the second used to rebuild the first's bytes
+    # under one name that staging had already copied.
     Write-Section 'runner: CLI and GUI variants'
     Invoke-Cargo ((@('build', '-p', 'runner-cli', '-p', 'runner-gui') + $runnerArgs))
     $cli = Join-Path $BinDir 'runner-cli.exe'
@@ -135,6 +128,16 @@ try {
     foreach ($staged in @($cli, $gui)) {
         Copy-Item (Join-Path $runnerDir (Split-Path -Leaf $staged)) $staged -Force
     }
+
+    # The third report a person can be handed without asking for one. Clippy is the
+    # only tool here that reads what the compiler already accepts, so its warnings
+    # arrive as a change nobody noticed rather than as a build that fails, and a tree
+    # that grows them grows the habit of scrolling past them. It runs before the
+    # tests for the reason the two checks above run before anything: an answer that
+    # costs a check should not be made to wait behind a build of the thing it is
+    # complaining about.
+    Write-Section 'lint'
+    Invoke-Cargo @('clippy', '--workspace', '--all-targets', '--', '-D', 'warnings')
 
     Write-Section 'tests'
     Invoke-Cargo @('test', '--workspace')
