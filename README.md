@@ -151,8 +151,10 @@ the dialog instead.
 **Update runners** — a shim is a copy of a runner, so a fix released later reaches
 none of the shims made before it. The third tab lists the pairs whose `.exe` is not
 this build's bytes: the folder named in the field, or, while it names nothing,
-every folder on `PATH`. Only a runner that names shimbox in its own file properties
-is ever listed, so another tool's shims in a folder on `PATH` stay untouched. Ticking
+every folder on `PATH`. Only a file that names shimbox *and* one of its two runner
+binaries in its own file properties is ever listed, so another tool's shims in a
+folder on `PATH` stay untouched — and so does the manager, which carries our product
+name without a runner's. Ticking
 a row writes that runner and the one `runner` line that says which bytes are in it;
 every other line of the config goes back exactly as it came, so nothing you set is
 lost. A shim that is running now fails on its own row with the reason, and the rest

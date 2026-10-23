@@ -10,9 +10,10 @@
 //! Reaching a folder by name is also how the scan reaches another tool's files:
 //! Scoop keeps its own shims in a `%PATH%` folder under a `.shim` of its own, so
 //! the extension marks a candidate, never ours. Two things settle it, both read
-//! out of the runner itself rather than inferred from where it sits: the
-//! `ProductName` of its version resource, which only a binary this build made
-//! carries, and a byte-for-byte comparison with the runner it embeds (5.7).
+//! out of the runner itself rather than inferred from where it sits: the two names
+//! of its version resource, which say that the file came from this tool and which
+//! of its binaries it was built as, and a byte-for-byte comparison with the runner
+//! this build embeds (5.7).
 
 use std::ffi::OsStr;
 use std::fs;
@@ -208,13 +209,16 @@ fn declared(text: &str) -> bool {
 }
 
 /// Whether these are our files to write bytes over. A runner that is there
-/// answers for itself, because a copy of one of our binaries is the only shape
-/// that names `shimbox` in its resources (5.7) - and it answers instead of its
-/// config, so another tool's `.shim` beside another tool's `.exe` is never made
-/// into a pair by the two files agreeing with each other.
+/// answers for itself, because only the bytes of one of our two runner builds name
+/// both `shimbox` and the runner they were compiled as (5.7) - and it answers
+/// instead of its config, so another tool's `.shim` beside another tool's `.exe` is
+/// never made into a pair by the two files agreeing with each other. The manager
+/// carries the same product name as its runners, so the name alone is not enough:
+/// a `.shim` of the manager's own stem would otherwise ask us to write a runner
+/// over the window that is being asked.
 fn ours(exe: &Path, image: &pe::Image, text: &str) -> bool {
     if exe.is_file() {
-        image.is_shimbox()
+        image.is_runner()
     } else {
         declared(text)
     }
@@ -534,7 +538,7 @@ mod tests {
             fs::write(&exe, variant.bytes()).unwrap();
 
             let image = pe::inspect(&exe);
-            assert!(image.is_shimbox(), "{} lost its name", variant.name());
+            assert!(image.is_runner(), "{} lost its name", variant.name());
             assert_eq!(image.version.text(), Some(env!("CARGO_PKG_VERSION")));
             assert!(current(&exe, variant));
 
@@ -546,6 +550,46 @@ mod tests {
             };
             assert_eq!(image.subsystem, wanted);
         }
+        clear(&dir);
+    }
+
+    #[test]
+    fn the_manager_is_ours_but_never_a_runner() {
+        // `bin\shimbox.exe` and this test binary are built by the same build
+        // script, so they carry the same version resource: our product name and no
+        // runner's original file. A `.shim` of the manager's own stem is the one
+        // pair a `%PATH%` scan could name that would ask it to write a runner over
+        // the window being asked - which is what the second half of the identity
+        // rule is for.
+        let manager = std::env::current_exe().unwrap();
+        let image = pe::inspect(&manager);
+        assert_eq!(image.product.as_deref(), Some("shimbox"));
+        assert_eq!(image.original, None);
+        assert!(!image.is_runner());
+
+        let dir = crate::testutil::scratch("refresh", "manager");
+        let config = dir.join("shimbox.shim");
+        fs::write(
+            &config,
+            "# shimbox config\nrunner=cli@0.9.0\npath=C:\\t.exe\n",
+        )
+        .unwrap();
+        let exe = shim::exe_of(&config);
+        fs::copy(&manager, &exe).unwrap();
+
+        assert!(row(&config).is_none(), "a manager is not a stale shim");
+
+        let before = fs::read(&exe).unwrap();
+        let mut summary = summary();
+        refresh_one(&config, &mut summary);
+        assert!(summary.refreshed.is_empty());
+        assert_eq!(summary.failed[0].code, "foreign");
+        assert_eq!(
+            fs::read(&exe).unwrap(),
+            before,
+            "and nothing was written over it"
+        );
+
         clear(&dir);
     }
 
