@@ -10,6 +10,7 @@ use std::time::SystemTime;
 use tauri::Emitter;
 
 use crate::pe;
+use crate::pickers;
 use crate::runner::Variant;
 use crate::shim::{self, Failure};
 
@@ -163,9 +164,15 @@ impl From<Candidate> for Found {
 pub async fn generate_batch(app: tauri::AppHandle, request: Request) -> Result<Summary, Failure> {
     let destination = shim::checked_path(&request.destination, false, "destination")?;
     let total = request.targets.len();
-    Ok(run_batch(&request.targets, &destination, |done| {
+    let summary = run_batch(&request.targets, &destination, |done| {
         let _ = app.emit("batch-progress", Progress { done, total });
-    }))
+    });
+    // Mode 1's write records its own destination through the command that wraps
+    // it; this one already holds the app handle, so it says the same thing here.
+    if !summary.created.is_empty() {
+        pickers::remember(&app, "destination", &destination);
+    }
+    Ok(summary)
 }
 
 fn file_name(path: &Path) -> String {

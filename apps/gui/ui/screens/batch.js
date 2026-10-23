@@ -13,6 +13,7 @@ import {
   nameOf,
   note,
   pathCell,
+  prefillFolder,
   resultDialog,
   stemOf,
   textInput,
@@ -95,6 +96,9 @@ export function renderBatch(root) {
       withBrowseButton(destination, 'pick_folder', 'destination')
     )
   );
+  // The same remembered folder mode 1 opens with, because the two modes write
+  // into one place (5).
+  prefillFolder(destination, 'destination');
 
   // The three lines that explain the scan belong to both folders above, so they
   // sit under them rather than being split between two fields.

@@ -122,6 +122,26 @@ export function withBrowseButton(input, command, key) {
   return row;
 }
 
+/// A destination field opens with the folder its picker last ended at, so the one
+/// folder a person writes into all day is named once rather than at every start
+/// (5). Only an empty field is filled: what it holds already is either typed now
+/// or dropped in, and a remembered folder never overwrites either. The `input`
+/// event is what the screen listens to for a typed value; the folder is not a
+/// scan request, so the `change` that would start one is not dispatched.
+export function prefillFolder(input, key) {
+  invoke('remembered_folder', { key })
+    .then((folder) => {
+      if (folder && !input.value.trim()) {
+        input.value = folder;
+        input.dispatchEvent(new Event('input'));
+      }
+    })
+    .catch(() => {
+      // A folder the app cannot name is a field left empty, which is what it was
+      // before the question was asked.
+    });
+}
+
 export function stemOf(path) {
   const name = path.split(/[\\/]/).pop() ?? '';
   return name.replace(/\.[^.]+$/, '');

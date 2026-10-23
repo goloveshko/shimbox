@@ -450,13 +450,21 @@ restart: a field that still holds a path starts there, since what is typed now
 says more than an older pick, and a remembered folder that no longer exists is
 not a starting point either — the dialog then falls back to the system default.
 Keys name what is picked rather than which screen picked it, so the two modes
-share one Destination memory. The file is a convenience, never a dependency:
+share one Destination memory. That memory opens the Destination field itself, in
+both modes, so the folder the shims go to is named once rather than every start —
+and it is refreshed by a write, not only by a dialog, since a folder typed or
+dropped into the field never passed a picker that could have written it down. What
+arrives is the last destination, never one read off the target's own path: a pair
+belongs on `PATH`, not beside the binary it shims (6).
+The file is a convenience, never a dependency:
 unreadable or garbled it reads as empty, and no dialog is refused because of it.
 
 ### 5.1 Mode 1: single shim
 
 * **Source path**: file picker for the target `.exe`.
-* **Destination**: folder picker, never prefilled. The pair belongs somewhere on
+* **Destination**: folder picker, and the field opens holding the destination the
+  last pair was written into (5). What it never gets is a folder read off the
+  target: the pair belongs somewhere on
   `PATH` (6), not next to the binary it shims, where `<alias>.exe` would collide
   with the real one and the scan would read the folder as its own output.
 * **Shim name / alias**: text input, prefilled from the target's stem, editable.
@@ -530,7 +538,8 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   disabled whenever the rows on screen already match them, and Generate waits
   for a destination and one selected row: the scan can fill the table without
   either, and writing cannot start from that.
-* **Destination directory**: folder picker.
+* **Destination directory**: folder picker, opening with the same destination the
+  first mode writes into (5).
 * **Left out of the scan**: an `.exe` that has a sibling `.shim` is already a
   shim, and everything under the destination folder is where the pairs are
   being written — a tool tree that is also its own output folder is the normal

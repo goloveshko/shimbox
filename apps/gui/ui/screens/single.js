@@ -9,6 +9,7 @@ import {
   nameOf,
   nextFieldId,
   note,
+  prefillFolder,
   resultDialog,
   sameFolder,
   stemOf,
@@ -36,6 +37,7 @@ export function renderSingle(root) {
       note('single.destination.help')
     )
   );
+  prefillFolder(destination, 'destination');
 
   const alias = textInput('single.alias.placeholder');
   fields.append(field('single.alias', alias, alias));

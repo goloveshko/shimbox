@@ -6,6 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::pe::{self, Subsystem};
+use crate::pickers;
 use crate::runner::Variant;
 
 /// Everything the form holds, as raw strings: the UI does no parsing.
@@ -75,8 +76,19 @@ pub(crate) fn fail(code: &'static str, detail: impl Into<String>) -> Failure {
     }
 }
 
+/// The command mode 1 submits to. The folder that took a shim is the one worth
+/// opening next time, and a destination typed or dropped into the field never
+/// went through a dialog that could have written it down, so the write itself is
+/// what remembers it (5).
 #[tauri::command]
-pub fn generate(request: Request) -> Result<Created, Failure> {
+pub fn generate(app: tauri::AppHandle, request: Request) -> Result<Created, Failure> {
+    let created = write_shim(request)?;
+    pickers::remember(&app, "destination", Path::new(&created.exe));
+    Ok(created)
+}
+
+/// Everything the form asked for, checked and written.
+pub fn write_shim(request: Request) -> Result<Created, Failure> {
     let target = checked_path(&request.target, true, "target")?;
     let destination = checked_path(&request.destination, false, "destination")?;
     let alias = checked_alias(&request.alias)?;
@@ -474,7 +486,7 @@ mod tests {
         let target = dir.join("tool.exe");
         fs::write(&target, b"MZ").unwrap();
 
-        let failure = generate(Request {
+        let failure = write_shim(Request {
             target: target.display().to_string(),
             destination: dir.display().to_string(),
             alias: "probe".to_string(),
@@ -527,7 +539,7 @@ mod tests {
             environment: Vec::new(),
         };
 
-        let created = generate(request("tool")).unwrap();
+        let created = write_shim(request("tool")).unwrap();
         assert_eq!(created.variant, "cli");
         assert!(Path::new(&created.exe).is_file());
         assert!(
@@ -536,7 +548,7 @@ mod tests {
                 .contains("arg=-v")
         );
 
-        let error = generate(request("tool")).unwrap_err();
+        let error = write_shim(request("tool")).unwrap_err();
         assert_eq!(error.code, "collision");
         assert!(error.detail.unwrap().ends_with("tool.shim"));
 
@@ -568,7 +580,7 @@ mod tests {
         let own = nested.display().to_string();
 
         let config = |workdir: &str, alias: &str| {
-            let created = generate(Request {
+            let created = write_shim(Request {
                 target: target.display().to_string(),
                 destination: dir.display().to_string(),
                 alias: alias.to_string(),
@@ -613,15 +625,17 @@ mod tests {
 
         fs::write(dir.join("target.exe"), b"MZ").unwrap();
         assert_eq!(
-            generate(request("nope.exe", "")).unwrap_err().code,
+            write_shim(request("nope.exe", "")).unwrap_err().code,
             "target"
         );
         assert_eq!(
-            generate(request("target.exe", "nowhere")).unwrap_err().code,
+            write_shim(request("target.exe", "nowhere"))
+                .unwrap_err()
+                .code,
             "destination"
         );
 
-        assert!(generate(request("target.exe", "")).is_ok());
+        assert!(write_shim(request("target.exe", "")).is_ok());
 
         fs::remove_dir_all(&dir).ok();
     }

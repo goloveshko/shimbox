@@ -15,12 +15,17 @@ const FILE: &str = ".pickers.json";
 /// pick does. Otherwise the field's own last directory, and only while it still
 /// exists. Nothing at all leaves the choice to the system.
 fn start_of(fields: &BTreeMap<String, String>, key: &str, typed: &str) -> Option<PathBuf> {
-    existing_directory(Path::new(typed.trim())).or_else(|| {
-        fields
-            .get(key)
-            .map(PathBuf::from)
-            .filter(|stored| stored.is_dir())
-    })
+    existing_directory(Path::new(typed.trim())).or_else(|| remembered(fields, key))
+}
+
+/// The directory `key` was left at, and only while it is still a folder: a field
+/// opens with it rather than empty, and one that has gone asks a person to type
+/// where the shims should go instead of writing them into a name that is gone.
+fn remembered(fields: &BTreeMap<String, String>, key: &str) -> Option<PathBuf> {
+    fields
+        .get(key)
+        .map(PathBuf::from)
+        .filter(|stored| stored.is_dir())
 }
 
 /// A directory as itself; anything else as the directory holding it, which
@@ -54,6 +59,16 @@ fn state_file(app: &tauri::AppHandle) -> Option<PathBuf> {
 pub fn start_directory(app: &tauri::AppHandle, key: &str, typed: &str) -> Option<PathBuf> {
     let file = state_file(app)?;
     start_of(&read(&file), key, typed)
+}
+
+/// The folder `key`'s dialog last ended at, while it still exists. A field can
+/// open with it instead of empty, which is what a person who writes into one
+/// folder all day asks for: the name of that folder is typed once rather than
+/// every start.
+#[tauri::command]
+pub fn remembered_folder(app: tauri::AppHandle, key: String) -> Option<String> {
+    let file = state_file(&app)?;
+    remembered(&read(&file), &key).map(|stored| stored.display().to_string())
 }
 
 /// Record where `key` ended up, keeping every other field's directory.
@@ -153,6 +168,28 @@ mod tests {
         assert_eq!(start_of(&stored, "source", ""), Some(was));
 
         fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn a_field_opens_where_it_was_left_while_that_folder_is_there() {
+        let root = scratch("remembered");
+        let shims = root.join("shims");
+        fs::create_dir_all(&shims).unwrap();
+        let stored = fields(&[("destination", &shims.display().to_string())]);
+
+        assert_eq!(remembered(&stored, "destination"), Some(shims));
+        assert_eq!(
+            remembered(&stored, "source"),
+            None,
+            "a field with no history opens empty"
+        );
+
+        fs::remove_dir_all(&root).ok();
+        assert_eq!(
+            remembered(&stored, "destination"),
+            None,
+            "and a folder that has gone is not an answer"
+        );
     }
 
     #[test]

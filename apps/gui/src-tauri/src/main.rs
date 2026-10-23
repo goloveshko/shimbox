@@ -83,6 +83,7 @@ fn main() {
             embedded_runners,
             pick_file,
             pick_folder,
+            pickers::remembered_folder,
             open_folder,
             open_link,
             app_folder,
