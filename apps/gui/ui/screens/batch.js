@@ -175,6 +175,12 @@ export function renderBatch(root) {
   // Whether the table is empty because nothing was scanned yet or because a scan
   // came back with nothing in it. Only the second has anything to report.
   let scanned = false;
+  // How many scans have been asked for, so only the newest answer is drawn.
+  let scans = 0;
+  // Whether a batch is being written right now: the button holds its own state
+  // for the length of the request, which the counter next to the filter is not
+  // part of and cannot be trusted to leave alone.
+  let busy = false;
   const checks = new Map();
 
   // The table and its toolbar belong to a result, so the screen is drawn in that
@@ -241,8 +247,10 @@ export function renderBatch(root) {
     deselectAll.disabled = !shown.some((row) => row.selected);
     // The scan can fill the table before any destination is chosen, and writing
     // needs both a folder and a row, so the button waits for them instead of
-    // answering an incomplete request with an error (5.2).
-    generate.disabled = !destination.value.trim() || count === 0;
+    // answering an incomplete request with an error (5.2). A batch already under
+    // way is not a row count: the ticks change while it runs, and a second request
+    // over the same rows would write the same shims twice.
+    generate.disabled = busy || !destination.value.trim() || count === 0;
   }
 
   /// Checking a row takes the shim name, which unchecks every other file that
@@ -264,16 +272,22 @@ export function renderBatch(root) {
     tally();
   }
 
-  /// `Select all` cannot mean every row: one name gets one shim. It means the
-  /// row already picked, else the one the scan picked, else the first visible
-  /// one, and `Select none` clears the same set of rows the filter leaves.
+  /// `Select all` cannot mean every row: one name gets one shim, across the whole
+  /// table rather than only the part the filter leaves. A name a hidden row already
+  /// holds keeps that row, so the two files of one name are never both ticked and
+  /// the batch is never asked to write one shim twice. `Select none` clears the
+  /// rows the filter leaves, which is all a person can see to mean.
   function selectVisible(state) {
     const picked = new Set();
     if (state) {
       for (const group of new Set(shown.map((row) => row.group))) {
+        const claimed = rows.find((row) => row.group === group && row.selected);
+        if (claimed) {
+          picked.add(claimed.path);
+          continue;
+        }
         const members = shown.filter((row) => row.group === group);
-        const winner =
-          members.find((row) => row.selected) ?? members.find((row) => row.preferred) ?? members[0];
+        const winner = members.find((row) => row.preferred) ?? members[0];
         picked.add(winner.path);
       }
     }
@@ -285,20 +299,24 @@ export function renderBatch(root) {
 
   /// Whether every shim name the filter leaves visible already has one row
   /// chosen, which is the case where `Select all` would change nothing: a name
-  /// with a choice keeps it and a name without one has none to gain.
+  /// with a choice keeps it and a name without one has none to gain. The choice
+  /// counts wherever it sits, because a hidden row of the same name is the answer
+  /// [`selectVisible`] would reach for.
   function everyNameChosen() {
-    const chosen = new Set();
-    for (const row of shown) {
-      if (row.selected) {
-        chosen.add(row.group);
-      }
-    }
+    const chosen = new Set(rows.filter((row) => row.selected).map((row) => row.group));
     return shown.every((row) => chosen.has(row.group));
   }
 
   async function rescan() {
+    // Two scans can be in the air at once, since a folder is edited while the
+    // first one still runs. The later one is the folder the field names now, so
+    // the earlier answer is dropped rather than drawn over it.
+    const scan = ++scans;
     const path = source.value.trim();
     if (!path) {
+      // This is the newest scan and it has nothing to ask for, so the note the
+      // superseded one was holding is cleared here rather than left up forever.
+      setText(progress, null);
       rows = [];
       scanned = false;
       show();
@@ -309,21 +327,30 @@ export function renderBatch(root) {
     // folder the user edited, so the choices made by hand are kept by path.
     const chosen = new Set(rows.filter((row) => row.selected).map((row) => row.path));
     try {
-      rows = await invoke('scan', {
+      const found = await invoke('scan', {
         source: path,
         destination: destination.value,
         recursive: recursive.checked,
       });
+      if (scan !== scans) {
+        return;
+      }
+      rows = found;
       groupRows(rows);
       carry(rows, chosen);
       scanned = true;
     } catch (failure) {
+      if (scan !== scans) {
+        return;
+      }
       rows = [];
       scanned = false;
       result.fail(`error.${failure.code}`, failure.detail);
-    } finally {
-      setText(progress, null);
     }
+    if (scan !== scans) {
+      return;
+    }
+    setText(progress, null);
     show();
   }
 
@@ -375,7 +402,8 @@ export function renderBatch(root) {
     // The selection lives on the rows, so a filtered-out one is still written;
     // the counter next to the filter is what says how many there are.
     const targets = rows.filter((row) => row.selected).map((row) => row.path);
-    generate.disabled = true;
+    busy = true;
+    tally();
     const unlisten = await window.__TAURI__.event.listen('batch-progress', (event) => {
       setText(progress, 'batch.progress', event.payload);
     });
@@ -400,6 +428,7 @@ export function renderBatch(root) {
       result.fail(`error.${failure.code}`, failure.detail);
     } finally {
       unlisten();
+      busy = false;
       setText(progress, null);
       tally();
     }
