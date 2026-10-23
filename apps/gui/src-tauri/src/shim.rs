@@ -354,22 +354,38 @@ fn write(path: &Path, bytes: &[u8]) -> Result<(), Failure> {
 /// the quotes, intact: the config stores values verbatim and the runner passes
 /// them through `raw_arg`, so the child's own parser sees `"out file.txt"`
 /// exactly as typed (docs/techspec.md 3.3).
+///
+/// Where a quote is escaped is what Windows' own parser decides - a quote
+/// preceded by an odd number of backslashes is a character, not a delimiter - and
+/// the split has to agree with it, or a space inside `"a \"b\" c"` ends the token
+/// there and the child gets two arguments instead of one. Nothing is rewritten:
+/// the backslashes a person typed are what the child's parser will read.
 fn split_arguments(text: &str) -> Vec<String> {
     let mut arguments = Vec::new();
     let mut current = String::new();
     let mut quoted = false;
+    let mut backslashes = 0;
     for character in text.chars() {
         match character {
-            '"' => {
+            '\\' => {
+                backslashes += 1;
+                current.push(character);
+            }
+            '"' if backslashes % 2 == 0 => {
                 quoted = !quoted;
+                backslashes = 0;
                 current.push(character);
             }
             c if c.is_whitespace() && !quoted => {
+                backslashes = 0;
                 if !current.is_empty() {
                     arguments.push(std::mem::take(&mut current));
                 }
             }
-            c => current.push(c),
+            c => {
+                backslashes = 0;
+                current.push(c);
+            }
         }
     }
     if !current.is_empty() {
@@ -439,6 +455,18 @@ mod tests {
             vec!["-o", "\"out file.txt\"", "-y"]
         );
         assert!(split_arguments("   ").is_empty());
+
+        // An escaped quote is a character to the parser the child uses, so the
+        // space beside it belongs to the same argument: the value goes back to the
+        // command line verbatim, and only the split points have to agree.
+        assert_eq!(
+            split_arguments(r#"-d "a \"b\" c" -y"#),
+            vec!["-d", r#""a \"b\" c""#, "-y"]
+        );
+
+        // Backslashes before a quote are literal, so that quote still closes the
+        // group and the next space still ends the argument.
+        assert_eq!(split_arguments(r#""path\\" -y"#), vec![r#""path\\""#, "-y"]);
     }
 
     #[test]
