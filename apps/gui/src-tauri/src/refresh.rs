@@ -116,22 +116,59 @@ fn stamp_of(text: &str) -> Option<String> {
         .map(|(_, value)| value.trim().to_string())
 }
 
-/// The config with its stamp pointing at these bytes. Every line that is not the
-/// stamp goes back exactly as it came, and a config with no stamp line gets one
-/// last: the person's file is being kept here, not rearranged.
+/// A config read one line at a time, with the exact bytes that ended each one. A
+/// file that passed through two editors carries two kinds of ending, and the
+/// endings are part of what the manager does not own.
+fn lines_of(text: &str) -> Vec<(&str, &str)> {
+    let mut lines = Vec::new();
+    let mut rest = text;
+    while let Some(end) = rest.find('\n') {
+        let crlf = end > 0 && rest.as_bytes()[end - 1] == b'\r';
+        let cut = if crlf { end - 1 } else { end };
+        lines.push((&rest[..cut], &rest[cut..end + 1]));
+        rest = &rest[end + 1..];
+    }
+    if !rest.is_empty() {
+        lines.push((rest, ""));
+    }
+    lines
+}
+
+/// The config with its stamp pointing at these bytes. Only the stamp line is
+/// rewritten: every other line goes back with its own bytes and its own ending,
+/// and a config with no stamp line gets one last, ended like the lines above it -
+/// the person's file is being kept here, not rearranged.
 fn restamped(text: &str, stamp: &str) -> String {
-    let newline = if text.contains("\r\n") { "\r\n" } else { "\n" };
     let line = format!("runner={stamp}");
-    let mut lines = text.lines().map(str::to_string).collect::<Vec<_>>();
-    match lines.iter().position(|entry| {
-        entry
+    let lines = lines_of(text);
+    let stamp_at = lines.iter().position(|(content, _)| {
+        content
             .split_once('=')
             .is_some_and(|(key, _)| key.trim() == "runner")
-    }) {
-        Some(at) => lines[at] = line,
-        None => lines.push(line),
+    });
+
+    let mut written = String::with_capacity(text.len() + line.len() + 2);
+    for (index, (content, terminator)) in lines.iter().enumerate() {
+        if Some(index) == stamp_at {
+            written.push_str(&line);
+        } else {
+            written.push_str(content);
+        }
+        written.push_str(terminator);
     }
-    lines.join(newline) + newline
+    if stamp_at.is_none() {
+        let newline = lines
+            .iter()
+            .rev()
+            .find(|(_, terminator)| !terminator.is_empty())
+            .map_or("\n", |(_, terminator)| *terminator);
+        if !written.is_empty() && !written.ends_with(newline) {
+            written.push_str(newline);
+        }
+        written.push_str(&line);
+        written.push_str(newline);
+    }
+    written
 }
 
 /// Which of the two runners a pair wants. The header of the copy on disk decides,
@@ -393,6 +430,23 @@ mod tests {
         assert_eq!(
             restamped("path=C:\\t.exe\n", "cli@1.0.0"),
             "path=C:\\t.exe\nrunner=cli@1.0.0\n"
+        );
+
+        // Two endings in one file, which is what a folder that saw two editors
+        // holds: the line the manager owns changes and the others keep the exact
+        // bytes they came with, including the last one's missing ending.
+        assert_eq!(
+            restamped(
+                "path=C:\\a.exe\r\nrunner=cli@0.9.0\npath=C:\\b.exe",
+                "cli@1.0.0"
+            ),
+            "path=C:\\a.exe\r\nrunner=cli@1.0.0\npath=C:\\b.exe"
+        );
+
+        // A line added to such a file joins it the way the file ends its lines.
+        assert_eq!(
+            restamped("path=C:\\a.exe\r\narg=x", "cli@1.0.0"),
+            "path=C:\\a.exe\r\narg=x\r\nrunner=cli@1.0.0\r\n"
         );
     }
 
