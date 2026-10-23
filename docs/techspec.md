@@ -674,11 +674,16 @@ what each shim is.
   generator owes anybody. No list of made shims is kept either: a pair says where it
   is, and the two ways to ask for one are the folder in the field and, while that
   field is empty, every folder the variable `folder_on_path` (5) already reads.
-* **Which files are ours**: the `.exe` answers for the pair, from the `ProductName`
-  its own `VERSIONINFO` carries (2.2) — a name no other tool's binary has any reason
-  to write, and one the hand-written PE reader already walks the resource tree to
-  reach for *FileVersion*. A `.shim` in the same folder makes a pair only once that
-  answer says shimbox, because `%PATH%` reaches Scoop's own `shims` folders, which
+* **Which files are ours**: the `.exe` answers for the pair, from the two names its
+  own `VERSIONINFO` carries (2.2) — the `ProductName` of shimbox and the
+  `OriginalFilename` of one of the two runner builds. The second is what keeps the
+  rule honest: the manager is built with the same product name and no original file
+  at all, so a `.shim` of the stem `shimbox` in a folder on `PATH` would otherwise
+  ask it to write a runner over the window being asked. Neither name is one another
+  tool's binary has any reason to write, and the hand-written PE reader already
+  walks the resource tree to reach *FileVersion*, so both come out of the same walk.
+  A `.shim` in the same folder makes a pair only once those two names say runner,
+  because `%PATH%` reaches Scoop's own `shims` folders, which
   hold `git.shim` beside `git.exe` in exactly the shape a scan of a folder asks for.
   A config with no `.exe` beside it is taken at its own word instead — the header
   line of 3.2, or a `runner` line of the shape only this manager writes — since a
