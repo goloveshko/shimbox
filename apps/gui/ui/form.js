@@ -68,6 +68,46 @@ export function note(key) {
   return element;
 }
 
+/// The reason one line of the form was refused, written under that line rather
+/// than in a card over the window: the field that needs the fix is the thing a
+/// person is looking at, and a dialog covers exactly it (5.1). `block` is the
+/// field's own box, so the sentence cannot drift from the control it describes,
+/// and the control is marked to say which one the sentence is about. Typing in it
+/// clears both, since the answer to a refused value is another one.
+export function fieldError(block, control) {
+  const line = document.createElement('p');
+  line.className = 'field-error';
+  line.hidden = true;
+  block.append(line);
+
+  function clear() {
+    line.hidden = true;
+    line.replaceChildren();
+    control.classList.remove('bad');
+    control.removeAttribute('aria-invalid');
+  }
+
+  /// `key` is the sentence's own, so a language change rewrites a reason the way
+  /// it rewrites a label; the detail is what the backend named, and stays as said.
+  function show(key, detail) {
+    line.replaceChildren();
+    const sentence = document.createElement('span');
+    line.append(setText(sentence, key));
+    if (detail) {
+      line.append(` ${detail}`);
+    }
+    line.hidden = false;
+    control.classList.add('bad');
+    control.setAttribute('aria-invalid', 'true');
+    control.focus();
+  }
+
+  for (const event of ['input', 'change']) {
+    control.addEventListener(event, clear);
+  }
+  return { show, clear };
+}
+
 /// A push button whose caption is a key. `small` is the one that acts on a single
 /// line of a list rather than on the screen.
 export function button(key, className) {

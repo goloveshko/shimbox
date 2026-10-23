@@ -501,6 +501,24 @@ input[type='checkbox'] {
   align-items: center;
 }
 
+/* A refusal of one line of the form is written under it rather than in a card
+   over the window the person is filling in (5.1), so the reason reads as part of
+   the field it belongs to: a hint in the colour of a problem. */
+.field-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--danger);
+}
+
+/* The control the sentence is about, marked so a row of variables does not leave
+   the reason floating above the wrong line. */
+input.bad,
+select.bad {
+  border-color: var(--danger);
+}
+
 /* The actions a list of rows needs are the same shape in every language, so they
    carry a glyph and the word moves to the tooltip and the accessible name. The
    box is the one a field makes - the same height and the same radius - so a row

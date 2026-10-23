@@ -4,6 +4,7 @@ import { environmentPanel } from '../environment.js';
 import {
   autofill,
   field,
+  fieldError,
   folderOf,
   invoke,
   nameOf,
@@ -26,24 +27,30 @@ export function renderSingle(root) {
   form.append(fields);
 
   const target = textInput('single.target.placeholder');
-  fields.append(field('single.target', target, withBrowseButton(target, 'pick_file', 'target')));
+  const targetBlock = field(
+    'single.target',
+    target,
+    withBrowseButton(target, 'pick_file', 'target')
+  );
+  fields.append(targetBlock);
 
   const destination = textInput('single.destination.placeholder');
-  fields.append(
-    field(
-      'single.destination',
-      destination,
-      withBrowseButton(destination, 'pick_folder', 'destination'),
-      note('single.destination.help')
-    )
+  const destinationBlock = field(
+    'single.destination',
+    destination,
+    withBrowseButton(destination, 'pick_folder', 'destination'),
+    note('single.destination.help')
   );
+  fields.append(destinationBlock);
   prefillFolder(destination, 'destination');
 
   const alias = textInput('single.alias.placeholder');
-  fields.append(field('single.alias', alias, alias));
+  const aliasBlock = field('single.alias', alias, alias);
+  fields.append(aliasBlock);
 
   const args = textInput('single.arguments.placeholder');
-  fields.append(field('single.arguments', args, args, note('single.arguments.help')));
+  const argsBlock = field('single.arguments', args, args, note('single.arguments.help'));
+  fields.append(argsBlock);
 
   const variant = document.createElement('select');
   variant.id = nextFieldId();
@@ -58,14 +65,13 @@ export function renderSingle(root) {
 
   const workdir = textInput('single.workdir.placeholder');
   const workdirNote = note();
-  fields.append(
-    field(
-      'single.workdir',
-      workdir,
-      withBrowseButton(workdir, 'pick_folder', 'workdir'),
-      workdirNote
-    )
+  const workdirBlock = field(
+    'single.workdir',
+    workdir,
+    withBrowseButton(workdir, 'pick_folder', 'workdir'),
+    workdirNote
   );
+  fields.append(workdirBlock);
 
   const result = resultDialog();
 
@@ -73,6 +79,18 @@ export function renderSingle(root) {
   // secret among them is the one value the config must not carry (3.3, 3.5).
   const environment = environmentPanel(result.fail);
   fields.append(environment.block);
+
+  /// The lines a refusal can be about: the backend names the one that caused it,
+  /// and the reason is written under it rather than over the form the person is
+  /// filling in (5.1). An environment row answers through the panel, since which
+  /// of them is meant is said by the variable it holds.
+  const errors = {
+    target: fieldError(targetBlock, target),
+    destination: fieldError(destinationBlock, destination),
+    alias: fieldError(aliasBlock, alias),
+    arguments: fieldError(argsBlock, args),
+    workdir: fieldError(workdirBlock, workdir),
+  };
 
   const generate = document.createElement('button');
   generate.type = 'submit';
@@ -137,6 +155,12 @@ export function renderSingle(root) {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    // A reason under one line says nothing about this attempt, and a row that was
+    // refused is fixed by typing in it, which clears its own line but not another's.
+    for (const error of Object.values(errors)) {
+      error.clear();
+    }
+    environment.clearErrors();
     generate.disabled = true;
     try {
       const created = await invoke('generate', {
@@ -164,11 +188,29 @@ export function renderSingle(root) {
         );
       });
     } catch (failure) {
-      result.fail(`error.${failure.code}`, failure.detail);
+      report(failure);
     } finally {
       checkComplete();
     }
   });
+
+  /// A refusal that belongs to one line of this form is answered under that line,
+  /// because the thing to fix is what a person is looking at and a card would
+  /// cover it. What has no line of the form — a folder that is gone, a pair that
+  /// could not be written — keeps the card, which is also where the actions on a
+  /// result live (5.1).
+  function report(failure) {
+    const key = `error.${failure.code}`;
+    if (failure.field === 'env' && environment.flag(failure.name, key, failure.detail)) {
+      return;
+    }
+    const where = errors[failure.field];
+    if (where) {
+      where.show(key, failure.detail);
+    } else {
+      result.fail(key, failure.detail);
+    }
+  }
 
   // The fields a drop can aim at, named by what they take rather than by the
   // screen that holds them, which is what ui/drop.js routes a path by.

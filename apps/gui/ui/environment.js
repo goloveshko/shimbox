@@ -1,7 +1,7 @@
 // The child environment of mode 1 (docs/techspec.md 3.3, 3.5): one row per
 // variable, and the `cred` rows that point at a named secret. Which config key a
 // kind turns into is the backend's call, so nothing here parses or validates.
-import { iconButton, invoke, note, textInput, withBrowseButton } from './form.js';
+import { fieldError, iconButton, invoke, note, textInput, withBrowseButton } from './form.js';
 import { secretsDialog } from './secrets.js';
 import { setLabel, setText } from './i18n.js';
 
@@ -123,6 +123,7 @@ export function environmentPanel(report) {
     const remove = iconButton('−', 'env.remove');
     remove.addEventListener('click', () => {
       picks.delete(pick);
+      errors.delete(line);
       line.remove();
     });
 
@@ -145,12 +146,46 @@ export function environmentPanel(report) {
       value: { value: literal, file: path, cred: pick }[kind.value].value,
     });
 
+    // The row is where a refusal of its variable is written, so the name is read
+    // from the control when the answer arrives rather than copied when the row was
+    // made — a new row is focused empty and named after that.
+    errors.set(line, {
+      holds: (wanted) => name.value.trim() === wanted,
+      says: fieldError(line, name),
+    });
+
     lines.append(line);
     name.focus();
   }
 
   const add = iconButton('+', 'env.add');
   add.addEventListener('click', () => addLine());
+
+  /// Each row's own line of refusal, held with the control that names the variable
+  /// so a backend rejection can be answered on the row it belongs to.
+  const errors = new Map();
+
+  /// Every row the panel has, which is what a new attempt clears before it asks
+  /// again: a reason under one row says nothing about the next one.
+  function clearErrors() {
+    for (const row of errors.values()) {
+      row.says.clear();
+    }
+  }
+
+  /// The reason a variable was refused, written under the row that holds its name.
+  /// False when no row does, which is the answer that leaves the refusal its card
+  /// rather than dropping the sentence.
+  function flag(wanted, key, detail) {
+    clearErrors();
+    for (const row of errors.values()) {
+      if (row.holds(wanted)) {
+        row.says.show(key, detail);
+        return true;
+      }
+    }
+    return false;
+  }
 
   const title = document.createElement('p');
   title.className = 'group';
@@ -175,5 +210,7 @@ export function environmentPanel(report) {
   return {
     block,
     values: () => [...lines.children].map((line) => line.value()),
+    flag,
+    clearErrors,
   };
 }

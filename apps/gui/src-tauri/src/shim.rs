@@ -51,11 +51,37 @@ pub struct Created {
 }
 
 /// A rejection the UI can translate: a stable code plus the one path that
-/// explains it.
+/// explains it, and where in the form it happened.
 #[derive(Debug, serde::Serialize)]
 pub struct Failure {
     pub code: &'static str,
     pub detail: Option<String>,
+    /// The line of the form a refusal belongs to, when one of them explains it.
+    /// The manager writes the reason under that line instead of opening a card
+    /// over the form the person is filling in (5.1); a rejection with no line of
+    /// its own leaves the field out and the card says the whole sentence.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub field: Option<&'static str>,
+    /// The variable a rejection is about, when it is about one environment row
+    /// rather than the block. The name travels as its own answer because a row is
+    /// found by what it holds, not by reading the sentence meant for a person.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+impl Failure {
+    /// The refusal belongs to the form line named `field`, when it has one.
+    fn at(mut self, field: Option<&'static str>) -> Self {
+        self.field = self.field.or(field);
+        self
+    }
+
+    /// …and to the row of one variable, which is the one part of mode 1 that repeats.
+    fn row(mut self, name: &str) -> Self {
+        self.field = Some("env");
+        self.name = Some(name.to_string());
+        self
+    }
 }
 
 impl From<Subsystem> for Variant {
@@ -73,6 +99,8 @@ pub(crate) fn fail(code: &'static str, detail: impl Into<String>) -> Failure {
     Failure {
         code,
         detail: Some(detail.into()),
+        field: None,
+        name: None,
     }
 }
 
@@ -144,15 +172,16 @@ fn env_lines(rows: &[EnvRow]) -> Result<Vec<(&'static str, String)>, Failure> {
             "cred" => {
                 let target = row.value.trim();
                 if !target.starts_with(CRED_PREFIX) {
-                    return Err(fail("env", format!("{name}: {target}")));
+                    return Err(fail("env", format!("{name}: {target}")).row(name));
                 }
                 ("envref", format!("{name}=cred:{target}"))
             }
             "file" => {
-                let path = checked_path(&row.value, true, "env")?;
+                let path =
+                    checked_path(&row.value, true, "env").map_err(|failure| failure.row(name))?;
                 ("envref", format!("{name}=file:{}", path.display()))
             }
-            other => return Err(fail("env", format!("{name}: {other}"))),
+            other => return Err(fail("env", format!("{name}: {other}")).row(name)),
         };
         lines.push((key, written));
     }
@@ -206,7 +235,9 @@ pub fn write_pair(
     let config_path = config_of(&exe_path);
     for path in [&config_path, &exe_path] {
         if path.exists() {
-            return Err(fail("collision", path.display().to_string()));
+            // The name is the half a person chooses, so the clash is reported
+            // under the field that holds it.
+            return Err(fail("collision", path.display().to_string()).at(Some("alias")));
         }
     }
 
@@ -242,21 +273,23 @@ pub(crate) fn checked_path(
 ) -> Result<PathBuf, Failure> {
     let trimmed = text.trim();
     if trimmed.is_empty() {
-        return Err(fail(code, String::new()));
+        return Err(fail(code, String::new()).at(Some(code)));
     }
-    let path = std::path::absolute(trimmed).map_err(|error| fail(code, error.to_string()))?;
+    let path = std::path::absolute(trimmed)
+        .map_err(|error| fail(code, error.to_string()).at(Some(code)))?;
     let exists = if want_file {
         path.is_file()
     } else {
         path.is_dir()
     };
     if !exists {
-        return Err(fail(code, path.display().to_string()));
+        return Err(fail(code, path.display().to_string()).at(Some(code)));
     }
     Ok(path)
 }
 
-/// Returns the name without its `.exe`, which the caller appends itself.
+/// Returns the name without its `.exe`, which the caller appends itself. A name
+/// is one field of the form, so every refusal here is reported under it (5.1).
 fn checked_alias(text: &str) -> Result<String, Failure> {
     let mut alias = text.trim();
     // People paste file names with the extension; generating `git.exe.exe`
@@ -266,7 +299,7 @@ fn checked_alias(text: &str) -> Result<String, Failure> {
         alias = &alias[..alias.len() - 4];
     }
     if alias.is_empty() {
-        return Err(fail("alias", String::new()));
+        return Err(fail("alias", String::new()).at(Some("alias")));
     }
     if alias
         .chars()
@@ -274,7 +307,7 @@ fn checked_alias(text: &str) -> Result<String, Failure> {
         || alias.ends_with('.')
         || alias.ends_with(' ')
     {
-        return Err(fail("alias", alias.to_string()));
+        return Err(fail("alias", alias.to_string()).at(Some("alias")));
     }
     // Reserved device names look legal but cannot be created.
     let stem = alias
@@ -283,7 +316,7 @@ fn checked_alias(text: &str) -> Result<String, Failure> {
         .unwrap_or(alias)
         .to_ascii_uppercase();
     if is_reserved(&stem) {
-        return Err(fail("alias", alias.to_string()));
+        return Err(fail("alias", alias.to_string()).at(Some("alias")));
     }
     Ok(alias.to_string())
 }
@@ -348,7 +381,13 @@ fn config_text(
         line(&mut text, "workdir", workdir)?;
     }
     for (key, pair) in environment {
-        line(&mut text, key, pair)?;
+        // A pair of this block is a `NAME=value` line, and the name is the row's
+        // own, so a value the config cannot hold is reported on the row that holds
+        // it rather than on the block.
+        line(&mut text, key, pair).map_err(|failure| match *key {
+            "env" | "envref" => failure.row(pair.split('=').next().unwrap_or_default()),
+            _ => failure,
+        })?;
     }
     Ok(text)
 }
@@ -358,10 +397,21 @@ fn config_text(
 /// from there, so no field gets to contain one.
 fn line(text: &mut String, key: &str, value: &str) -> Result<(), Failure> {
     if value.contains(['\r', '\n']) {
-        return Err(fail("newline", format!("{key}={value}")));
+        return Err(fail("newline", format!("{key}={value}")).at(field_of(key)));
     }
     text.push_str(&format!("{key}={value}\n"));
     Ok(())
+}
+
+/// The form line a config key was filled from. The header and the `runner` line
+/// are written by the manager rather than typed, so they have no field to name.
+fn field_of(key: &str) -> Option<&'static str> {
+    match key {
+        "arg" => Some("arguments"),
+        "workdir" => Some("workdir"),
+        "path" => Some("target"),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -375,6 +425,23 @@ mod tests {
             vec!["-o", "\"out file.txt\"", "-y"]
         );
         assert!(split_arguments("   ").is_empty());
+    }
+
+    #[test]
+    fn a_refusal_names_the_line_it_belongs_to() {
+        // A reason written under the field that caused it is only possible while
+        // the rejection says which field that is; the prose beside it is for a
+        // person reading a card, not for finding a row.
+        assert_eq!(checked_alias("a<b").unwrap_err().field, Some("alias"));
+        assert_eq!(
+            checked_path("", true, "target").unwrap_err().field,
+            Some("target")
+        );
+
+        // A rejection with no field of its own carries neither key, so what the UI
+        // reads is the same answer it read before a field was ever named.
+        let written = serde_json::to_string(&fail("write", "C:\\t.exe")).unwrap();
+        assert_eq!(written, r#"{"code":"write","detail":"C:\\t.exe"}"#);
     }
 
     #[test]

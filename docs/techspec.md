@@ -391,6 +391,11 @@ outside the card ends the result; `Esc` and its own Close action do the same, an
 the body is the part that gives when a batch summary is longer than the window. A
 result that wrote something also offers the two ways to act on the folder it
 wrote into: open it, and open the system editor that puts it on `PATH` (6).
+A refusal that names the line of the form it came from is written under that line
+instead — in the colour of a problem, with the reason's own words beside it and the
+field it belongs to taking the focus — because a card over the form the person is
+still filling in hides the half of it the mistake sits in. Only a refusal with no
+field to point at, the write that could not happen, still takes the dialog.
 Each screen is one card that takes the height the window leaves rather than pushing
 the window past it, and one region inside it gives: the fields in mode 1, where
 every variable the target needs adds a line, and the scan in mode 2, where a folder
@@ -518,7 +523,8 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   is a legal file name. The button waits for those three fields
   to be filled rather than answering an incomplete form with an error; what the
   form cannot know without looking — a name already taken, a path that stopped
-  existing — still arrives as one.
+  existing — still arrives as one, and arrives on the line of the form that holds
+  it, including one line of a variable's row (5).
 
 ### 5.2 Mode 2: batch
 
