@@ -21,10 +21,10 @@ pub fn read<T: Default + serde::de::DeserializeOwned>(file: &Path) -> T {
 
 /// The whole value at once: every one of these files holds a handful of keys, so
 /// rewriting it costs nothing and keeps the reading rule to the one above.
-/// The bytes land in a file beside the real one and arrive by a rename, so the
-/// file a person holds is either the whole previous setting or the whole new
-/// one: a start stopped mid-write leaves the old file standing, and the reading
-/// rule above never has to meet a half-written JSON.
+/// The bytes land in a file beside the real one and arrive by a rename, so what
+/// a person holds is either the whole previous setting or the whole new one: a
+/// start stopped mid-write leaves the old file standing, and the reading rule
+/// above never has to meet a half-written JSON.
 pub fn write<T: serde::Serialize>(file: &Path, value: &T) {
     let Ok(text) = serde_json::to_string_pretty(value) else {
         return;

@@ -273,6 +273,14 @@ two registered today are English and Russian.
 
 ---
 
+## 🔒 Security
+
+Report a vulnerability privately through a [GitHub Security Advisory](SECURITY.md),
+not a public issue. [The policy](SECURITY.md) says what the code holds, what is
+worth reporting and what is not.
+
+---
+
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
