@@ -14,7 +14,7 @@ const executable = (path) => /\.exe$/i.test(path);
 
 /// The fields a drop can be aimed at, from every screen at once: only the visible
 /// screen's can end up under the pointer, so one list answers for any mode.
-export const zones = (screens) => [
+const zones = (screens) => [
   { screen: 'single', key: 'target', kind: 'file', element: screens.single.target },
   { screen: 'single', key: 'destination', kind: 'folder', element: screens.single.destination },
   { screen: 'single', key: 'workdir', kind: 'folder', element: screens.single.workdir },
@@ -26,7 +26,7 @@ export const zones = (screens) => [
 /// The deepest folder every dropped item lives in, which is the one a scan of the
 /// dropped files has to read. A pair of drives sharing no folder is not a folder,
 /// so the first item's own is used and the rest are simply not in the table.
-export function commonFolder(paths, folders) {
+function commonFolder(paths, folders) {
   // `C:` on its own names whatever the current folder of that drive happens to be,
   // so a bare drive gets its separator back before it is used as a folder.
   const own = paths.map((path, index) => {
@@ -52,7 +52,7 @@ export function commonFolder(paths, folders) {
 /// any, and `folders[i]` says whether `paths[i]` is a folder. A file aimed at a
 /// folder field is that file's own folder, and aimed at the folder to scan it is
 /// also the choice the table should start with.
-export function plan(paths, folders, zone) {
+function plan(paths, folders, zone) {
   const files = paths.filter((_, index) => !folders[index]);
   const dirs = paths.filter((_, index) => folders[index]);
 
