@@ -188,7 +188,7 @@ mod tests {
     #[test]
     fn stores_lists_and_removes_one_credential() {
         let name = format!("_probe_{}", std::process::id());
-        let target = store_secret(name.clone(), "ghp_test_value".to_string()).unwrap();
+        let target = store_secret(name.clone(), "token-test-value".to_string()).unwrap();
         assert_eq!(target, format!("{CRED_PREFIX}{name}"));
 
         assert!(list_secrets().contains(&target), "{target} not listed");

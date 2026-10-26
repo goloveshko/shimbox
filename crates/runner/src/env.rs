@@ -151,10 +151,10 @@ mod tests {
     fn reads_a_value_from_a_file_without_its_newlines() {
         let probe =
             Probe(std::env::temp_dir().join(format!("shimbox-envref-{}.txt", std::process::id())));
-        std::fs::write(&probe.0, "ghp_from_file\r\n").unwrap();
+        std::fs::write(&probe.0, "token-from-file\r\n").unwrap();
         let target = format!("file:{}", probe.0.display());
         let resolved = resolve(&[("GH_TOKEN".to_string(), target)]).unwrap();
-        assert_eq!(resolved[0].1, "ghp_from_file");
+        assert_eq!(resolved[0].1, "token-from-file");
     }
 
     #[test]
@@ -178,10 +178,10 @@ mod tests {
 
     #[test]
     fn reads_a_blob_as_utf8_or_utf16() {
-        assert_eq!(blob_to_text(b"ghp_plain").as_deref(), Some("ghp_plain"));
-        let wide: Vec<u16> = "ghp_wide".encode_utf16().collect();
+        assert_eq!(blob_to_text(b"token-plain").as_deref(), Some("token-plain"));
+        let wide: Vec<u16> = "token-wide".encode_utf16().collect();
         let bytes: Vec<u8> = wide.iter().flat_map(|unit| unit.to_ne_bytes()).collect();
-        assert_eq!(blob_to_text(&bytes).as_deref(), Some("ghp_wide"));
+        assert_eq!(blob_to_text(&bytes).as_deref(), Some("token-wide"));
         assert_eq!(blob_to_text(&[0xff, 0xfe, 0xff]), None);
     }
 }
