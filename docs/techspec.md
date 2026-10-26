@@ -584,8 +584,10 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
   reported as skipped with a `duplicate` reason, kept distinct from `collision`,
   which means a file already sitting in the destination. A row whose file has
   left the disk since the scan is skipped as `missing`, and one the write itself
-  refused as `write`, so the summary's reasons are the same codes mode 1 reports
-  as failures. Disambiguating suffixes
+  refused as `write`. A stem mode 1 would have refused as an `alias` — a
+  reserved device name, a trailing dot — is refused the same way here, before
+  the name is claimed, so the summary's reasons are the same codes mode 1
+  reports as failures. Disambiguating suffixes
   are deliberately not generated — a skipped-and-reported batch is honest, a
   silently renamed one is not.
 * The generated `.exe` is written **after** a successful `.shim` write, so a
