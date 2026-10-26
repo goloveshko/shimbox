@@ -254,11 +254,10 @@ fn generate_one(
     summary: &mut Summary,
 ) {
     let path = Path::new(target);
-    let alias = match path
-        .file_stem()
-        .and_then(OsStr::to_str)
-        .map_or_else(|| Err(shim::fail("alias", String::new())), shim::checked_alias)
-    {
+    let alias = match path.file_stem().and_then(OsStr::to_str).map_or_else(
+        || Err(shim::fail("alias", String::new())),
+        shim::checked_alias,
+    ) {
         Ok(alias) if path.is_file() => alias,
         Ok(_) => {
             summary.skipped.push(skipped(target, "missing"));
