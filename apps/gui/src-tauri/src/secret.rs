@@ -61,9 +61,21 @@ fn wide(text: &str) -> Vec<u16> {
 
 /// A name the user can still read in the system's own list, and no control
 /// characters that would end up in a config line.
+///
+/// The characters a file name refuses are refused here too, as far as they reach:
+/// a credential is not a file, so a reserved device name stays a usable name, but
+/// the config line is read verbatim (docs/techspec.md 3.4) and the target put in
+/// it is looked up exactly, so a name carrying `\` or `"` is one that only the
+/// store can answer for and no person can type back in. The reference's own `:`
+/// stays allowed: the config cuts the line at the first `=` and the runner cuts
+/// `cred:` at its first colon, so everything after it reaches the store whole,
+/// and a name is not a file name trying to be one.
 fn checked_name(name: &str) -> Result<&str, Failure> {
     let name = name.trim();
-    let usable = !name.is_empty() && !name.contains('/') && name.chars().all(|c| c >= ' ');
+    let usable = !name.is_empty()
+        && name
+            .chars()
+            .all(|c| c >= ' ' && !matches!(c, '<' | '>' | '"' | '/' | '\\' | '|' | '?' | '*'));
     if usable {
         Ok(name)
     } else {
@@ -223,5 +235,29 @@ mod tests {
                 .code,
             "secret"
         );
+    }
+
+    #[test]
+    fn refuses_a_name_no_one_could_type_back_into_a_reference() {
+        for name in ["a\\b", "a/b", "a|b", "a<b", "a>b", "a*b", "a?b", "a\"b"] {
+            assert_eq!(
+                store_secret(name.to_string(), "x".to_string())
+                    .unwrap_err()
+                    .code,
+                "secret",
+                "accepted {name:?}"
+            );
+        }
+        // A device name is a file rule, and a credential is not a file. The name
+        // is this process's own and the store is left holding nothing.
+        let name = format!("_probe_con_{}", std::process::id());
+        let target = store_secret(name, "x".to_string()).unwrap();
+        forget_secret(target).unwrap();
+
+        // The reference keeps its own colon: `cred:` is cut at the first one and
+        // everything after it is the target, so this is one whole credential.
+        let colon = store_secret("a:b".to_string(), "x".to_string()).unwrap();
+        assert_eq!(colon, format!("{CRED_PREFIX}a:b"));
+        forget_secret(colon).unwrap();
     }
 }
