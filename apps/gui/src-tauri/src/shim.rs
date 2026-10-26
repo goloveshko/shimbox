@@ -304,7 +304,9 @@ pub(crate) fn checked_path(
 
 /// Returns the name without its `.exe`, which the caller appends itself. A name
 /// is one field of the form, so every refusal here is reported under it (5.1).
-fn checked_alias(text: &str) -> Result<String, Failure> {
+/// Mode 2 runs it too, because the stem of a scanned file is a name the person
+/// never chose and the rules above still hold for it (5.2).
+pub(crate) fn checked_alias(text: &str) -> Result<String, Failure> {
     let mut alias = text.trim();
     // People paste file names with the extension; generating `git.exe.exe`
     // would only be a surprise later.

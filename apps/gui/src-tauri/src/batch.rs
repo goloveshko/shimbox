@@ -254,10 +254,18 @@ fn generate_one(
     summary: &mut Summary,
 ) {
     let path = Path::new(target);
-    let alias = match path.file_stem().and_then(OsStr::to_str) {
-        Some(alias) if !alias.is_empty() && path.is_file() => alias,
-        _ => {
+    let alias = match path
+        .file_stem()
+        .and_then(OsStr::to_str)
+        .map_or_else(|| Err(shim::fail("alias", String::new())), shim::checked_alias)
+    {
+        Ok(alias) if path.is_file() => alias,
+        Ok(_) => {
             summary.skipped.push(skipped(target, "missing"));
+            return;
+        }
+        Err(failure) => {
+            summary.skipped.push(skipped(target, failure.code));
             return;
         }
     };
@@ -267,7 +275,7 @@ fn generate_one(
     }
 
     let variant = Variant::from(pe::subsystem_of(path));
-    match shim::write_pair(path, destination, alias, &[], "", &[], variant) {
+    match shim::write_pair(path, destination, &alias, &[], "", &[], variant) {
         Ok(created) => summary.created.push(created.exe),
         Err(failure) => summary.skipped.push(skipped(target, failure.code)),
     }
@@ -430,6 +438,33 @@ mod tests {
         assert_eq!(reasons, ["duplicate", "missing"]);
         // The count advances over the skipped rows too, or the bar stalls.
         assert_eq!(counts, [1, 2, 3, 4]);
+
+        fs::remove_dir_all(&source).ok();
+        fs::remove_dir_all(&destination).ok();
+    }
+
+    #[test]
+    fn refuses_a_stem_that_could_not_be_written_even_before_trying() {
+        let source = scratch("named");
+        let destination = scratch("named-out");
+        // `CON` is a device name: creating it fails, but only once something
+        // reaches for the disk, and the scan found the file honestly.
+        let device = source.join("CON.exe");
+        fs::write(&device, b"MZ").unwrap();
+        // A stem may not end in a dot, and this one does after the `.exe` goes.
+        let trailing = source.join("bad..exe");
+        fs::write(&trailing, b"MZ").unwrap();
+        let targets: Vec<String> = [&device, &trailing]
+            .into_iter()
+            .map(|path| path.display().to_string())
+            .collect();
+
+        let summary = run_batch(&targets, &destination, |_| {});
+
+        assert!(summary.created.is_empty());
+        let reasons: Vec<&str> = summary.skipped.iter().map(|row| row.reason).collect();
+        assert_eq!(reasons, ["alias", "alias"]);
+        assert!(!destination.join("CON.shim").exists());
 
         fs::remove_dir_all(&source).ok();
         fs::remove_dir_all(&destination).ok();

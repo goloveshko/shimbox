@@ -141,6 +141,7 @@ export default {
   'batch.created': 'Created {count} shim pairs in {destination}.',
   'batch.created.none': 'No shim pair was created.',
   'batch.skipped': 'Skipped:',
+  'batch.skip.alias': 'that program name cannot become a shim',
   'batch.skip.collision': 'a shim with that name already exists',
   'batch.skip.duplicate': 'another selected file has the same name',
   'batch.skip.missing': 'the executable is not there anymore',

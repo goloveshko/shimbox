@@ -136,6 +136,7 @@ export default {
   'batch.created': 'Создано пар шимов: {count}, папка {destination}.',
   'batch.created.none': 'Ни одна пара шимов не создана.',
   'batch.skipped': 'Пропущено:',
+  'batch.skip.alias': 'это имя программы не может стать шимом',
   'batch.skip.collision': 'шим с таким именем уже есть',
   'batch.skip.duplicate': 'другая выбранная программа того же имени',
   'batch.skip.missing': 'программа больше не на месте',
