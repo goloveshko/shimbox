@@ -3,6 +3,8 @@ name = "gui"
 description = "shimbox manager: generates shims from a desktop UI"
 version.workspace = true
 license.workspace = true
+repository.workspace = true
+authors.workspace = true
 edition.workspace = true
 
 [build-dependencies]

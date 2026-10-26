@@ -4,6 +4,12 @@
   "private": true,
   "type": "module",
   "description": "The manager's UI: plain ESM read from disk by the webview, with Prettier as the authority on how it is wrapped.",
+  "license": "MIT",
+  "author": "Sergey Goloveshko <8836169+goloveshko@users.noreply.github.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goloveshko/shimbox.git"
+  },
   "scripts": {
     "check": "prettier --check \"ui/**/*.{js,css}\"",
     "format": "prettier --write \"ui/**/*.{js,css}\""

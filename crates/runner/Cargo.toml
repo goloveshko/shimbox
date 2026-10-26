@@ -3,6 +3,8 @@ name = "runner"
 description = "shimbox shim runner: forwards invocation to the real binary"
 version.workspace = true
 license.workspace = true
+repository.workspace = true
+authors.workspace = true
 edition.workspace = true
 
 # The machinery both shim crates share, and the reason neither of them repeats

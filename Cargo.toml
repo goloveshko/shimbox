@@ -11,6 +11,8 @@ members = [
 version = "1.0.0"
 edition = "2024"
 license = "MIT"
+repository = "https://github.com/goloveshko/shimbox"
+authors = ["Sergey Goloveshko <8836169+goloveshko@users.noreply.github.com>"]
 
 [profile.release]
 strip = true

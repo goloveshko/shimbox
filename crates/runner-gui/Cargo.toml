@@ -3,6 +3,8 @@ name = "runner-gui"
 description = "shimbox shim runner (windows subsystem): forwards invocation to the real binary"
 version.workspace = true
 license.workspace = true
+repository.workspace = true
+authors.workspace = true
 edition.workspace = true
 
 [dependencies]
