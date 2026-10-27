@@ -78,6 +78,12 @@ jobs:
       - name: Attach the archive
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This job checks out nothing, and `gh` reads the repository to work on
+          # from the git remote in front of it. Without this the whole job answers
+          # `failed to run git: fatal: not a git repository` - and it starts with
+          # the release that does not exist yet, which the guard below swallows, so
+          # the failure lands two lines further down than the cause.
+          GH_REPO: ${{ github.repository }}
         run: |
           tag="$GITHUB_REF_NAME"
           archive="$(ls bin/*.zip)"
