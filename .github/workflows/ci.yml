@@ -84,4 +84,10 @@ jobs:
           if ! gh release view "$tag" >/dev/null 2>&1; then
             gh release create "$tag" --draft --title "shimbox $tag" --notes ''
           fi
+          # The line names the archive without the `bin/` in front of it, which is
+          # what makes `sha256sum -c` pass for a person holding both files in one
+          # folder: the check reads the name from the line, not the file being read.
+          sum="$(sha256sum "$archive")"
+          printf '%s  %s\n' "${sum%% *}" "$(basename "$archive")" > "$archive.sha256"
           gh release upload "$tag" "$archive" --clobber
+          gh release upload "$tag" "$archive.sha256" --clobber
