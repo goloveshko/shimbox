@@ -1,5 +1,16 @@
 # shimbox
 
+[![release](https://img.shields.io/github/v/release/goloveshko/shimbox)](https://github.com/goloveshko/shimbox/releases/latest)
+[![build](https://github.com/goloveshko/shimbox/actions/workflows/ci.yml/badge.svg)](https://github.com/goloveshko/shimbox/actions/workflows/ci.yml)
+[![license](https://img.shields.io/github/license/goloveshko/shimbox)](LICENSE)
+![platform: 64-bit Windows](https://img.shields.io/badge/platform-Windows%20x64-blue)
+![written in Rust](https://img.shields.io/badge/written%20in-Rust-orange)
+![manager: Tauri v2](https://img.shields.io/badge/manager-Tauri%20v2-blueviolet)
+
+**[Download the portable archive](https://github.com/goloveshko/shimbox/releases/latest)** —
+one `shimbox.exe`, nothing to install, no service and no registry writes. Its checksum
+sits beside it on the same page.
+
 A tiny executable-shimming tool for Windows. It puts a small proxy `.exe` next
 to a flat config file in one folder, you put that folder on `PATH`, and from
 then on the tool answers to a name you chose — with the arguments it always
