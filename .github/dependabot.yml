@@ -1,0 +1,9 @@
+# The half a major pin cannot do for itself: `@v7` follows everything under it,
+# so the only thing left to notice is a new major, which is exactly what made the
+# first build warn about a runtime it no longer used.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
