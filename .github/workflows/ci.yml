@@ -15,12 +15,12 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Only the registry. A Tauri `target` is gigabytes, and a runner starts from
       # a different machine every time, so the honest trade is to re-download
       # nothing and re-compile anyway.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -34,7 +34,7 @@ jobs:
       # the install belongs here rather than in a fourth build path: `npm ci` reads
       # the lock file the repository carries, which is what makes the runner format
       # the code with the same binary the pass here was made with.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
@@ -53,7 +53,7 @@ jobs:
       - name: Package the release archive
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package.ps1 -NoPause
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: bin
           path: bin/
@@ -68,7 +68,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      # The two artifact actions are one pair released on the same day, which is
+      # why their majors disagree: `bin` is the only thing crossing the jobs.
+      - uses: actions/download-artifact@v8
         with:
           name: bin
           path: bin
