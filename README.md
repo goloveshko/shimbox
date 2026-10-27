@@ -22,6 +22,14 @@ Typical uses: a portable tool that only runs from its own folder, a build of
 `-some-flag` every single time, or a CLI that has to be given a token your
 scripts should not carry in plain text.
 
+Windows only, and because Windows needs it that way. On macOS and Linux the shim is already
+a file: two lines in a folder on `PATH` — `#!/bin/sh`, then `exec` with `"$@"` — and every
+caller finds it, so the tool there would be a thing that writes two lines. The Windows
+equivalent is a `.cmd`, and that puts `cmd.exe` between the caller and the program: a second
+parser for the quotes, a console window for a program that has none, and a Ctrl-C that
+reaches both. Copying the real binary under the name you want is the other answer, and it
+stays a copy.
+
 Two parts, one workspace:
 
 | Part | What it is |
