@@ -12,7 +12,6 @@ import {
   note,
   prefillFolder,
   resultDialog,
-  sameFolder,
   stemOf,
   textInput,
   withBrowseButton,
@@ -114,30 +113,16 @@ export function renderSingle(root) {
   }
 
   const fillAlias = autofill(alias, () => stemOf(target.value));
-  // The target's folder is where the target runs, not where the pair belongs:
-  // the destination has to be on `PATH` (6), and a pair written next to the
-  // binary it shims would collide with the name the scan already has there.
-  const fillWorkdir = autofill(workdir, () => folderOf(target.value));
 
-  /// The prefilled folder is exactly what the runner falls back to, so the line
-  /// under the field says whether the config will name one (3.4).
-  function showWorkdirDefault() {
-    const folder = folderOf(target.value);
-    const value = workdir.value.trim();
-    if (!folder && !value) {
-      setText(workdirNote, 'single.workdir.help');
-    } else if (!value || sameFolder(value, folder)) {
-      setText(workdirNote, 'single.workdir.default', { folder });
-    } else {
-      setText(workdirNote, 'single.workdir.custom');
-    }
+  /// The field is the only thing that decides where the child runs: empty leaves
+  /// it in the caller's folder, a path pins one (3.4).
+  function showWorkdirNote() {
+    setText(workdirNote, workdir.value.trim() ? 'single.workdir.custom' : 'single.workdir.help');
   }
 
   target.addEventListener('change', async () => {
     const path = target.value.trim();
     fillAlias();
-    fillWorkdir();
-    showWorkdirDefault();
     // The alias arrived without an event of its own, so the button is told here.
     checkComplete();
     if (!path) {
@@ -149,9 +134,9 @@ export function renderSingle(root) {
   });
 
   for (const event of ['input', 'change']) {
-    workdir.addEventListener(event, showWorkdirDefault);
+    workdir.addEventListener(event, showWorkdirNote);
   }
-  showWorkdirDefault();
+  showWorkdirNote();
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();

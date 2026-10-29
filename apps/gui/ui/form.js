@@ -205,14 +205,6 @@ export function nameOf(path) {
   return path.slice(Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/')) + 1);
 }
 
-/// Whether two strings name the same folder, which is what decides if a
-/// `workdir` has to be written at all: Windows ignores case and a trailing
-/// separator, and the backend applies the same rule (3.4).
-export function sameFolder(left, right) {
-  const trim = (path) => path.replace(/[\\/]+$/, '').toLowerCase();
-  return trim(left) === trim(right);
-}
-
 /// Sizes are read by eye, so one decimal is enough to tell 208 KB from 211 KB.
 export function formatSize(bytes) {
   const kb = bytes / 1024;

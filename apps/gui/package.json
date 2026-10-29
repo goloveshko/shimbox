@@ -1,6 +1,6 @@
 {
   "name": "shimbox-ui",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "The manager's UI: plain ESM read from disk by the webview, with Prettier as the authority on how it is wrapped.",

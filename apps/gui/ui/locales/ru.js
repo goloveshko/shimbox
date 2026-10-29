@@ -71,9 +71,7 @@ export default {
   'single.detected.unknown': 'Это не читаемый PE-файл, будет взят консольный runner.',
   'single.workdir': 'Рабочая папка',
   'single.workdir.placeholder': 'C:\\Tools\\ffmpeg',
-  'single.workdir.help': 'Оставьте пустой, чтобы запускать программу из её собственной папки.',
-  'single.workdir.default':
-    'Запуск из {folder} — это своя папка программы, поэтому в конфиг не идёт ничего лишнего.',
+  'single.workdir.help': 'Оставьте пустой, чтобы запускать программу из папки вызова шима.',
   'single.workdir.custom': 'Программа запускается отсюда, и этот путь попадает в конфиг.',
   'single.generate': 'Создать шим',
   'single.result': '{name} готов и лежит в {destination}.',

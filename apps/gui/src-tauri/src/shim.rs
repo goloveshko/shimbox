@@ -129,20 +129,10 @@ pub fn write_shim(request: Request) -> Result<Created, Failure> {
         _ => Variant::from(pe::subsystem_of(&target)),
     };
 
-    // The form prefills the working directory with the target's own folder,
-    // which is also what the runner falls back to (3.4). Writing that back into
-    // the config would pin a path meant to keep following the target, so a
-    // field left at the resolved default writes nothing.
-    let workdir = match request.workdir.trim() {
-        "" => "",
-        dir if target
-            .parent()
-            .is_some_and(|parent| same_path(Path::new(dir), parent)) =>
-        {
-            ""
-        }
-        dir => dir,
-    };
+    // An empty field writes nothing, which leaves the child in the caller's own
+    // directory; a folder named here is the one the target will run from, so it
+    // goes into the config as typed (3.4).
+    let workdir = request.workdir.trim();
 
     write_pair(
         &target,
@@ -711,7 +701,7 @@ mod tests {
     }
 
     #[test]
-    fn writes_workdir_only_when_it_differs_from_the_targets_folder() {
+    fn writes_a_workdir_only_when_the_field_names_one() {
         let dir = scratch("workdir");
         let nested = dir.join("bin");
         fs::create_dir_all(&nested).unwrap();
@@ -733,19 +723,24 @@ mod tests {
             fs::read_to_string(created.config).unwrap()
         };
 
-        // The value the form prefills, however the user happens to type it.
-        for (index, workdir) in ["", &own, &format!("{own}\\"), &own.to_uppercase()]
-            .into_iter()
-            .enumerate()
-        {
+        // No folder named, no line written: the child is left in the one it was
+        // started from.
+        for (index, workdir) in ["", "  "].into_iter().enumerate() {
             assert!(
                 !config(workdir, &format!("a{index}")).contains("workdir="),
-                "wrote the default for {workdir:?}"
+                "wrote a line for {workdir:?}"
             );
         }
-        // A folder of the user's own is written, so the runner keeps it.
-        let text = config(&dir.display().to_string(), "b");
-        assert!(text.contains(&format!("workdir={}\n", dir.display())));
+
+        // A folder is taken at its word, including the target's own: the runner
+        // no longer has a default of its own to fall back to, so nothing here is
+        // a value the config can leave out.
+        assert!(config(&own, "b").contains(&format!("workdir={own}\n")));
+        // Spaces around it are the form's.
+        assert!(
+            config(&format!(" {} ", dir.display()), "c")
+                .contains(&format!("workdir={}\n", dir.display()))
+        );
 
         fs::remove_dir_all(&dir).ok();
     }
