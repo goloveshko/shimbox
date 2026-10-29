@@ -1174,7 +1174,7 @@ dependencies = [
 
 [[package]]
 name = "gui"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -2525,11 +2525,11 @@ dependencies = [
 
 [[package]]
 name = "runner"
-version = "1.0.0"
+version = "1.0.1"
 
 [[package]]
 name = "runner-cli"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "runner",
  "tauri-winres",
@@ -2537,7 +2537,7 @@ dependencies = [
 
 [[package]]
 name = "runner-gui"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "runner",
  "tauri-winres",

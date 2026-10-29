@@ -101,17 +101,25 @@ Check 'a quoted path ending in a backslash survives' ($trailing -eq '"C:\tools\"
 & $cli exit 7 | Out-Null
 Check 'exit code propagated' ($LASTEXITCODE -eq 7) "got: $LASTEXITCODE"
 
-# No workdir in the config: the child must land in the target's own directory.
-$output = & $cli cd | Out-String
-Check 'workdir defaults to target dir' ($output.Trim() -ieq 'C:\Windows\System32') "got: $($output.Trim())"
+# No workdir in the config: the child keeps the caller's folder, which is where
+# the relative paths handed to it came from. Run from the scratch folder so the
+# answer cannot be confused with the target's own directory, and name the other
+# folder for the explicit case so the two checks say different things.
+Push-Location $Work
+try {
+    $output = & $cli cd | Out-String
+    Check 'workdir defaults to the caller' ($output.Trim() -ieq $Work) "got: $($output.Trim())"
 
-Write-Config -Name 'echocli' -Lines @(
-    "path=$Cmd",
-    'arg=/c',
-    "workdir=$Work"
-)
-$output = & $cli cd | Out-String
-Check 'explicit workdir honoured' ($output.Trim() -ieq $Work) "got: $($output.Trim())"
+    Write-Config -Name 'echocli' -Lines @(
+        "path=$Cmd",
+        'arg=/c',
+        "workdir=$Bin"
+    )
+    $output = & $cli cd | Out-String
+    Check 'explicit workdir honoured' ($output.Trim() -ieq $Bin) "got: $($output.Trim())"
+} finally {
+    Pop-Location
+}
 
 # Interactive stdin: cmd /c more consumes piped input through the shim.
 $piped = 'from stdin' | & $cli more | Out-String

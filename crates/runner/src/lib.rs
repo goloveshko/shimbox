@@ -93,17 +93,13 @@ pub fn run(launch: Launch) -> Result<u32, ShimError> {
         command.raw_arg(OsString::from_wide(&arguments));
     }
 
-    // Working directory of the target, not of the caller: portable tools load
-    // DLLs and data relative to their own folder (techspec 3.4).
-    let workdir = match &config.workdir {
-        Some(dir) => absolute(Path::new(dir)),
-        None => target
-            .parent()
-            .filter(|parent| !parent.as_os_str().is_empty())
-            .unwrap_or(Path::new("."))
-            .to_path_buf(),
-    };
-    command.current_dir(workdir);
+    // The child inherits the caller's working directory, which is where the paths
+    // it was handed come from. `workdir` names a folder for the targets that
+    // really want one, and a relative `workdir` is read from that same directory
+    // (3.4).
+    if let Some(dir) = &config.workdir {
+        command.current_dir(absolute(Path::new(dir)));
+    }
 
     // Resolved before the child starts: a reference that names nothing fails the
     // shim rather than handing the target a value it expects and never gets.
