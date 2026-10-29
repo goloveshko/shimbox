@@ -105,10 +105,28 @@ Check 'exit code propagated' ($LASTEXITCODE -eq 7) "got: $LASTEXITCODE"
 # the relative paths handed to it came from. Run from the scratch folder so the
 # answer cannot be confused with the target's own directory, and name the other
 # folder for the explicit case so the two checks say different things.
+#
+# The expected answer is asked of the same `cd`, standing in the folder in
+# question, rather than written out of a PowerShell path: one folder has two
+# spellings on a machine whose short names are enabled, and a runner answering
+# `C:\Users\RUNNER~1\...` is not wrong about where it is.
+function Where-Cd-Says {
+    param([string]$Folder)
+    Push-Location $Folder
+    try {
+        (& $Cmd /c cd | Out-String).Trim()
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 Push-Location $Work
 try {
     $output = & $cli cd | Out-String
-    Check 'workdir defaults to the caller' ($output.Trim() -ieq $Work) "got: $($output.Trim())"
+    $where = Where-Cd-Says -Folder $Work
+    Check 'workdir defaults to the caller' ($output.Trim() -eq $where) `
+        "got: $($output.Trim()), the caller's own folder is: $where"
 
     Write-Config -Name 'echocli' -Lines @(
         "path=$Cmd",
@@ -116,7 +134,9 @@ try {
         "workdir=$Bin"
     )
     $output = & $cli cd | Out-String
-    Check 'explicit workdir honoured' ($output.Trim() -ieq $Bin) "got: $($output.Trim())"
+    $where = Where-Cd-Says -Folder $Bin
+    Check 'explicit workdir honoured' ($output.Trim() -eq $where) `
+        "got: $($output.Trim()), the named folder answers: $where"
 } finally {
     Pop-Location
 }
