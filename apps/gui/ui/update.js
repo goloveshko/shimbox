@@ -2,8 +2,8 @@
 //
 // The question is asked here rather than in Rust: the window already is a
 // browser, so one public JSON file costs no HTTP client in the app. Rust holds
-// only the moment of the ask and answers whether the version it names is ahead,
-// which is the part worth testing.
+// only the moment of the ask, answers whether the version it names is ahead, and
+// reads the body down to the text a card can show - the parts worth testing.
 import { closeButton, invoke, modalDialog } from './form.js';
 import { setText } from './i18n.js';
 
@@ -32,8 +32,8 @@ function card(available, current) {
   setText(line, 'update.head', { version: available.version.replace(/^v/, ''), current });
   body.append(line);
   if (available.notes) {
-    // Written as the author left it: a release body is markdown, and the notes
-    // answer "is it worth restarting for", which plain lines say well enough.
+    // Already read down to plain text by Rust: a release body is markdown, and
+    // this is one paragraph of what it says.
     const notes = document.createElement('p');
     notes.className = 'update-notes';
     notes.textContent = available.notes;

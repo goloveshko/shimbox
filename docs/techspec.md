@@ -660,9 +660,11 @@ says so in a card. This is the only network request the app makes.
   network is not served by asking again on every start.
 * **The card**: the same shape Settings and About use, and the third one of the
   shell — the only one nobody opens. The two version numbers in one line, the
-  release notes as their
-  author wrote them (plain lines, no markdown renderer added for the sake of
-  bullets), and *Open release*, which hands the release page to `open_link` —
+  release notes read down to the text they carry (the body is markdown and the
+  card is one paragraph of plain text, so Rust takes the markup off on the way:
+  headings, bold, inline code, the address of a link and the fence of a code
+  block, while a bullet stays a bullet and a list keeps its lines), and
+  *Open release*, which hands the release page to `open_link` —
   the same host allow-list the About card's links pass through, so an answer
   from the network cannot point the browser anywhere else. *Close* is the
   focused button, as in every other card.
