@@ -139,9 +139,8 @@ the shim is simply not found, which is expected rather than an error.
 ## Using the manager
 
 **Single shim** — pick the target executable, get its file stem offered as the
-name and its own folder as the working directory, then adjust: alias, the
-destination folder, arguments, runner variant, and the environment variables the
-target runs with.
+name, then adjust: alias, the destination folder, arguments, the working
+directory the target starts in, and the environment variables it runs with.
 The `Generate` button waits until the target, the destination and the name are
 all filled in.
 Arguments are written into the config exactly as you type them, with no quoting
@@ -234,7 +233,7 @@ name is kept anyway, is in `docs/techspec.md` 3.6.
 | `runner` | written, read only when its `.exe` is gone | `<variant>@<version>` of the bytes copied in as the `.exe` half. A later build compares the bytes themselves — the copy carries its own version in its file properties — so this line is what a config left without its runner has to say about itself. The runner itself is those bytes already and ignores the line. |
 | `path` | yes | Absolute path to the target executable. |
 | `arg` | no, repeatable | Argument inserted before the caller's own, exactly as written. |
-| `workdir` | no | Working directory for the child. Without it the child starts in **the target's** directory, not the caller's. |
+| `workdir` | no | Working directory for the child. Without it the child starts in **the caller's** directory, so the relative paths in its arguments mean what they mean without the shim. Name a folder here for a tool that only works from its own. |
 | `env` | no, repeatable | `NAME=value` for the child. For parameters, not secrets. |
 | `envref` | no, repeatable | `NAME=reference`; the value is read when the shim runs, so it never sits in the file. |
 

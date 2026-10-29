@@ -208,23 +208,33 @@ envref=GITHUB_TOKEN=cred:shimbox/github
 | `runner` | written by the GUI, ignored by the runner | `<variant>@<version>` of the bytes copied in as the `.exe` half. What 5.7 compares is those bytes themselves, so this line is the word the pair is left with once its runner is gone, and a note for whoever reads the file by hand. The runner never looks at it: it already *is* those bytes. |
 | `path` | yes | Absolute path to the target executable. |
 | `arg` | no, repeatable | Argument inserted before the caller's arguments, **exactly as written** — the GUI does not add quoting, so `arg=-o "out file.txt"` reaches the child as `-o "out file.txt"`. |
-| `workdir` | no | Working directory for the child. |
+| `workdir` | no | Working directory for the child; absent leaves it in the caller's (3.4). |
 | `env` | no, repeatable | `NAME=value` set for the child, the value exactly as written (3.5). |
 | `envref` | no, repeatable | `NAME=reference` whose value is read at launch, so a secret never sits in the file (3.5). |
 
 `path` is stored absolute. Relative-to-config resolution is deferred
 (section 8), as is anything non-`.exe` in `path`.
 
-### 3.4 `workdir` default (changed from draft 1)
+### 3.4 `workdir` default (changed from draft 2)
 
-When `workdir` is absent, the child's working directory is **the target's own
-directory**, not the caller's current directory.
+When `workdir` is absent, the child keeps **the caller's working directory** —
+the one the shim itself was started with.
 
-Draft 1 defaulted to the caller's cwd, which silently breaks portable apps that
-load DLLs and data files relative to their working directory. The caller's cwd
-is still what the shim itself sees, so nothing about stdin/stdout or `.` in the
-child's *arguments* changes — only its `GetCurrentDirectory`. Explicit
-`workdir`, including a path pointing back at the caller's cwd, overrides this.
+Draft 2 defaulted to the target's own folder on the belief that portable apps
+need it to find their DLLs and data. That is not what a working directory does
+for them: Windows resolves a bare module name against the folder of the
+executable being run, so a target started from anywhere still finds its own
+folder, and `magick` reads `colors.xml` and its delegates from a scratch
+directory without being told where it is. What the override did reach was the
+child's *arguments*, because a relative path there is read from the child's
+working directory: `magick @list.txt output.pdf` looked for `list.txt` beside
+`magick.exe`, and a relative output name landed there rather than where the
+caller was standing.
+
+`workdir` is the opt-in for a target that genuinely wants a fixed folder, and
+then it names that folder whatever the caller's happens to be. A relative value
+is resolved from the caller's directory, so `workdir=.` means the same folder
+the shim was run from.
 
 ### 3.5 The child's environment
 
@@ -485,12 +495,11 @@ unreadable or garbled it reads as empty, and no dialog is refused because of it.
 * **Runner type**: dropdown `Auto detect` (default) / `CLI (Console)` /
   `GUI (Detached)` -> selects the embedded runner variant. No config field.
   See 5.4.
-* **Working directory**: prefilled with the target's own folder, which is the
-  default the runner falls back to (3.4), and editable from there. Writing the
-  default back into the config would pin a path meant to keep following the
-  target, so the pair is only given a `workdir` when the field names a different
-  folder — case and a trailing separator do not make one different, and the line
-  under the field says which of the two the config will hold.
+* **Working directory**: empty by default, which is what the runner falls back to
+  (3.4), so the common shim writes no `workdir` line at all. A folder named here
+  is written as typed, trimmed of the spaces around it — including the target's
+  own, since the runner no longer has a default for it to duplicate — and the
+  line under the field says which of the two the config will hold.
 * **Environment variables**: one row per variable — its name, where its value
   comes from (`Value`, `Secret`, `File`, 3.5), and the control that kind needs:
   a field written into the config as typed, a picker over the stored names, or a
